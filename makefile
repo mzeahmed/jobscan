@@ -80,6 +80,12 @@ alerts: ## Affiche les alertes OPPSCAN
 pipeline-logs: ## Logs du cron (si configuré)
 	tail -f /var/log/oppscan.log
 
+pint: ## Lancement de Laravel Pint
+	composer run lint
+
+pintf: ## Lancement de Laravel Pint avec correction
+	composer run lint:fix
+
 # ========================
 # PERMISSIONS
 # ========================

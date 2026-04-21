@@ -54,6 +54,8 @@
         "symfony/polyfill-php82": "*"
     },
     "scripts": {
+        "lint": "pint --test",
+        "lint:fix": "pint",
         "auto-scripts": {
             "cache:clear": "symfony-cmd",
             "assets:install %PUBLIC_DIR%": "symfony-cmd"

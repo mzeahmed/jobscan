@@ -1,0 +1,50 @@
+{
+  "preset": "psr12",
+  "rules": {
+    "declare_strict_types": true,
+    "array_syntax": {
+      "syntax": "short"
+    },
+    "ordered_imports": {
+      "sort_algorithm": "length"
+    },
+    "no_unused_imports": true,
+    "trailing_comma_in_multiline": true,
+    "binary_operator_spaces": {
+      "default": "single_space"
+    },
+    "no_extra_blank_lines": true,
+    "no_whitespace_in_blank_line": true,
+    "single_space_around_construct": true,
+    "types_spaces": {
+      "space": "single"
+    },
+    "concat_space": {
+      "spacing": "one"
+    },
+    "align_multiline_comment": false,
+    "single_quote": true,
+    "class_attributes_separation": {
+      "elements": {
+        "method": "one"
+      }
+    },
+    "combine_consecutive_unsets": true,
+    "combine_consecutive_issets": true,
+    "type_declaration_spaces": true,
+    "statement_indentation": {
+      "stick_comment_to_next_continuous_control_statement": true
+    }
+  },
+  "exclude": [
+    ".docker",
+    "node_modules",
+    "public/build",
+    "public/uploads",
+    "templates",
+    "tests",
+    "translations",
+    "var",
+    "vendor"
+  ]
+}
