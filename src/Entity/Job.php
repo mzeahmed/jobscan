@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use App\DTO\JobDTO;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\JobRepository;
@@ -33,6 +34,22 @@ class Job
 
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
+
+    public function __construct()
+    {
+        $this->createdAt = new \DateTimeImmutable();
+    }
+
+    public static function fromDTO(JobDTO $dto): self
+    {
+        $job = new self();
+        $job->title = $dto->title;
+        $job->url = $dto->url;
+        $job->description = $dto->description;
+        $job->source = $dto->source;
+
+        return $job;
+    }
 
     public function getId(): ?int
     {

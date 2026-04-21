@@ -68,7 +68,7 @@ migrate: ## Lance les migrations
 	symfony console doctrine:migrations:migrate --no-interaction
 
 run-pipeline: ## Lance le pipeline OPPSCAN
-	php /app/bin/console app:jobs:run
+	php bin/console app:jobs:run
 
 # ========================
 # LOGS UTILES

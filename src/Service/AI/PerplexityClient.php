@@ -135,7 +135,7 @@ final class PerplexityClient
     {
         $known = ['php', 'symfony', 'wordpres', 'mysql', 'postgresql', 'redis', 'docker', 'react', 'vue', 'api', 'rabbitmq'];
 
-        return array_values(array_filter($known, fn(string $tech) => str_contains($text, $tech)));
+        return array_values(array_filter($known, fn (string $tech) => str_contains($text, $tech)));
     }
 
     private function extractBudget(string $text): string
