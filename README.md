@@ -183,6 +183,46 @@ make alerts
 
 ---
 
+## Automatisation (Cron)
+
+JOBSCAN peut tourner de manière entièrement autonome via un cron local. Une fois configuré, il surveille en continu les nouvelles opportunités, les analyse et déclenche des notifications sans aucune intervention manuelle.
+
+### Configurer le cron
+
+```bash
+crontab -e
+```
+
+#### Toutes les 30 minutes
+
+```bash
+*/30 * * * * cd /home/USER/chemin/vers/jobscan && php bin/console app:jobs:run >> var/cron.log 2>&1
+```
+
+#### Version avec lock (recommandée)
+
+Évite les exécutions simultanées si le pipeline est long :
+
+```bash
+*/30 * * * * cd /home/USER/chemin/vers/jobscan && flock -n /tmp/jobscan.lock php bin/console app:jobs:run >> var/cron.log 2>&1
+```
+
+### Logs cron
+
+```bash
+tail -f var/cron.log
+```
+
+### Vérifier que le cron tourne
+
+```bash
+systemctl status cron
+```
+
+> **Note** : adapter le chemin du projet, s'assurer que PHP est dans le `PATH` (`which php`), et que LM Studio est lancé pour que l'analyse IA fonctionne.
+
+---
+
 ## Analyse IA
 
 L'analyse est effectuée par `OpenAIClient`, qui pointe vers **LM Studio**.
