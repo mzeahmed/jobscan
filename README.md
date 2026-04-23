@@ -46,7 +46,7 @@ Provider -> JobProcessor -> OpenAIClient (LM Studio) -> ScoringService -> DB -> 
 ## Installation
 
 ```bash
-git clone <repo>
+git clone https://github.com/mzeahmed/jobscan.git
 cd jobscan
 composer install
 cp .env .env.local
