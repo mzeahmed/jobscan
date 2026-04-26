@@ -1,3 +1,5 @@
+.PHONY: help build up down logs bash migrate run-pipeline alerts fix-perms
+
 COMPOSE = docker compose -f docker-compose.yml
 COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
