@@ -19,6 +19,7 @@ final class AIClient
         private readonly string $apiBase,
         private readonly string $apiKey,
         private readonly string $model,
+        private readonly string $systemPrompt,
     ) {
     }
 
@@ -53,46 +54,6 @@ final class AIClient
 
     private function callLMStudio(string $text): ?array
     {
-        $systemPrompt = <<<'PROMPT'
-            Tu es un extracteur de données d'offres d'emploi.
-
-            Tu dois répondre STRICTEMENT avec un JSON valide.
-            Aucun texte avant.
-            Aucun texte après.
-            Aucun markdown.
-            Aucun bloc ```json.
-
-            Format EXACT :
-
-            {
-              "stack": ["php", "symfony", "wordpress"],
-              "contract_type": "freelance|cdi|unknown",
-              "freelance": true,
-              "remote": true,
-              "budget": "500€/j ou 45k€/an ou non précisé",
-              "recent": true,
-              "seniority": "junior|mid|senior|unknown"
-            }
-
-            Règles strictes :
-
-            - "freelance" = true UNIQUEMENT si freelance, mission, TJM, contract explicite
-            - "contract_type" = "cdi" UNIQUEMENT si CDI explicitement mentionné
-            - "remote" = true si remote ou télétravail mentionné
-            - "budget" :
-              - convertir $ en € approximatif
-              - exemple: $80,000 → 80k€/an
-              - plage: 80k-110k€/an
-            - "seniority" :
-              - senior si 3+ ans ou autonomie demandée
-            - "stack" :
-              - uniquement technologies explicitement présentes
-
-            Si doute → "unknown"
-
-            Réponds UNIQUEMENT avec le JSON.
-            PROMPT;
-
         try {
             $response = $this->httpClient
                 ->request('POST', rtrim($this->apiBase, '/') . '/chat/completions', [
@@ -103,7 +64,7 @@ final class AIClient
                     'json' => [
                         'model' => $this->model,
                         'messages' => [
-                            ['role' => 'system', 'content' => $systemPrompt],
+                            ['role' => 'system', 'content' => $this->systemPrompt],
                             ['role' => 'user', 'content' => $text],
                         ],
                         'temperature' => 0,

@@ -40,6 +40,7 @@ services:
             $apiBase: '%ai.api_base%'
             $apiKey: '%ai.api_key%'
             $model: '%ai.model%'
+            $systemPrompt: '%app.ai_system_prompt%'
 
     App\Service\Provider\RsFeedProvider:
         arguments:
