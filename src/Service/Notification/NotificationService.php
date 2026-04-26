@@ -9,7 +9,7 @@ use Psr\Log\LoggerInterface;
 
 final class NotificationService
 {
-    private const THRESHOLD = 70;
+    private const THRESHOLD = 60;
 
     public function __construct(
         private readonly TelegramNotifier $telegram,
@@ -19,9 +19,9 @@ final class NotificationService
 
     public function notify(Job $job): void
     {
-        // if ($job->getScore() < self::THRESHOLD) {
-        //     return;
-        // }
+        if ($job->getScore() < self::THRESHOLD) {
+            return;
+        }
 
         $message = $this->formatMessage($job);
 

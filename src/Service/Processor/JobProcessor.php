@@ -14,7 +14,7 @@ use App\Service\Notification\NotificationService;
 
 final class JobProcessor
 {
-    private const NOTIFICATION_THRESHOLD = 70;
+    private const NOTIFICATION_THRESHOLD = 60;
     private const AI_PRESCORE_THRESHOLD = 15;
 
     public function __construct(
@@ -82,8 +82,8 @@ final class JobProcessor
             'source' => $dto->source,
         ]);
 
-        // if ($score >= self::NOTIFICATION_THRESHOLD) {
-        $this->notificationService->notify($job);
-        // }
+        if ($score >= self::NOTIFICATION_THRESHOLD) {
+            $this->notificationService->notify($job);
+        }
     }
 }

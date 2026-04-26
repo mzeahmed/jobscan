@@ -4,25 +4,55 @@ declare(strict_types=1);
 
 namespace App\Service\AI;
 
+use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class AIClient
 {
+    private const CACHE_TTL = 86400; // 24h
+
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly LoggerInterface $logger,
+        private readonly CacheItemPoolInterface $cache,
         private readonly string $apiBase,
         private readonly string $apiKey,
         private readonly string $model,
     ) {
     }
 
+    /**
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
     public function analyze(string $text): array
     {
         $text = $this->cleanText($text);
         $text = mb_substr($text, 0, 3000);
 
+        $cacheKey = 'ai_' . hash('sha256', $text);
+        $item = $this->cache->getItem($cacheKey);
+
+        if ($item->isHit()) {
+            $this->logger->debug('AIClient: cache hit.', ['key' => $cacheKey]);
+
+            return $item->get();
+        }
+
+        $result = $this->callLMStudio($text);
+
+        if ($result !== null) {
+            $item->set($result)->expiresAfter(self::CACHE_TTL);
+            $this->cache->save($item);
+
+            return $result;
+        }
+
+        return $this->heuristicFallback($text);
+    }
+
+    private function callLMStudio(string $text): ?array
+    {
         $systemPrompt = <<<'PROMPT'
             Tu es un extracteur de données d'offres d'emploi.
 
@@ -108,7 +138,7 @@ final class AIClient
             ]);
         }
 
-        return $this->heuristicFallback($text);
+        return null;
     }
 
     private function normalize(array $data): array
