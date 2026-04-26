@@ -330,13 +330,12 @@ make bash          # ouvre un shell dans le conteneur app
 
 ## Base de données
 
-SQLite, fichier par environnement :
+SQLite :
 
-* dev : `var/data_dev.db`
-* prod : `var/data_prod.db`
+*  `var/jobscan.db`
 
 ```bash
-sqlite3 var/data_dev.db "SELECT id, title, score, source FROM job ORDER BY score DESC;"
+sqlite3 var/jobscan.db "SELECT id, title, score, source FROM job ORDER BY score DESC;"
 ```
 
 ---
