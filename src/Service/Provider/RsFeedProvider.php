@@ -38,7 +38,7 @@ final class RsFeedProvider implements JobProviderInterface
                         'timeout' => 20,
                         'headers' => [
                             'Accept' => 'application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8',
-                            'User-Agent' => 'OPPSCAN/1.0',
+                            'User-Agent' => 'JOBSCAN/1.0',
                         ],
                     ]);
 

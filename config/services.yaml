@@ -41,6 +41,7 @@ services:
             $apiKey: '%ai.api_key%'
             $model: '%ai.model%'
             $systemPrompt: '%app.ai_system_prompt%'
+            $knownStack: '%app.known_stack%'
 
     App\Service\Provider\RsFeedProvider:
         arguments:

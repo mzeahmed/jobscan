@@ -20,6 +20,7 @@ final class AIClient
         private readonly string $apiKey,
         private readonly string $model,
         private readonly string $systemPrompt,
+        private readonly array $knownStack = [],
     ) {
     }
 
@@ -177,26 +178,9 @@ final class AIClient
 
     private function extractStack(string $text): array
     {
-        $known = [
-            'php',
-            'symfony',
-            'wordpress',
-            'mysql',
-            'postgresql',
-            'redis',
-            'docker',
-            'react',
-            'vue',
-            'api',
-            'rabbitmq',
-            'laravel',
-            'typescript',
-            'javascript',
-        ];
-
         return array_values(array_filter(
-            $known,
-            static fn(string $tech) => str_contains($text, $tech)
+            $this->knownStack,
+            static fn (string $tech) => str_contains($text, $tech)
         ));
     }
 

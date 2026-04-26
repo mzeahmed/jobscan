@@ -7,6 +7,22 @@ parameters:
         - fullstack
         - api
 
+    app.known_stack:
+        - php
+        - symfony
+        - wordpress
+        - mysql
+        - postgresql
+        - redis
+        - docker
+        - react
+        - vue
+        - api
+        - rabbitmq
+        - laravel
+        - typescript
+        - javascript
+
     app.searx_queries:
         - 'php symfony remote job'
         - 'php symfony freelance remote'

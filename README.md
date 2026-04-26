@@ -87,13 +87,13 @@ JOB_FEED_URL_2=
 JOB_FEED_URL_3=
 ```
 
-### Mots-clés et requêtes — `config/packages/jobscan.yaml`
+### Mots-clés, requêtes et stack — `config/packages/jobscan.yaml`
 
-Les mots-clés métier et les requêtes SearXNG sont centralisés dans un seul fichier YAML :
+Toute la configuration métier est centralisée dans un seul fichier YAML. Aucune modification de code PHP n'est nécessaire pour adapter JOBSCAN à un autre profil technique.
 
 ```yaml
 parameters:
-    app.filter_keywords:
+    app.filter_keywords:       # filtre d'entrée du pipeline
         - php
         - symfony
         - wordpress
@@ -101,7 +101,23 @@ parameters:
         - fullstack
         - api
 
-    app.searx_queries:
+    app.known_stack:           # technos reconnues par le fallback heuristique
+        - php
+        - symfony
+        - wordpress
+        - mysql
+        - postgresql
+        - redis
+        - docker
+        - react
+        - vue
+        - api
+        - rabbitmq
+        - laravel
+        - typescript
+        - javascript
+
+    app.searx_queries:         # requêtes envoyées à SearXNG
         - 'php symfony remote job'
         - 'php symfony freelance remote'
         - 'wordpress php remote developer'
@@ -109,12 +125,19 @@ parameters:
         - 'développeur php symfony full remote'
         - 'développeur php WordPress'
         - 'mission freelance php symfony remote'
+
+    app.ai_system_prompt: |   # prompt système envoyé à LM Studio
+        ...
 ```
 
-* **`app.filter_keywords`** : termes utilisés par le pipeline pour écarter les offres hors scope avant tout traitement IA
-* **`app.searx_queries`** : requêtes envoyées à SearXNG à chaque run
+| Paramètre | Utilisé par | Rôle |
+|---|---|---|
+| `app.filter_keywords` | `JobProcessor` | Écarte les offres hors scope avant tout traitement IA |
+| `app.known_stack` | `AIClient` | Détecte la stack technique en fallback heuristique |
+| `app.searx_queries` | `SearxProvider` | Requêtes envoyées à SearXNG à chaque run |
+| `app.ai_system_prompt` | `AIClient` | Prompt système envoyé à LM Studio |
 
-Pour adapter JOBSCAN à un autre profil (ex : Python / Django, ou Java / Spring), il suffit de modifier ce fichier — sans toucher au code PHP.
+Pour adapter JOBSCAN à un autre profil (ex : Python / Django, ou Java / Spring), il suffit de modifier ce fichier.
 
 ---
 
