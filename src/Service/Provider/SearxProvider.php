@@ -15,6 +15,7 @@ final class SearxProvider implements JobProviderInterface
         private readonly LoggerInterface $logger,
         private readonly string $baseUrl,
         private readonly array $searchQueries = [],
+        private readonly array $locations = [],
     ) {
     }
 
@@ -25,7 +26,7 @@ final class SearxProvider implements JobProviderInterface
     {
         $jobs = [];
 
-        foreach ($this->searchQueries as $query) {
+        foreach ($this->buildQueries() as $query) {
             foreach ($this->search($query) as $result) {
                 $title = trim((string) ($result['title'] ?? ''));
                 $url = trim((string) ($result['url'] ?? ''));
@@ -150,5 +151,18 @@ final class SearxProvider implements JobProviderInterface
         $text = preg_replace('/\s+/', ' ', $text);
 
         return trim((string) $text);
+    }
+
+    private function buildQueries(): array
+    {
+        $queries = [];
+
+        foreach ($this->searchQueries as $baseQuery) {
+            foreach ($this->locations as $location) {
+                $queries[] = trim($baseQuery . ' ' . $location);
+            }
+        }
+
+        return array_values(array_unique($queries));
     }
 }

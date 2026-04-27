@@ -52,6 +52,7 @@ services:
         arguments:
             $baseUrl: '%env(SEARXNG_URL)%'
             $searchQueries: '%app.searx_queries%'
+            $locations: '%app.job_locations%'
         tags: [ 'app.job_provider' ]
 
     App\Service\Processor\JobProcessor:
