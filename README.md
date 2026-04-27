@@ -400,6 +400,24 @@ sqlite3 var/jobscan.db "SELECT id, title, score, source FROM job ORDER BY score 
 
 ---
 
+## Contribuer
+
+Les contributions sont les bienvenues. Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour le guide complet et [ROADMAP.md](ROADMAP.md) pour les chantiers ouverts.
+
+**En bref :**
+
+```bash
+make setup        # configure les git hooks
+composer install
+cp .env .env.local
+make migrate
+```
+
+Avant chaque commit : Pint s'exécute automatiquement via le hook `pre-commit`.
+Avant chaque push : PHPStan s'exécute via le hook `pre-push`.
+
+---
+
 ## Objectif
 
 JOBSCAN n'est pas un job board.
