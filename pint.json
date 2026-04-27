@@ -46,6 +46,6 @@
         "translations",
         "var",
         "vendor",
-        "config/reference.php"
+        "./config/reference.php"
     ]
 }
