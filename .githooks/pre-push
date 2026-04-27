@@ -17,3 +17,12 @@ if [ $? -ne 0 ]; then
 else
     echo "✅ Laravel Pint passed."
 fi
+
+echo " Lancement des tests unitaires..."
+php bin/phpunit
+if [ $? -ne 0 ]; then
+    echo "❌ Tests unitaires échoués. Veuillez corriger les erreurs avant de pousser."
+    exit 1
+else
+    echo "✅ Tests unitaires réussis."
+fi

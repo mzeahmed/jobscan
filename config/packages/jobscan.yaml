@@ -41,6 +41,40 @@ parameters:
         - "Provence-Alpes-Côte d'Azur"
         - 'Remote'
 
+    app.scoring:
+        prescore:
+            keywords:
+                php: 10
+                symfony: 15
+                wordpress: 10
+            remote_keywords:
+                - remote
+                - télétravail
+                - teletravail
+            remote_bonus: 5
+            negative_keywords:
+                stage: -50
+                alternance: -50
+        compute:
+            title_keywords:
+                php: 20
+            stack_keywords:
+                symfony: 30
+                wordpress: 20
+            contract_bonuses:
+                freelance: 15
+                cdi: 10
+            flag_bonuses:
+                remote: 10
+                recent: 20
+            description_keywords:
+                mission: 10
+                urgent: 15
+                asap: 15
+            negative_keywords:
+                stage: -50
+                alternance: -50
+
     app.ai_system_prompt: |
         Tu es un extracteur de données d'offres d'emploi.
 

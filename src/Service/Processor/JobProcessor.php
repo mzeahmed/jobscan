@@ -17,6 +17,9 @@ final class JobProcessor
     private const NOTIFICATION_THRESHOLD = 60;
     private const AI_PRESCORE_THRESHOLD = 15;
 
+    /**
+     * @param list<string> $filterKeywords
+     */
     public function __construct(
         private readonly JobRepository $jobRepository,
         private readonly AIClient $AIClient,

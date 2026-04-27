@@ -9,39 +9,54 @@ use App\DTO\JobDTO;
 final class ScoringService
 {
     /**
+     * @param array{
+     *     prescore: array{
+     *         keywords: array<string, int>,
+     *         remote_keywords: list<string>,
+     *         remote_bonus: int,
+     *         negative_keywords: array<string, int>,
+     *     },
+     *     compute: array{
+     *         title_keywords: array<string, int>,
+     *         stack_keywords: array<string, int>,
+     *         contract_bonuses: array<string, int>,
+     *         flag_bonuses: array<string, int>,
+     *         description_keywords: array<string, int>,
+     *         negative_keywords: array<string, int>,
+     *     },
+     * } $scoringConfig
+     */
+    public function __construct(
+        private readonly array $scoringConfig,
+    ) {
+    }
+
+    /**
      * Score rapide sans IA, utilisé pour décider si l'analyse IA vaut le coup.
      */
     public function preScore(JobDTO $job): int
     {
         $score = 0;
+        $config = $this->scoringConfig['prescore'];
         $text = strtolower($job->title . ' ' . $job->description);
 
-        if (str_contains($text, 'php')) {
-            $score += 10;
+        foreach ($config['keywords'] as $keyword => $points) {
+            if (str_contains($text, $keyword)) {
+                $score += $points;
+            }
         }
 
-        if (str_contains($text, 'symfony')) {
-            $score += 15;
+        foreach ($config['remote_keywords'] as $keyword) {
+            if (str_contains($text, $keyword)) {
+                $score += $config['remote_bonus'];
+                break;
+            }
         }
 
-        if (str_contains($text, 'wordpress')) {
-            $score += 10;
-        }
-
-        if (
-            str_contains($text, 'remote')
-            || str_contains($text, 'télétravail')
-            || str_contains($text, 'teletravail')
-        ) {
-            $score += 5;
-        }
-
-        if (str_contains($text, 'stage')) {
-            $score -= 50;
-        }
-
-        if (str_contains($text, 'alternance')) {
-            $score -= 50;
+        foreach ($config['negative_keywords'] as $keyword => $points) {
+            if (str_contains($text, $keyword)) {
+                $score += $points;
+            }
         }
 
         return $score;
@@ -50,68 +65,63 @@ final class ScoringService
     /**
      * Score final sur 100, basé sur les données IA enrichies.
      *
+     * @param array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string} $ai
+     *
      * @return array{score: int, breakdown: string[]}
      */
     public function compute(JobDTO $job, array $ai): array
     {
         $score = 0;
         $breakdown = [];
+        $config = $this->scoringConfig['compute'];
+        $title = strtolower($job->title);
         $desc = strtolower($job->description);
+        $stack = array_map('strtolower', $ai['stack']);
 
-        if (str_contains(strtolower($job->title), 'php')) {
-            $score += 20;
-            $breakdown[] = '+20 (PHP titre)';
+        foreach ($config['title_keywords'] as $keyword => $points) {
+            if (str_contains($title, $keyword)) {
+                $score += $points;
+                $breakdown[] = sprintf('%+d (%s titre)', $points, $keyword);
+            }
         }
 
-        $stack = array_map('strtolower', $ai['stack'] ?? []);
-
-        if (\in_array('symfony', $stack, true)) {
-            $score += 30;
-            $breakdown[] = '+30 (Symfony stack)';
+        foreach ($config['stack_keywords'] as $keyword => $points) {
+            if (in_array($keyword, $stack, true)) {
+                $score += $points;
+                $breakdown[] = sprintf('%+d (%s stack)', $points, $keyword);
+            }
         }
 
-        if (\in_array('wordpress', $stack, true)) {
-            $score += 20;
-            $breakdown[] = '+20 (WordPress stack)';
-        }
-
-        $contractType = $ai['contract_type'] ?? 'unknown';
-        if ('freelance' === $contractType || ($ai['freelance'] ?? false)) {
-            $score += 15;
-            $breakdown[] = '+15 (freelance)';
+        $contractType = $ai['contract_type'];
+        if ('freelance' === $contractType || $ai['freelance']) {
+            $points = $config['contract_bonuses']['freelance'];
+            $score += $points;
+            $breakdown[] = sprintf('%+d (freelance)', $points);
         } elseif ('cdi' === $contractType) {
-            $score += 10;
-            $breakdown[] = '+10 (CDI)';
+            $points = $config['contract_bonuses']['cdi'];
+            $score += $points;
+            $breakdown[] = sprintf('%+d (CDI)', $points);
         }
 
-        if ($ai['remote'] ?? false) {
-            $score += 10;
-            $breakdown[] = '+10 (remote)';
+        foreach ($config['flag_bonuses'] as $flag => $points) {
+            if ($ai[$flag] ?? false) {
+                $score += $points;
+                $breakdown[] = sprintf('%+d (%s)', $points, $flag);
+            }
         }
 
-        if ($ai['recent'] ?? false) {
-            $score += 20;
-            $breakdown[] = '+20 (offre récente)';
+        foreach ($config['description_keywords'] as $keyword => $points) {
+            if (str_contains($desc, $keyword)) {
+                $score += $points;
+                $breakdown[] = sprintf('%+d (%s)', $points, $keyword);
+            }
         }
 
-        if (str_contains($desc, 'mission')) {
-            $score += 10;
-            $breakdown[] = '+10 (mission)';
-        }
-
-        if (str_contains($desc, 'urgent') || str_contains($desc, 'asap')) {
-            $score += 15;
-            $breakdown[] = '+15 (urgent/ASAP)';
-        }
-
-        if (str_contains($desc, 'stage')) {
-            $score -= 50;
-            $breakdown[] = '-50 (stage)';
-        }
-
-        if (str_contains($desc, 'alternance')) {
-            $score -= 50;
-            $breakdown[] = '-50 (alternance)';
+        foreach ($config['negative_keywords'] as $keyword => $points) {
+            if (str_contains($desc, $keyword)) {
+                $score += $points;
+                $breakdown[] = sprintf('%+d (%s)', $points, $keyword);
+            }
         }
 
         return ['score' => max(0, min($score, 100)), 'breakdown' => $breakdown];

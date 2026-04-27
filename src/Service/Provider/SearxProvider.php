@@ -10,6 +10,10 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class SearxProvider implements JobProviderInterface
 {
+    /**
+     * @param list<string> $searchQueries
+     * @param list<string> $locations
+     */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly LoggerInterface $logger,
@@ -153,6 +157,9 @@ final class SearxProvider implements JobProviderInterface
         return trim((string) $text);
     }
 
+    /**
+     * @return list<string>
+     */
     private function buildQueries(): array
     {
         $queries = [];

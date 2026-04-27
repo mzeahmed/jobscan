@@ -58,3 +58,7 @@ services:
     App\Service\Processor\JobProcessor:
         arguments:
             $filterKeywords: '%app.filter_keywords%'
+
+    App\Service\Scoring\ScoringService:
+        arguments:
+            $scoringConfig: '%app.scoring%'

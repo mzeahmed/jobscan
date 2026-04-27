@@ -18,7 +18,7 @@ Objectif : un pipeline fonctionnel, fiable et reproductible en local.
 - [x] Alerte Telegram pour les meilleures offres
 - [x] Configuration centralisée dans `jobscan.yaml`
 - [x] Hook pre-push avec PHPStan
-- [ ] Tests unitaires sur `ScoringService`
+- [x] Tests unitaires sur `ScoringService`
 - [ ] Tests d'intégration sur `JobProcessor`
 - [ ] CI GitHub Actions (lint + PHPStan)
 

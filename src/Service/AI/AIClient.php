@@ -12,6 +12,9 @@ final class AIClient
 {
     private const CACHE_TTL = 86400; // 24h
 
+    /**
+     * @param list<string> $knownStack
+     */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly LoggerInterface $logger,
@@ -25,6 +28,8 @@ final class AIClient
     }
 
     /**
+     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string}
+     *
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function analyze(string $text): array
@@ -53,6 +58,9 @@ final class AIClient
         return $this->heuristicFallback($text);
     }
 
+    /**
+     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string}|null
+     */
     private function callLMStudio(string $text): ?array
     {
         try {
@@ -114,6 +122,11 @@ final class AIClient
         return null;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     *
+     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string}
+     */
     private function normalize(array $data): array
     {
         $contractType = strtolower((string) ($data['contract_type'] ?? 'unknown'));
@@ -140,6 +153,9 @@ final class AIClient
         ];
     }
 
+    /**
+     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string}
+     */
     private function heuristicFallback(string $text): array
     {
         $lower = strtolower($text);
@@ -176,6 +192,9 @@ final class AIClient
         ];
     }
 
+    /**
+     * @return list<string>
+     */
     private function extractStack(string $text): array
     {
         return array_values(array_filter(

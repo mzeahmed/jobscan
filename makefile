@@ -89,7 +89,7 @@ lms-stop: ## Arrête le serveur de LM Studio
 	@echo "$(GREEN)Serveur de LM Studio arrêté$(NO_COLOR)"
 
 # ========================
-# LOGS UTILES
+# LOGS / UTILES
 # ========================
 
 alerts: ## Affiche les alertes JOBSCAN
@@ -114,6 +114,23 @@ stan: ## Lancement de PHPStan
 	@echo "$(YELLOW)Lancement de PHPStan...$(NO_COLOR)"
 	./vendor/bin/phpstan analyse -c phpstan.neon
 	@echo "$(GREEN)PHPStan terminé$(NO_COLOR)"
+
+hard: ## Reinitialisation du dépôt (attention, toutes les modifications non commit seront perdues)
+	@echo "$(RED)⚠️  Cette action va supprimer toutes les modifications non commitées.$(NO_COLOR)"
+	@printf "Confirmer ? [y/N] " && read ans && [ "$$ans" = "y" ] || (echo "Annulé." && exit 1)
+	@echo "$(YELLOW)Réinitialisation du dépôt...$(NO_COLOR)"
+	git reset --hard
+	git clean -fd
+	@echo "$(GREEN)Dépôt réinitialisé.$(NO_COLOR)"
+
+
+# ========================
+# TESTES
+# ========================
+test: ## Lancement des tests PHPUnit
+	@echo "$(YELLOW)Lancement des tests PHPUnit...$(NO_COLOR)"
+	php bin/phpunit
+	@echo "$(GREEN)Tests PHPUnit terminés$(NO_COLOR)"
 
 # ========================
 # PERMISSIONS
