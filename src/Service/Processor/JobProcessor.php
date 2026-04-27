@@ -6,8 +6,8 @@ namespace App\Service\Processor;
 
 use App\DTO\JobDTO;
 use App\Entity\Job;
-use Psr\Log\LoggerInterface;
 use App\Service\AI\AIClient;
+use Psr\Log\LoggerInterface;
 use App\Repository\JobRepository;
 use App\Service\Scoring\ScoringService;
 use App\Service\Notification\NotificationService;

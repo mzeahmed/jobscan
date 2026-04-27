@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Service\Notification;
 
 use App\Entity\Job;
-use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
+use Doctrine\ORM\EntityManagerInterface;
 
 final class NotificationService
 {

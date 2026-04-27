@@ -1,0 +1,9 @@
+#!/bin/bash
+
+echo "🎨 Running Pint..."
+./vendor/bin/pint
+if ! ./vendor/bin/pint --test; then
+    echo "❌ Pint failed. Fix the issues with (make pintf) before committing."
+    exit 1
+fi
+echo "✅ Pint passed."

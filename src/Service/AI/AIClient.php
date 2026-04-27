@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Service\AI;
 
-use Psr\Cache\CacheItemPoolInterface;
 use Psr\Log\LoggerInterface;
+use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class AIClient
@@ -128,7 +128,7 @@ final class AIClient
 
         return [
             'stack' => array_values(array_unique(array_map(
-                static fn($item) => strtolower(trim((string) $item)),
+                static fn ($item) => strtolower(trim((string) $item)),
                 (array) ($data['stack'] ?? [])
             ))),
             'contract_type' => $contractType,

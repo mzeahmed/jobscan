@@ -114,7 +114,6 @@ final class ScoringService
             $breakdown[] = '-50 (alternance)';
         }
 
-
         return ['score' => max(0, min($score, 100)), 'breakdown' => $breakdown];
     }
 }
