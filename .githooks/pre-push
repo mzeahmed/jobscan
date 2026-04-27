@@ -1,0 +1,10 @@
+#!/bin/bash
+
+echo "🧪 Running PHPStan analysis..."
+vendor/bin/phpstan analyse -c phpstan.neon
+if [ $? -ne 0 ]; then
+    echo "❌ PHPStan analysis failed. Please fix the issues before pushing."
+    exit 1
+else
+    echo "✅ PHPStan analysis passed."
+fi
