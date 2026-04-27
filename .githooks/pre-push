@@ -10,7 +10,7 @@ else
 fi
 
 echo "🎨 Running Laravel Pint..."
-./vendor/bin/pint
+./vendor/bin/pint --test
 if [ $? -ne 0 ]; then
     echo "❌ Laravel Pint failed. Please fix the issues the command (make pintf) before pushing."
     exit 1
