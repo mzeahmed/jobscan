@@ -123,6 +123,14 @@ hard: ## Reinitialisation du dépôt (attention, toutes les modifications non co
 	git clean -fd
 	@echo "$(GREEN)Dépôt réinitialisé.$(NO_COLOR)"
 
+clean: ## Supprimer toutes les branches locales et distantes sauf main
+	@echo "$(RED)⚠️  Cette action va supprimer toutes les branches locales et distantes sauf main.$(NO_COLOR)"
+	@printf "Confirmer ? [y/N] " && read ans && [ "$$ans" = "y" ] || (echo "Annulé." && exit 1)
+	@echo "$(YELLOW)Suppression des branches...$(NO_COLOR)"
+	git branch | grep -vE '^\*? (main)$' | xargs git branch -D
+	git branch -r | grep -vE '^\*? (origin/(main))$' | sed 's/origin\///' | xargs -I {} git push origin --delete {}
+	@echo "$(GREEN)Branches supprimées.$(NO_COLOR)"
+
 
 # ========================
 # TESTES
