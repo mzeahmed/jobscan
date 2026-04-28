@@ -3,11 +3,10 @@ use_default_settings: true
 server:
     bind_address: "0.0.0.0"
     port: 8080
-    secret_key: "jobscan-CHANGE-ME-very-long-random-secret-2026"
+    secret_key: "67e;u[WVE=SIc;fR:t:aO2cuT?D6xFy-V-}kObr2W}lO8frE}xjti+/54[:|\SER"
 
 search:
     formats:
         - html
         - json
         - rss
-
