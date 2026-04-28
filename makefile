@@ -137,8 +137,8 @@ clean: ## Supprimer toutes les branches locales et distantes sauf main
 	@echo "$(YELLOW)Suppression des branches locales...$(NO_COLOR)"
 	@git branch | grep -vE '^\*|main' | xargs -r git branch -D || true
 
-	@echo "$(YELLOW)Suppression des branches distantes...$(NO_COLOR)"
-	@git branch -r | grep -vE 'origin/(main)' | sed 's/origin\///' | xargs -r -I {} git push origin --delete {} || true
+	@#echo "$(YELLOW)Suppression des branches distantes...$(NO_COLOR)"
+	@#git branch -r | grep -vE 'origin/(main)' | sed 's/origin\///' | xargs -r -I {} git push origin --delete {} || true
 
 	@echo "$(GREEN)Nettoyage des branches terminé$(NO_COLOR)"
 
