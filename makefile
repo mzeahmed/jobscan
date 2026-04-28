@@ -123,7 +123,7 @@ hard: ## Reinitialisation du dépôt (attention, toutes les modifications non co
 	git clean -fd
 	@echo "$(GREEN)Dépôt réinitialisé.$(NO_COLOR)"
 
-del: ## Supprimer toutes les branches locales et distantes sauf main
+clean: ## Supprimer toutes les branches locales et distantes sauf main
 	@echo "$(RED)⚠️  Cette action va supprimer toutes les branches locales et distantes sauf main.$(NO_COLOR)"
 	@printf "Confirmer ? [y/N] " && read ans && [ "$$ans" = "y" ] || (echo "Annulé." && exit 1)
 	@echo "$(YELLOW)Suppression des branches...$(NO_COLOR)"
