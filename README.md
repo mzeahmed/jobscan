@@ -93,7 +93,7 @@ Toute la configuration métier est centralisée dans un seul fichier YAML. Aucun
 
 ```yaml
 parameters:
-    app.filter_keywords:       # filtre d'entrée de la pipeline
+    app.filter_keywords:       # filtre d'entrée du pipeline
         - php
         - symfony
         - wordpress
@@ -250,7 +250,7 @@ Le champ `id` retourné doit être utilisé dans `AI_MODEL`.
 
 ## Utilisation
 
-### Lancer la pipeline manuellement
+### Lancer le pipeline manuellement
 
 ```bash
 make run-pipeline
@@ -294,7 +294,7 @@ crontab -e
 
 #### Version avec lock (recommandée)
 
-Évite les exécutions simultanées si la pipeline est long :
+Évite les exécutions simultanées si le pipeline est long :
 
 ```bash
 */30 * * * * cd /home/USER/chemin/vers/jobscan && flock -n /tmp/jobscan.lock php bin/console app:jobs:run >> var/cron.log 2>&1
@@ -312,7 +312,7 @@ tail -f var/cron.log
 systemctl status cron
 ```
 
-> Adapter le chemin du projet et s'assurer que PHP est dans le `PATH` (`which php`). LM Studio et SearXNG doivent être démarrés pour que la pipeline complet fonctionne.
+> Adapter le chemin du projet et s'assurer que PHP est dans le `PATH` (`which php`). LM Studio et SearXNG doivent être démarrés pour que le pipeline complet fonctionne.
 
 ---
 
@@ -369,7 +369,7 @@ TELEGRAM_CHAT_ID=...
 ```bash
 make help          # liste toutes les commandes
 make migrate       # applique les migrations
-make run-pipeline  # lance la pipeline
+make run-pipeline  # lance le pipeline
 make alerts        # suit les alertes en live
 make fix-perms     # corrige les permissions SQLite
 make logs          # affiche les logs Docker
@@ -394,8 +394,8 @@ sqlite3 var/jobscan.db "SELECT id, title, score, source FROM job ORDER BY score 
 
 * **LM Studio** est utilisé pour l'analyse IA locale
 * **SearXNG** est le moteur de recherche d'offres web
-* **RsFeedProvider** et **SearxProvider** sont actifs dans la pipeline
-* la pipeline fonctionne même sans IA grâce au fallback heuristique
+* **RsFeedProvider** et **SearxProvider** sont actifs dans le pipeline
+* le pipeline fonctionne même sans IA grâce au fallback heuristique
 * aucune dépendance externe payante (pas d'API tierce, pas de clé requise)
 
 ---

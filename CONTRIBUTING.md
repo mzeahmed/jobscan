@@ -37,7 +37,7 @@ symfony console doctrine:migrations:migrate --no-interaction
 
 ---
 
-## Lancer la pipeline
+## Lancer le pipeline
 
 ```bash
 # Exécution complète (RSS + SearXNG → IA → score → alerte)
@@ -62,7 +62,7 @@ symfony console app:jobs:run
    make pintf      # correction automatique
    ```
 
-3. S'assurer que la pipeline tourne sans erreur en local.
+3. S'assurer que le pipeline tourne sans erreur en local.
 
 Le hook `pre-push` lance PHPStan automatiquement. Si le hook ne se déclenche pas, lancer `make setup`.
 
