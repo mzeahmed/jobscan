@@ -11,6 +11,7 @@ final class JobDTO
         public readonly string $url,
         public readonly string $description,
         public readonly string $source,
+        public readonly ?\DateTimeImmutable $publishedAt = null,
     ) {
     }
 }

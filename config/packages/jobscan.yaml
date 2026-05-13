@@ -1,4 +1,6 @@
 parameters:
+    app.max_job_age_days: 30
+
     app.filter_keywords:
         - php
         - symfony

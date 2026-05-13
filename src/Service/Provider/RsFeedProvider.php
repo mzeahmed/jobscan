@@ -59,6 +59,19 @@ final class RsFeedProvider implements JobProviderInterface
         return array_values($results);
     }
 
+    private function parsePubDate(string $raw): ?\DateTimeImmutable
+    {
+        if ($raw === '') {
+            return null;
+        }
+
+        try {
+            return new \DateTimeImmutable($raw);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     /**
      * @return JobDTO[]
      */
@@ -79,54 +92,82 @@ final class RsFeedProvider implements JobProviderInterface
 
         // RSS 2.0
         if (isset($feed->channel->item)) {
-            foreach ($feed->channel->item as $item) {
-                $title = trim((string) ($item->title ?? ''));
-                $url = trim((string) ($item->link ?? ''));
-                $description = trim(strip_tags((string) ($item->description ?? '')));
-
-                if ($title === '' || $url === '') {
-                    continue;
-                }
-
-                $jobs[] = new JobDTO(
-                    title: $title,
-                    url: $url,
-                    description: $description,
-                    source: 'feed',
-                );
-            }
-
-            return $jobs;
+            return $this->rss20($feed->channel->item);
         }
 
         // Atom
         if (isset($feed->entry)) {
-            foreach ($feed->entry as $entry) {
-                $title = trim((string) ($entry->title ?? ''));
-                $url = '';
-                $description = trim(strip_tags((string) ($entry->summary ?? $entry->content ?? '')));
+            $jobs = $this->atom($feed->entry);
+        }
 
-                if (isset($entry->link)) {
-                    foreach ($entry->link as $link) {
-                        $href = trim((string) $link['href']);
-                        if ($href !== '') {
-                            $url = $href;
-                            break;
-                        }
+        return $jobs;
+    }
+
+    /**
+     * @param array<mixed>|\SimpleXMLElement $items
+     * @return JobDTO[]
+     */
+    private function rss20(array | \SimpleXMLElement $items): array
+    {
+        $jobs = [];
+
+        foreach ($items as $item) {
+            $title = trim((string) ($item->title ?? ''));
+            $url = trim((string) ($item->link ?? ''));
+            $description = trim(strip_tags((string) ($item->description ?? '')));
+
+            if ($title === '' || $url === '') {
+                continue;
+            }
+
+            $jobs[] = new JobDTO(
+                title: $title,
+                url: $url,
+                description: $description,
+                source: 'feed',
+                publishedAt: $this->parsePubDate((string) ($item->pubDate ?? '')),
+            );
+        }
+
+        return $jobs;
+    }
+
+    /**
+     * @param array<mixed>|\SimpleXMLElement $entries
+     * @return JobDTO[]
+     */
+    private function atom(array | \SimpleXMLElement $entries): array
+    {
+        $jobs = [];
+
+        foreach ($entries as $entry) {
+            $title = trim($entry->title ?? '');
+            $url = '';
+            $description = trim(strip_tags($entry->summary ?? $entry->content ?? ''));
+
+            if (isset($entry->link)) {
+                foreach ($entry->link as $link) {
+                    $href = trim((string) $link['href']);
+                    if ($href !== '') {
+                        $url = $href;
+                        break;
                     }
                 }
-
-                if ($title === '' || $url === '') {
-                    continue;
-                }
-
-                $jobs[] = new JobDTO(
-                    title: $title,
-                    url: $url,
-                    description: $description,
-                    source: 'feed',
-                );
             }
+
+            if ($title === '' || $url === '') {
+                continue;
+            }
+
+            $rawDate = trim($entry->published ?? $entry->updated ?? '');
+
+            $jobs[] = new JobDTO(
+                title: $title,
+                url: $url,
+                description: $description,
+                source: 'feed',
+                publishedAt: $this->parsePubDate($rawDate),
+            );
         }
 
         return $jobs;
