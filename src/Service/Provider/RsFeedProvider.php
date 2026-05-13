@@ -107,7 +107,7 @@ final class RsFeedProvider implements JobProviderInterface
      * @param array<mixed>|\SimpleXMLElement $items
      * @return JobDTO[]
      */
-    private function rss20(array|\SimpleXMLElement $items): array
+    private function rss20(array | \SimpleXMLElement $items): array
     {
         $jobs = [];
 
@@ -136,7 +136,7 @@ final class RsFeedProvider implements JobProviderInterface
      * @param array<mixed>|\SimpleXMLElement $entries
      * @return JobDTO[]
      */
-    private function atom(array|\SimpleXMLElement $entries): array
+    private function atom(array | \SimpleXMLElement $entries): array
     {
         $jobs = [];
 

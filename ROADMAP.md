@@ -60,7 +60,7 @@ Providers (RSS + SearXNG)
 
 ## Phase 2 — Qualité du signal
 
-- [ ] Filtrer les offres trop anciennes — #1
+- [x] Filtrer les offres trop anciennes — #1
 - [ ] Déduplication avancée cross-provider — #2
 - [ ] Source RSS basée sur le domaine du flux — #3
 - [ ] Pagination SearXNG — #4
