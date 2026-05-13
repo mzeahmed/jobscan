@@ -10,6 +10,7 @@ use App\Service\AI\AIClient;
 use Psr\Log\LoggerInterface;
 use App\Repository\JobRepository;
 use App\Service\Scoring\ScoringService;
+use Psr\Cache\InvalidArgumentException;
 use App\Service\Notification\NotificationService;
 
 final class JobProcessor
@@ -27,11 +28,12 @@ final class JobProcessor
         private readonly NotificationService $notificationService,
         private readonly LoggerInterface $logger,
         private readonly array $filterKeywords = [],
+        private readonly int $maxJobAgeDays = 30,
     ) {
     }
 
     /**
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function process(JobDTO $dto): void
     {
@@ -54,6 +56,20 @@ final class JobProcessor
             $this->logger->debug('Offre ignorée : URL vide.', ['title' => $dto->title]);
 
             return;
+        }
+
+        if ($dto->publishedAt !== null) {
+            $ageDays = (int) $dto->publishedAt->diff(new \DateTimeImmutable())->days;
+
+            if ($ageDays > $this->maxJobAgeDays) {
+                $this->logger->debug('Offre trop ancienne ({days}j > {max}j), ignorée.', [
+                    'days' => $ageDays,
+                    'max' => $this->maxJobAgeDays,
+                    'title' => $dto->title,
+                ]);
+
+                return;
+            }
         }
 
         if ($this->jobRepository->existsByUrl($dto->url)) {

@@ -58,6 +58,7 @@ services:
     App\Service\Processor\JobProcessor:
         arguments:
             $filterKeywords: '%app.filter_keywords%'
+            $maxJobAgeDays: '%app.max_job_age_days%'
 
     App\Service\Scoring\ScoringService:
         arguments:
