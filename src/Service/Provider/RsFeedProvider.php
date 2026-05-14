@@ -8,10 +8,20 @@ use App\DTO\JobDTO;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
+/**
+ * Agrège les offres d'emploi depuis des flux RSS 2.0 et Atom.
+ *
+ * Chaque URL de flux configurée dans `app.job_feed_urls` est interrogée
+ * indépendamment. Les erreurs réseau ou XML d'un flux sont journalisées et
+ * ignorées sans interrompre le traitement des autres flux.
+ *
+ * Les doublons intra-provider (même URL dans plusieurs flux) sont éliminés
+ * en indexant les résultats par URL avant de les retourner.
+ */
 final class RsFeedProvider implements JobProviderInterface
 {
     /**
-     * @param string[] $feedUrls
+     * @param string[] $feedUrls URLs des flux à interroger (config `app.job_feed_urls`)
      */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
@@ -21,6 +31,8 @@ final class RsFeedProvider implements JobProviderInterface
     }
 
     /**
+     * Récupère et agrège toutes les offres depuis les flux configurés.
+     *
      * @return JobDTO[]
      */
     public function fetch(): array
@@ -59,6 +71,11 @@ final class RsFeedProvider implements JobProviderInterface
         return array_values($results);
     }
 
+    /**
+     * Parse une date de publication depuis une chaîne brute (RFC 2822, ISO 8601, etc.).
+     *
+     * Retourne `null` si la chaîne est vide ou non parseable, sans jamais lever d'exception.
+     */
     private function parsePubDate(string $raw): ?\DateTimeImmutable
     {
         if ($raw === '') {
@@ -73,6 +90,8 @@ final class RsFeedProvider implements JobProviderInterface
     }
 
     /**
+     * Détecte le format du flux (RSS 2.0 ou Atom) et délègue au parseur approprié.
+     *
      * @return JobDTO[]
      */
     private function parseFeed(string $xml, string $feedUrl): array
@@ -104,6 +123,11 @@ final class RsFeedProvider implements JobProviderInterface
     }
 
     /**
+     * Parse les items d'un flux RSS 2.0.
+     *
+     * Extrait `<title>`, `<link>`, `<description>` et `<pubDate>` de chaque item.
+     * Les items sans titre ou sans URL sont ignorés.
+     *
      * @param array<mixed>|\SimpleXMLElement $items
      * @return JobDTO[]
      */
@@ -133,6 +157,12 @@ final class RsFeedProvider implements JobProviderInterface
     }
 
     /**
+     * Parse les entrées d'un flux Atom.
+     *
+     * Extrait `<title>`, `<link href>`, `<summary>` (ou `<content>`) et
+     * `<published>` (ou `<updated>` en fallback) de chaque entrée.
+     * Les entrées sans titre ou sans URL sont ignorées.
+     *
      * @param array<mixed>|\SimpleXMLElement $entries
      * @return JobDTO[]
      */
