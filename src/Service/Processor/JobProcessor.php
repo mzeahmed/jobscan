@@ -13,13 +13,31 @@ use App\Service\Scoring\ScoringService;
 use Psr\Cache\InvalidArgumentException;
 use App\Service\Notification\NotificationService;
 
+/**
+ * Orchestre le traitement d'une offre d'emploi depuis son ingestion jusqu'à sa persistance.
+ *
+ * Pipeline appliqué dans l'ordre :
+ *   1. Filtre par mots-clés (titre + description)
+ *   2. Rejet des offres sans URL
+ *   3. Filtre d'ancienneté (si la date de publication est disponible)
+ *   4. Déduplication par URL exacte
+ *   5. Déduplication par hash de titre normalisé (cross-provider)
+ *   6. Pré-score heuristique — les offres sous le seuil n'atteignent pas l'IA
+ *   7. Analyse IA (LM Studio) + calcul du score final
+ *   8. Persistance en base de données
+ *   9. Notification Telegram si le score dépasse le seuil de notification
+ */
 final class JobProcessor
 {
+    /** Score minimum pour déclencher une notification Telegram. */
     private const NOTIFICATION_THRESHOLD = 60;
+
+    /** Pré-score heuristique minimum pour appeler l'IA. */
     private const AI_PRESCORE_THRESHOLD = 15;
 
     /**
-     * @param list<string> $filterKeywords
+     * @param list<string> $filterKeywords Mots-clés requis dans le titre ou la description (config `app.filter_keywords`)
+     * @param int          $maxJobAgeDays  Âge maximum en jours d'une offre datée (config `app.max_job_age_days`)
      */
     public function __construct(
         private readonly JobRepository $jobRepository,
@@ -33,7 +51,12 @@ final class JobProcessor
     }
 
     /**
-     * @throws InvalidArgumentException
+     * Traite une offre d'emploi et l'enregistre si elle passe tous les filtres.
+     *
+     * Chaque étape du pipeline peut court-circuiter le traitement : une offre rejetée
+     * à n'importe quelle étape est silencieusement ignorée (log debug uniquement).
+     *
+     * @throws InvalidArgumentException si le cache IA est inaccessible
      */
     public function process(JobDTO $dto): void
     {
@@ -73,7 +96,15 @@ final class JobProcessor
         }
 
         if ($this->jobRepository->existsByUrl($dto->url)) {
-            $this->logger->debug('Doublon ignoré : {url}', ['url' => $dto->url]);
+            $this->logger->debug('Doublon ignoré (URL) : {url}', ['url' => $dto->url]);
+
+            return;
+        }
+
+        $titleHash = sha1(Job::normalizeTitle($dto->title));
+
+        if ($this->jobRepository->existsByTitleHash($titleHash)) {
+            $this->logger->debug('Doublon ignoré (titre) : {title}', ['title' => $dto->title]);
 
             return;
         }

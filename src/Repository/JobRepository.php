@@ -32,6 +32,11 @@ class JobRepository extends ServiceEntityRepository
         return $this->count(['url' => $url]) > 0;
     }
 
+    public function existsByTitleHash(string $hash): bool
+    {
+        return $this->count(['titleHash' => $hash]) > 0;
+    }
+
     //    /**
     //     * @return Job[] Returns an array of Job objects
     //     */

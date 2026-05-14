@@ -6,6 +6,22 @@ namespace App\Service\Scoring;
 
 use App\DTO\JobDTO;
 
+/**
+ * Calcule le score de pertinence d'une offre d'emploi en deux passes.
+ *
+ * **Passe 1 — pré-score heuristique (`preScore`)**
+ * Rapide, sans appel IA. Évalue la présence de mots-clés et de signaux remote
+ * directement dans le texte brut. Utilisée par `JobProcessor` pour filtrer les
+ * offres trop peu pertinentes avant de solliciter le LLM.
+ *
+ * **Passe 2 — score final (`compute`)**
+ * Enrichie par les données extraites par l'IA (stack, type de contrat, remote,
+ * récence, séniorité). Produit un score entre 0 et 100 et un breakdown lisible
+ * des critères ayant contribué.
+ *
+ * Toute la configuration est externalisée dans `config/packages/jobscan.yaml`
+ * sous la clé `app.scoring` — aucune valeur n'est codée en dur dans cette classe.
+ */
 final class ScoringService
 {
     /**
@@ -24,7 +40,7 @@ final class ScoringService
      *         description_keywords: array<string, int>,
      *         negative_keywords: array<string, int>,
      *     },
-     * } $scoringConfig
+     * } $scoringConfig Configuration issue de `app.scoring` dans `jobscan.yaml`
      */
     public function __construct(
         private readonly array $scoringConfig,
@@ -32,7 +48,11 @@ final class ScoringService
     }
 
     /**
-     * Score rapide sans IA, utilisé pour décider si l'analyse IA vaut le coup.
+     * Calcule un score rapide sans IA pour décider si l'analyse LLM vaut le coût.
+     *
+     * Additionne les points des mots-clés trouvés dans le texte brut (titre + description),
+     * applique un bonus remote et soustrait les points des mots-clés négatifs.
+     * Le résultat n'est pas borné — il peut être négatif si des mots-clés négatifs dominent.
      */
     public function preScore(JobDTO $job): int
     {
@@ -63,10 +83,20 @@ final class ScoringService
     }
 
     /**
-     * Score final sur 100, basé sur les données IA enrichies.
+     * Calcule le score final (0–100) à partir des données enrichies par l'IA.
      *
-     * @param array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string} $ai
+     * Critères évalués dans l'ordre :
+     *   - Mots-clés dans le titre
+     *   - Stack technique extraite par l'IA
+     *   - Type de contrat (freelance prioritaire, CDI en fallback)
+     *   - Flags booléens IA (remote, recent)
+     *   - Mots-clés dans la description (mission, urgent, asap…)
+     *   - Mots-clés négatifs (stage, alternance…)
      *
+     * Le score est clampé entre 0 et 100. Le breakdown liste chaque contribution
+     * sous la forme `+N (critère)` pour faciliter le débogage.
+     *
+     * @param array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string} $ai Données extraites par `AIClient`
      * @return array{score: int, breakdown: string[]}
      */
     public function compute(JobDTO $job, array $ai): array

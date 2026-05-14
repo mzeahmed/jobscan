@@ -8,8 +8,16 @@ use App\Entity\Job;
 use Psr\Log\LoggerInterface;
 use Doctrine\ORM\EntityManagerInterface;
 
+/**
+ * Gère l'envoi des notifications pour les offres d'emploi jugées pertinentes.
+ *
+ * Ce service agit comme une façade entre le pipeline de traitement et le canal
+ * de notification concret (Telegram). Il garantit qu'une même offre ne génère
+ * jamais deux notifications et n'envoie rien en dessous du seuil de score.
+ */
 final class NotificationService
 {
+    /** Score minimum requis pour qu'une notification soit envoyée. */
     private const THRESHOLD = 60;
 
     public function __construct(
@@ -19,6 +27,15 @@ final class NotificationService
     ) {
     }
 
+    /**
+     * Envoie une notification pour l'offre donnée si les conditions sont remplies.
+     *
+     * Conditions de blocage (silencieux) :
+     *   - L'offre a déjà été notifiée (`notifiedAt` non null)
+     *   - Le score est inférieur au seuil de notification
+     *
+     * En cas de succès, marque l'offre comme notifiée et persiste le changement.
+     */
     public function notify(Job $job): void
     {
         if ($job->getNotifiedAt() !== null) {
@@ -45,6 +62,9 @@ final class NotificationService
         ]);
     }
 
+    /**
+     * Formate le message Telegram en Markdown à partir des données de l'offre.
+     */
     private function formatMessage(Job $job): string
     {
         return sprintf(

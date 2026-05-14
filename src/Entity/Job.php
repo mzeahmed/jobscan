@@ -18,6 +18,7 @@ use App\Repository\JobRepository;
     ],
     uniqueConstraints: [
         new ORM\UniqueConstraint(name: 'uniq_job_url', columns: ['url']),
+        new ORM\UniqueConstraint(name: 'uniq_job_title_hash', columns: ['title_hash']),
     ],
 )]
 class Job
@@ -42,6 +43,9 @@ class Job
     #[ORM\Column]
     private ?int $score = null;
 
+    #[ORM\Column(length: 40, nullable: true)]
+    private ?string $titleHash = null;
+
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -53,6 +57,15 @@ class Job
         $this->createdAt = new \DateTimeImmutable();
     }
 
+    public static function normalizeTitle(string $title): string
+    {
+        $title = mb_strtolower($title, 'UTF-8');
+        $title = (string) preg_replace('/[^a-z0-9\p{L}\s]/u', '', $title);
+        $title = (string) preg_replace('/\s+/', ' ', $title);
+
+        return trim($title);
+    }
+
     public static function fromDTO(JobDTO $dto): self
     {
         $job = new self();
@@ -60,6 +73,7 @@ class Job
         $job->url = $dto->url;
         $job->description = $dto->description;
         $job->source = $dto->source;
+        $job->titleHash = sha1(self::normalizeTitle($dto->title));
 
         return $job;
     }
@@ -149,5 +163,10 @@ class Job
     public function markAsNotified(): void
     {
         $this->notifiedAt = new \DateTimeImmutable();
+    }
+
+    public function getTitleHash(): ?string
+    {
+        return $this->titleHash;
     }
 }

@@ -8,11 +8,23 @@ use App\DTO\JobDTO;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
+/**
+ * Agrège les offres d'emploi via l'API JSON de SearXNG.
+ *
+ * Les requêtes sont construites en combinant chaque entrée de `app.searx_queries`
+ * avec chaque localisation de `app.job_locations`. Le filtre `time_range=month`
+ * est envoyé nativement à SearXNG pour limiter les résultats aux offres récentes.
+ *
+ * Les résultats sont dédupliqués par URL avant d'être retournés. Les résultats
+ * manifestement hors-sujet (tutoriels, documentation, etc.) sont écartés via
+ * une liste de patterns bloquants avant d'atteindre le pipeline.
+ */
 final class SearxProvider implements JobProviderInterface
 {
     /**
-     * @param list<string> $searchQueries
-     * @param list<string> $locations
+     * @param string         $baseUrl        URL de base de l'instance SearXNG (env `SEARXNG_URL`)
+     * @param list<string>   $searchQueries  Requêtes de base (config `app.searx_queries`)
+     * @param list<string>   $locations      Localisations à combiner avec chaque requête (config `app.job_locations`)
      */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
@@ -24,6 +36,8 @@ final class SearxProvider implements JobProviderInterface
     }
 
     /**
+     * Exécute toutes les requêtes combinées et retourne les offres dédupliquées.
+     *
      * @return JobDTO[]
      */
     public function fetch(): array
@@ -64,6 +78,11 @@ final class SearxProvider implements JobProviderInterface
     }
 
     /**
+     * Exécute une requête sur l'API SearXNG et retourne les résultats bruts.
+     *
+     * Retourne un tableau vide en cas d'erreur réseau ou de réponse invalide,
+     * sans propager d'exception.
+     *
      * @return array<int, array<string, mixed>>
      */
     private function search(string $query): array
@@ -101,6 +120,16 @@ final class SearxProvider implements JobProviderInterface
         }
     }
 
+    /**
+     * Détermine si un résultat est manifestement hors-sujet.
+     *
+     * La détection se fait en deux passes :
+     *   1. Présence d'un pattern bloquant (tutoriels, docs, Wikipedia…) → rejeté
+     *   2. Absence de tout signal emploi (job, emploi, freelance, CDI…) → rejeté
+     *
+     * Un résultat qui ne contient aucun pattern bloquant mais au moins un signal
+     * emploi est considéré comme potentiellement pertinent.
+     */
     private function isClearlyIrrelevant(string $title, string $url, string $description): bool
     {
         $text = strtolower($title . ' ' . $url . ' ' . $description);
@@ -153,6 +182,16 @@ final class SearxProvider implements JobProviderInterface
         return true;
     }
 
+    /**
+     * Parse une date depuis une chaîne brute en tentant plusieurs formats.
+     *
+     * Ordre des tentatives :
+     *   1. `DateTimeImmutable` natif (ISO 8601, RFC 2822, etc.)
+     *   2. Regex mois français littéral : `12 janvier 2026`
+     *   3. Regex séparateur slash : `mm/dd/yyyy` (SearXNG) puis `dd/mm/yyyy`
+     *
+     * Retourne `null` si aucun format ne correspond, sans jamais lever d'exception.
+     */
     private function parsePublishedDate(string $raw): ?\DateTimeImmutable
     {
         $raw = trim($raw);
@@ -207,6 +246,12 @@ final class SearxProvider implements JobProviderInterface
     }
 
     /**
+     * Tente d'extraire une date de publication depuis un résultat SearXNG.
+     *
+     * Sonde les champs dans l'ordre de fiabilité décroissante :
+     * `publishedDate` → `pubdate` → `metadata` → `content` → `title`.
+     * Un log debug est émis quand la date provient d'un champ de fallback.
+     *
      * @param array<string, mixed> $result
      */
     private function extractPublishedDate(array $result): ?\DateTimeImmutable
@@ -244,6 +289,10 @@ final class SearxProvider implements JobProviderInterface
         return null;
     }
 
+    /**
+     * Nettoie un texte brut : décode les entités HTML, supprime les balises
+     * et normalise les espaces multiples.
+     */
     private function cleanText(string $text): string
     {
         $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -253,6 +302,11 @@ final class SearxProvider implements JobProviderInterface
     }
 
     /**
+     * Construit le produit cartésien requêtes × localisations.
+     *
+     * Exemple : 2 requêtes × 3 localisations → 6 requêtes uniques envoyées à SearXNG.
+     * Les doublons éventuels sont supprimés avant retour.
+     *
      * @return list<string>
      */
     private function buildQueries(): array

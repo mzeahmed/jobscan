@@ -8,12 +8,33 @@ use Psr\Log\LoggerInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
+/**
+ * Analyse le texte d'une offre d'emploi via un LLM local (LM Studio).
+ *
+ * Extrait les données structurées suivantes : stack technique, type de contrat,
+ * indicateurs remote/freelance/recent, budget et séniorité.
+ *
+ * **Stratégie de résilience :**
+ * - Le résultat est mis en cache 24h (clé = SHA-256 du texte nettoyé) pour éviter
+ *   d'interroger le LLM plusieurs fois pour la même offre.
+ * - Si LM Studio est indisponible ou retourne une réponse non parseable, un fallback
+ *   heuristique basé sur des regex et des correspondances de chaînes prend le relais.
+ * - Les erreurs LLM ne propagent jamais d'exception vers le pipeline.
+ *
+ * Le prompt système est entièrement configurable via `app.ai_system_prompt` dans
+ * `jobscan.yaml`, sans modifier le code.
+ */
 final class AIClient
 {
-    private const CACHE_TTL = 86400; // 24h
+    /** Durée de mise en cache des réponses IA en secondes (24h). */
+    private const CACHE_TTL = 86400;
 
     /**
-     * @param list<string> $knownStack
+     * @param string       $apiBase      URL de base de l'API LM Studio (env `AI_API_BASE`)
+     * @param string       $apiKey       Clé d'API (env `AI_API_KEY` — peut être vide pour LM Studio local)
+     * @param string       $model        Identifiant du modèle à utiliser (env `AI_MODEL`)
+     * @param string       $systemPrompt Prompt système injecté en tête de chaque requête (config `app.ai_system_prompt`)
+     * @param list<string> $knownStack   Technologies connues pour le fallback heuristique (config `app.known_stack`)
      */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
@@ -28,8 +49,13 @@ final class AIClient
     }
 
     /**
-     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string}
+     * Analyse une description d'offre et retourne les données structurées extraites.
      *
+     * Le texte est nettoyé et tronqué à 3 000 caractères avant envoi.
+     * En cas de cache hit, le LLM n'est pas sollicité.
+     * En cas d'échec LLM, le fallback heuristique est automatiquement utilisé.
+     *
+     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string}
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function analyze(string $text): array
@@ -59,6 +85,14 @@ final class AIClient
     }
 
     /**
+     * Envoie le texte au LLM via l'API compatible OpenAI de LM Studio.
+     *
+     * Tente deux passes de parsing sur la réponse :
+     *   1. `json_decode` direct sur le contenu brut
+     *   2. Extraction par regex d'un bloc JSON si le LLM a ajouté du texte autour
+     *
+     * Retourne `null` si la réponse est non parseable ou si une exception est levée.
+     *
      * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string}|null
      */
     private function callLMStudio(string $text): ?array
@@ -123,8 +157,13 @@ final class AIClient
     }
 
     /**
-     * @param array<string, mixed> $data
+     * Normalise et type-safe la réponse brute du LLM.
      *
+     * Garantit que chaque champ est présent avec le bon type, quelle que soit
+     * la qualité de la réponse du modèle. Les valeurs `contract_type` et
+     * `seniority` hors vocabulaire contrôlé sont ramenées à `'unknown'`.
+     *
+     * @param array<string, mixed> $data Tableau décodé depuis la réponse JSON du LLM
      * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string}
      */
     private function normalize(array $data): array
@@ -154,6 +193,17 @@ final class AIClient
     }
 
     /**
+     * Fallback heuristique activé quand LM Studio est indisponible ou retourne une réponse invalide.
+     *
+     * Reproduit une extraction partielle basée sur des correspondances de chaînes :
+     *   - Type de contrat : détection de `freelance`, `mission`, `tjm`, `cdi`
+     *   - Séniorité : détection de `senior`, `confirmé`, `junior`, `débutant`, `mid`
+     *   - Stack : intersection du texte avec `app.known_stack`
+     *   - Budget : extraction regex (TJM `€/j`, fourchette `80-110k`, montant `50k`)
+     *   - Remote : détection de `remote`, `télétravail`
+     *
+     * Le champ `recent` vaut toujours `true` — sans IA, l'information n'est pas déductible.
+     *
      * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string}
      */
     private function heuristicFallback(string $text): array
@@ -193,6 +243,8 @@ final class AIClient
     }
 
     /**
+     * Extrait les technologies présentes dans le texte par intersection avec `app.known_stack`.
+     *
      * @return list<string>
      */
     private function extractStack(string $text): array
@@ -203,6 +255,16 @@ final class AIClient
         ));
     }
 
+    /**
+     * Tente d'extraire un budget depuis le texte brut.
+     *
+     * Patterns reconnus dans l'ordre de priorité :
+     *   - TJM journalier : `450€/j`, `500 €/jour`
+     *   - Fourchette annuelle : `80-110k`, `80k-110k€`
+     *   - Montant annuel simple : `50k€`, `45k`
+     *
+     * Retourne `'non précisé'` si aucun pattern ne correspond.
+     */
     private function extractBudget(string $text): string
     {
         if (preg_match('/(\d{3,4})\s*€?\s*\/?\s*j(our)?/i', $text, $matches)) {
@@ -220,6 +282,10 @@ final class AIClient
         return 'non précisé';
     }
 
+    /**
+     * Nettoie le texte avant envoi au LLM : décode les entités HTML,
+     * supprime les balises et normalise les espaces.
+     */
     private function cleanText(string $text): string
     {
         $text = html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8');
