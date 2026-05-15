@@ -30,8 +30,10 @@ parameters:
         - 'php symfony freelance remote'
         - 'wordpress php remote developer'
         - 'backend php api remote job'
+        - 'développeur php'
         - 'développeur php symfony full remote'
         - 'développeur php WordPress'
+        - 'mission developeur php'
         - 'mission freelance php symfony remote'
 
     app.job_locations:
