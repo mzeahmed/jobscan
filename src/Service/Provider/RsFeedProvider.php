@@ -171,9 +171,9 @@ final class RsFeedProvider implements JobProviderInterface
         $jobs = [];
 
         foreach ($entries as $entry) {
-            $title = trim($entry->title ?? '');
+            $title = trim((string) ($entry->title ?? ''));
             $url = '';
-            $description = trim(strip_tags($entry->summary ?? $entry->content ?? ''));
+            $description = trim(strip_tags((string) ($entry->summary ?? $entry->content ?? '')));
 
             if (isset($entry->link)) {
                 foreach ($entry->link as $link) {
@@ -189,7 +189,7 @@ final class RsFeedProvider implements JobProviderInterface
                 continue;
             }
 
-            $rawDate = trim($entry->published ?? $entry->updated ?? '');
+            $rawDate = trim((string) ($entry->published ?? $entry->updated ?? ''));
 
             $jobs[] = new JobDTO(
                 title: $title,
