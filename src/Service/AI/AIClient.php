@@ -30,11 +30,11 @@ final class AIClient
     private const CACHE_TTL = 86400;
 
     /**
-     * @param string       $apiBase      URL de base de l'API LM Studio (env `AI_API_BASE`)
-     * @param string       $apiKey       Clé d'API (env `AI_API_KEY` — peut être vide pour LM Studio local)
-     * @param string       $model        Identifiant du modèle à utiliser (env `AI_MODEL`)
-     * @param string       $systemPrompt Prompt système injecté en tête de chaque requête (config `app.ai_system_prompt`)
-     * @param list<string> $knownStack   Technologies connues pour le fallback heuristique (config `app.known_stack`)
+     * @param string $apiBase URL de base de l'API LM Studio (env `AI_API_BASE`)
+     * @param string $apiKey Clé d'API (env `AI_API_KEY` — peut être vide pour LM Studio local)
+     * @param string $model Identifiant du modèle à utiliser (env `AI_MODEL`)
+     * @param string $systemPrompt Prompt système injecté en tête de chaque requête (config `app.ai_system_prompt`)
+     * @param list<string> $knownStack Technologies connues pour le fallback heuristique (config `app.known_stack`)
      */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
@@ -55,7 +55,8 @@ final class AIClient
      * En cas de cache hit, le LLM n'est pas sollicité.
      * En cas d'échec LLM, le fallback heuristique est automatiquement utilisé.
      *
-     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string}
+     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority:
+     *     string}
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function analyze(string $text): array
@@ -93,7 +94,8 @@ final class AIClient
      *
      * Retourne `null` si la réponse est non parseable ou si une exception est levée.
      *
-     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string}|null
+     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority:
+     *     string}|null
      */
     private function callLMStudio(string $text): ?array
     {
@@ -164,7 +166,9 @@ final class AIClient
      * `seniority` hors vocabulaire contrôlé sont ramenées à `'unknown'`.
      *
      * @param array<string, mixed> $data Tableau décodé depuis la réponse JSON du LLM
-     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string}
+     *
+     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority:
+     *     string}
      */
     private function normalize(array $data): array
     {
@@ -204,7 +208,8 @@ final class AIClient
      *
      * Le champ `recent` vaut toujours `true` — sans IA, l'information n'est pas déductible.
      *
-     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string}
+     * @return array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority:
+     *     string}
      */
     private function heuristicFallback(string $text): array
     {
