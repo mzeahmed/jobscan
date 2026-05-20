@@ -10,17 +10,11 @@ use Doctrine\ORM\Mapping as ORM;
 use App\Repository\JobRepository;
 
 #[ORM\Entity(repositoryClass: JobRepository::class)]
-#[ORM\Table(
-    indexes: [
-        new ORM\Index(name: 'idx_job_score', columns: ['score']),
-        new ORM\Index(name: 'idx_job_source', columns: ['source']),
-        new ORM\Index(name: 'idx_job_created_at', columns: ['created_at']),
-    ],
-    uniqueConstraints: [
-        new ORM\UniqueConstraint(name: 'uniq_job_url', columns: ['url']),
-        new ORM\UniqueConstraint(name: 'uniq_job_title_hash', columns: ['title_hash']),
-    ],
-)]
+#[ORM\Index(name: 'idx_job_score', columns: ['score'])]
+#[ORM\Index(name: 'idx_job_source', columns: ['source'])]
+#[ORM\Index(name: 'idx_job_created_at', columns: ['created_at'])]
+#[ORM\UniqueConstraint(name: 'uniq_job_url', columns: ['url'])]
+#[ORM\UniqueConstraint(name: 'uniq_job_title_hash', columns: ['title_hash'])]
 class Job
 {
     #[ORM\Id]
