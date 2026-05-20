@@ -108,6 +108,16 @@ Providers (RSS + SearXNG)
 - [ ] API REST en lecture seule — #32
 - [ ] Stack Docker complète avec LLM conteneurisé — #33
 
+## Phase 6 — Enrichissement optionnel
+
+- [ ] Contrat `EnrichmentProviderInterface`
+- [ ] `EnrichmentManager`
+- [ ] `NullEnrichmentProvider`
+- [ ] Providers d’enrichissement configurables via `jobscan.yaml`
+- [ ] Enrichissement sélectif basé sur le pré-score
+- [ ] Provider Perplexity optionnel
+- [ ] Provider Groq optionnel
+
 ---
 
 ## Bonnes premières contributions
