@@ -274,6 +274,10 @@ make run-pipeline
 make alerts
 ```
 
+Acces application (vue HTML des offres) :
+
+- `http://localhost:8000/job`
+
 > Si LM Studio tourne sur la machine hôte et Symfony dans Docker, `AI_API_BASE` est automatiquement configuré sur `http://host.docker.internal:1234/v1` dans le `docker-compose.yml`.
 
 ---

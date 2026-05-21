@@ -54,8 +54,8 @@ class Job
     public static function normalizeTitle(string $title): string
     {
         $title = mb_strtolower($title, 'UTF-8');
-        $title = (string) preg_replace('/[^a-z0-9\p{L}\s]/u', '', $title);
-        $title = (string) preg_replace('/\s+/', ' ', $title);
+        $title = preg_replace('/[^a-z0-9\p{L}\s]/u', '', $title);
+        $title = preg_replace('/\s+/', ' ', $title);
 
         return trim($title);
     }
@@ -63,6 +63,7 @@ class Job
     public static function fromDTO(JobDTO $dto): self
     {
         $job = new self();
+
         $job->title = $dto->title;
         $job->url = $dto->url;
         $job->description = $dto->description;

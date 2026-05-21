@@ -8,6 +8,8 @@ services:
         volumes:
             - ./:/app
             - ./var:/app/var
+        ports:
+            - "8000:8000"
         environment:
             APP_ENV: dev
             DATABASE_URL: "sqlite:///%kernel.project_dir%/var/jobscan.db"
@@ -17,7 +19,7 @@ services:
             - "host.docker.internal:host-gateway"
         depends_on:
             - searxng
-        command: tail -f /dev/null
+        command: php -S 0.0.0.0:8000 -t public
 
     searxng:
         image: searxng/searxng
