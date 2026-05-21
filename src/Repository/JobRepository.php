@@ -37,6 +37,29 @@ class JobRepository extends ServiceEntityRepository
         return $this->count(['titleHash' => $hash]) > 0;
     }
 
+    public function countAll(): int
+    {
+        return (int) $this->createQueryBuilder('j')
+            ->select('COUNT(j.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * @return Job[]
+     */
+    public function findPaginated(int $page, int $limit): array
+    {
+        $offset = max(0, ($page - 1) * $limit);
+
+        return $this->createQueryBuilder('j')
+            ->orderBy('j.createdAt', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
     //    /**
     //     * @return Job[] Returns an array of Job objects
     //     */

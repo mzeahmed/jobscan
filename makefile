@@ -32,11 +32,13 @@ up: lms-start build ## Démarre les conteneurs
 	@echo "$(YELLOW)Démarrage des conteneurs...$(NO_COLOR)"
 	$(COMPOSE) up -d
 	@echo "$(GREEN)Conteneurs démarrés$(NO_COLOR)"
+	@echo "$(BLUE)Vue HTML: http://localhost:8000/job$(NO_COLOR)"
 
 up-fast: ## Démarre sans rebuild
 	@echo "$(YELLOW)Démarrage sans rebuild des conteneurs...$(NO_COLOR)"
 	$(COMPOSE) up -d
 	@echo "$(GREEN)Conteneurs démarrés$(NO_COLOR)"
+	@echo "$(BLUE)Vue HTML: http://localhost:8000/job$(NO_COLOR)"
 
 down: lms-stop ## Stop les conteneurs
 	@echo "$(YELLOW)Arrêt des conteneurs...$(NO_COLOR)"

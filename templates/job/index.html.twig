@@ -1,0 +1,153 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Offres d'emploi{% endblock %}
+
+{% block body %}
+    <style>
+    .jobs-page {
+        margin: 2rem auto;
+        max-width: 1200px;
+        width: calc(100% - 2rem);
+        font: 16px/1.5 sans-serif;
+        color: #1f2937;
+    }
+
+    .jobs-page h1 {
+        margin-bottom: 0.5rem;
+    }
+
+    .jobs-page .summary {
+        margin-bottom: 1.5rem;
+        color: #6b7280;
+    }
+
+    .jobs-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .jobs-table th,
+    .jobs-table td {
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid #e5e7eb;
+        vertical-align: top;
+        text-align: left;
+    }
+
+    .jobs-table th {
+        background: #f9fafb;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #6b7280;
+    }
+
+    .job-title a {
+        color: #111827;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .job-title a:hover {
+        text-decoration: underline;
+    }
+
+    .job-meta {
+        display: block;
+        margin-top: 0.35rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .job-description {
+        margin: 0;
+        color: #374151;
+    }
+
+    .empty-state {
+        padding: 2rem;
+        background: #f9fafb;
+        border: 1px dashed #d1d5db;
+        border-radius: 0.75rem;
+        color: #6b7280;
+    }
+
+    .pagination {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+
+    .pagination a {
+        display: inline-block;
+        padding: 0.45rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.4rem;
+        text-decoration: none;
+        color: #111827;
+        background: #ffffff;
+    }
+
+    .pagination a:hover {
+        background: #f9fafb;
+    }
+
+    .pagination-status {
+        color: #6b7280;
+        font-size: 0.92rem;
+    }
+</style>
+
+    <main class="jobs-page">
+        <h1>Offres d'emploi</h1>
+        <p class="summary">{{ totalJobs }} offre{{ totalJobs > 1 ? 's' : '' }} au total dans la base locale.</p>
+
+        {% if jobs is not empty %}
+            <table class="jobs-table">
+                <thead>
+                    <tr>
+                        <th>Offre</th>
+                        <th>Source</th>
+                        <th>Score</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for job in jobs %}
+                        <tr>
+                            <td class="job-title">
+                                <a href="{{ job.url }}" target="_blank" rel="noopener noreferrer">{{ job.title }}</a>
+                                <span class="job-description job-meta">{{ job.description|striptags|slice(0, 180) }}{{ job.description|length > 180 ? '…' : '' }}</span>
+                            </td>
+                            <td>{{ job.source }}</td>
+                            <td>{{ job.score }}</td>
+                            <td>{{ job.createdAt ? job.createdAt|date('d/m/Y H:i') : '—' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            {% if totalPages > 1 %}
+                <nav class="pagination" aria-label="Pagination des offres">
+                    {% if currentPage > 1 %}
+                        <a href="{{ path('app_job', { page: currentPage - 1 }) }}">Page precedente</a>
+                    {% endif %}
+
+                    <span class="pagination-status">Page {{ currentPage }} sur {{ totalPages }}</span>
+
+                    {% if currentPage < totalPages %}
+                        <a href="{{ path('app_job', { page: currentPage + 1 }) }}">Page suivante</a>
+                    {% endif %}
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                Aucune offre disponible pour le moment.
+            </div>
+        {% endif %}
+    </main>
+{% endblock %}

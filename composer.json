@@ -7,6 +7,8 @@
         "php": ">=8.2",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "ext-libxml": "*",
+        "ext-simplexml": "*",
         "doctrine/doctrine-bundle": "^2.18",
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^3.6",
@@ -17,9 +19,8 @@
         "symfony/http-client": "7.4.*",
         "symfony/monolog-bundle": "^4.0",
         "symfony/runtime": "7.4.*",
-        "symfony/yaml": "7.4.*",
-        "ext-libxml": "*",
-        "ext-simplexml": "*"
+        "symfony/twig-bundle": "7.4.*",
+        "symfony/yaml": "7.4.*"
     },
     "require-dev": {
         "laravel/pint": "^1.29",
