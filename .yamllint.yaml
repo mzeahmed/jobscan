@@ -1,0 +1,21 @@
+extends: default
+ignore: |
+  .docker/
+
+rules:
+  document-start: disable  # Symfony/GH Actions ne préfixent pas leurs fichiers avec ---
+  line-length:
+    max: 120
+  truthy:
+    allowed-values: ['true', 'false']
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
+    require-starting-space: false  # Symfony utilise #commentaire sans espace
+  comments-indentation: disable  # Trop strict pour les fichiers Symfony
+  braces:
+    max-spaces-inside: 1
+  brackets:
+    max-spaces-inside: 1  # [ main ] est le style du projet
+  hyphens:
+    max-spaces-after: 4  # -   name: (3 espaces) est le style CI du projet

@@ -1,0 +1,71 @@
+repos:
+  # Vérifications de base
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+        exclude: ^\.docker/
+      - id: check-yaml
+        args: ['--unsafe']  # Symfony/Docker Compose utilisent des tags YAML custom
+      - id: check-json
+      - id: check-added-large-files
+        args: ['--maxkb=500']
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+
+  # Sécurité — détection de secrets
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.2
+    hooks:
+      - id: gitleaks
+
+  # YAML — lint des fichiers de config Symfony
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: ['-c', '.yamllint.yaml']
+
+  # Markdown
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.39.0
+    hooks:
+      - id: markdownlint
+        args: ['--config', '.markdownlint.yaml', '--fix']
+
+  # PHP et assets — hooks locaux sur les binaires Composer
+  - repo: local
+    hooks:
+      - id: pint
+        name: Laravel Pint (code style PHP)
+        language: system
+        entry: ./vendor/bin/pint
+        types: [php]
+        pass_filenames: true
+
+      - id: phpstan
+        name: PHPStan (analyse statique)
+        language: system
+        entry: ./vendor/bin/phpstan analyse -c phpstan.neon --no-progress
+        types: [php]
+        pass_filenames: false
+
+      - id: assets-build
+        name: Build assets (TypeScript + AssetMapper)
+        language: system
+        entry: bash -c 'php bin/console typescript:build && php bin/console asset-map:compile'
+        files: ^assets/.*\.(ts|css|js)$
+        pass_filenames: false
+        stages: [pre-push]
+
+      - id: phpunit
+        name: PHPUnit (tests)
+        language: system
+        entry: php bin/phpunit --no-coverage
+        types: [php]
+        pass_filenames: false
+        stages: [pre-push]

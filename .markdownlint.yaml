@@ -1,0 +1,7 @@
+default: true
+MD013: false  # Longueur de ligne non contrainte (URLs et tableaux dépassent régulièrement)
+MD024: false  # BACKLOG.md utilise des titres répétés par ticket (Contexte, Objectif...) — c'est intentionnel
+MD033: false  # HTML inline autorisé (badges, liens d'images)
+MD040: false  # Les blocs de code sans langage sont tolérés dans les docs existants
+MD041: false  # Pas d'obligation de H1 en première ligne
+MD001: false  # Incréments de niveaux de titres non contraints

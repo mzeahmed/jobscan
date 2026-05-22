@@ -1,28 +1,2 @@
 #!/bin/bash
-
-echo "🧪 Running PHPStan analysis..."
-./vendor/bin/phpstan analyse -c phpstan.neon
-if [ $? -ne 0 ]; then
-    echo "❌ PHPStan analysis failed. Please fix the issues before pushing."
-    exit 1
-else
-    echo "✅ PHPStan analysis passed."
-fi
-
-echo "🎨 Running Laravel Pint..."
-./vendor/bin/pint --test
-if [ $? -ne 0 ]; then
-    echo "❌ Laravel Pint failed. Please fix the issues the command (make pintf) before pushing."
-    exit 1
-else
-    echo "✅ Laravel Pint passed."
-fi
-
-echo " Lancement des tests unitaires..."
-php bin/phpunit
-if [ $? -ne 0 ]; then
-    echo "❌ Tests unitaires échoués. Veuillez corriger les erreurs avant de pousser."
-    exit 1
-else
-    echo "✅ Tests unitaires réussis."
-fi
+pre-commit run --hook-stage pre-push
