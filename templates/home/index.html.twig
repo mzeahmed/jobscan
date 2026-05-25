@@ -1,0 +1,50 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}JOBSCAN{% endblock %}
+
+{% block body_class %}home-page{% endblock %}
+{% block main_class %}w-100{% endblock %}
+
+{% block sidebar %}{% endblock %}
+{% block topbar %}{% endblock %}
+
+{% block body %}
+    <section class="home-landing position-relative overflow-hidden vh-100">
+        <div class="home-landing__grid position-absolute top-0 start-0 w-100 h-100" aria-hidden="true"></div>
+
+        <div class="container-fluid home-landing__container position-relative d-flex align-items-center justify-content-center h-100">
+            <main class="home-hero d-flex flex-column align-items-center justify-content-center text-center mx-auto">
+                <div class="home-hero__badge d-inline-flex align-items-center gap-2">
+                    <i class="fa-solid fa-terminal"></i>
+                    <span>v1.0.0 - Pipeline actif</span>
+                </div>
+
+                <a href="{{ path('app_home') }}" class="home-brand text-decoration-none d-inline-flex align-items-center gap-2 mb-3">
+                    <span class="home-brand__logo">JS</span>
+                    <span class="home-brand__name">JOBSCAN</span>
+                </a>
+
+                <h1 class="home-hero__title">
+                    Find signal.<br>
+                    <span class="home-hero__title-muted">Ignore noise.</span>
+                </h1>
+
+                <p class="home-hero__subtitle">
+                    Pipeline intelligent de veille tech pour developpeurs et freelances. Agregation,
+                    scoring local par IA et interface haute performance.
+                </p>
+
+                <div class="d-flex flex-column align-items-center gap-3">
+                    <a href="{{ path('app_job') }}" class="btn btn-primary home-hero__cta">
+                        <span>Voir les offres</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+
+                    <div class="home-proof d-flex align-items-center gap-2">
+                        <span>{{ todayJobs }} offre{{ todayJobs > 1 ? 's' : '' }} analysée{{ todayJobs > 1 ? 's' : '' }} aujourd'hui</span>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </section>
+{% endblock %}

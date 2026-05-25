@@ -45,7 +45,8 @@
         "tests",
         "translations",
         "var",
-        "vendor"
+        "vendor",
+        "config/reference.php"
     ],
     "notPath": [
         "config/reference.php"

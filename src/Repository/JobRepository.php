@@ -45,6 +45,21 @@ class JobRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    public function countToday(): int
+    {
+        $start = new \DateTimeImmutable('today midnight');
+        $end = new \DateTimeImmutable('tomorrow midnight');
+
+        return (int) $this->createQueryBuilder('j')
+            ->select('COUNT(j.id)')
+            ->where('j.createdAt >= :start')
+            ->andWhere('j.createdAt < :end')
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     /**
      * @return Job[]
      */

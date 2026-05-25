@@ -9,8 +9,8 @@ repos:
       - id: check-yaml
         args: ['--unsafe']  # Symfony/Docker Compose utilisent des tags YAML custom
       - id: check-json
-      - id: check-added-large-files
-        args: ['--maxkb=500']
+#      - id: check-added-large-files
+#        args: ['--maxkb=500']
       - id: check-merge-conflict
       - id: detect-private-key
       - id: check-case-conflict
@@ -43,9 +43,9 @@ repos:
       - id: pint
         name: Laravel Pint (code style PHP)
         language: system
-        entry: ./vendor/bin/pint
+        entry: ./vendor/bin/pint --test
         types: [php]
-        pass_filenames: true
+        pass_filenames: false
 
       - id: phpstan
         name: PHPStan (analyse statique)

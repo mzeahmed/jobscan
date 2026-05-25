@@ -1,0 +1,63 @@
+<aside class="sidebar" aria-label="Navigation principale">
+
+    {# Logo #}
+    <a href="{{ path('app_home') }}" class="sidebar__brand">
+        <img class="sidebar__logo" src="{{ asset('images/feather.png') }}" alt="">
+        <span class="sidebar__brand-name">JOBSCAN</span>
+    </a>
+
+    {# Nav #}
+    <nav class="sidebar__nav">
+        <div class="sidebar__section">
+            <div class="sidebar__section-label">Navigation</div>
+
+            <a href="#" class="sidebar__item">
+                <i class="fa-solid fa-grip fa-fw sidebar__item-icon" aria-hidden="true"></i>
+                Dashboard
+            </a>
+
+            <a href="{{ path('app_job') }}"
+               class="sidebar__item {{ app.request.attributes.get('_route') == 'app_job' ? 'sidebar__item--active' : '' }}"
+               aria-current="{{ app.request.attributes.get('_route') == 'app_job' ? 'page' : 'false' }}">
+                <i class="fa-solid fa-briefcase fa-fw sidebar__item-icon" aria-hidden="true"></i>
+                Offres
+                {{ sidebar_job_badge|default('')|raw }}
+            </a>
+
+            <a href="#" class="sidebar__item">
+                <i class="fa-solid fa-rss fa-fw sidebar__item-icon" aria-hidden="true"></i>
+                Sources
+            </a>
+
+            <a href="#" class="sidebar__item">
+                <i class="fa-solid fa-microchip fa-fw sidebar__item-icon" aria-hidden="true"></i>
+                Pipeline
+            </a>
+        </div>
+
+        <div class="sidebar__section">
+            <div class="sidebar__section-label">Analytique</div>
+
+            <a href="#" class="sidebar__item">
+                <i class="fa-solid fa-chart-bar fa-fw sidebar__item-icon" aria-hidden="true"></i>
+                Statistiques
+            </a>
+
+            <a href="#" class="sidebar__item">
+                <i class="fa-solid fa-gear fa-fw sidebar__item-icon" aria-hidden="true"></i>
+                Paramètres
+            </a>
+        </div>
+    </nav>
+
+    {# Pipeline status #}
+    <div class="sidebar__footer">
+        <div class="pipeline-status" role="status" aria-label="État du pipeline">
+            <div class="pipeline-status__dot pipeline-status__dot--idle" aria-hidden="true"></div>
+            <div class="pipeline-status__text">
+                <span class="pipeline-status__label">Pipeline</span>
+                <span class="pipeline-status__sub">En attente</span>
+            </div>
+        </div>
+    </div>
+</aside>

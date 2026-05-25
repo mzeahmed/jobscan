@@ -1,153 +1,191 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Offres d'emploi{% endblock %}
+{% block title %}Offres{% endblock %}
+
+{# Badge dynamique dans la sidebar #}
+{% block sidebar_job_badge %}
+    {% if totalJobs > 0 %}
+        <span class="sidebar__item-badge">{{ totalJobs }}</span>
+    {% endif %}
+{% endblock %}
 
 {% block body %}
-    <style>
-    .jobs-page {
-        margin: 2rem auto;
-        max-width: 1200px;
-        width: calc(100% - 2rem);
-        font: 16px/1.5 sans-serif;
-        color: #1f2937;
-    }
+    <div class="content-wrapper">
 
-    .jobs-page h1 {
-        margin-bottom: 0.5rem;
-    }
+        {# En-tête de page #}
+        <div class="page-header">
+            <div class="page-header__eyebrow">Veille intelligente</div>
+            <h1 class="page-header__title">Offres d'emploi</h1>
+            <p class="page-header__subtitle">
+                {{ totalJobs }} offre{{ totalJobs > 1 ? 's' : '' }} analysée{{ totalJobs > 1 ? 's' : '' }} et
+                scorée{{ totalJobs > 1 ? 's' : '' }} par IA
+            </p>
+        </div>
 
-    .jobs-page .summary {
-        margin-bottom: 1.5rem;
-        color: #6b7280;
-    }
+        {# Filtres #}
+        <div class="filter-bar" role="toolbar" aria-label="Filtres">
+            <div class="filter-tabs" role="group" aria-label="Vues">
+                <button class="filter-tab filter-tab--active" type="button">Toutes</button>
+                <button class="filter-tab" type="button">Score ≥ 75</button>
+                <button class="filter-tab" type="button">Récentes</button>
+                <button class="filter-tab" type="button">Non notifiées</button>
+            </div>
+            <div class="filter-selects">
+                <select class="select" aria-label="Filtrer par source">
+                    <option value="">Toutes les sources</option>
+                    <option value="rss">RSS</option>
+                    <option value="searxng">SearXNG</option>
+                </select>
+                <select class="select" aria-label="Trier par">
+                    <option value="score">Trier par score</option>
+                    <option value="date">Trier par date</option>
+                    <option value="source">Trier par source</option>
+                </select>
+            </div>
+        </div>
 
-    .jobs-table {
-        width: 100%;
-        border-collapse: collapse;
-        background: #fff;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    }
-
-    .jobs-table th,
-    .jobs-table td {
-        padding: 0.9rem 1rem;
-        border-bottom: 1px solid #e5e7eb;
-        vertical-align: top;
-        text-align: left;
-    }
-
-    .jobs-table th {
-        background: #f9fafb;
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        color: #6b7280;
-    }
-
-    .job-title a {
-        color: #111827;
-        font-weight: 600;
-        text-decoration: none;
-    }
-
-    .job-title a:hover {
-        text-decoration: underline;
-    }
-
-    .job-meta {
-        display: block;
-        margin-top: 0.35rem;
-        color: #6b7280;
-        font-size: 0.875rem;
-    }
-
-    .job-description {
-        margin: 0;
-        color: #374151;
-    }
-
-    .empty-state {
-        padding: 2rem;
-        background: #f9fafb;
-        border: 1px dashed #d1d5db;
-        border-radius: 0.75rem;
-        color: #6b7280;
-    }
-
-    .pagination {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        margin-top: 1rem;
-    }
-
-    .pagination a {
-        display: inline-block;
-        padding: 0.45rem 0.75rem;
-        border: 1px solid #d1d5db;
-        border-radius: 0.4rem;
-        text-decoration: none;
-        color: #111827;
-        background: #ffffff;
-    }
-
-    .pagination a:hover {
-        background: #f9fafb;
-    }
-
-    .pagination-status {
-        color: #6b7280;
-        font-size: 0.92rem;
-    }
-</style>
-
-    <main class="jobs-page">
-        <h1>Offres d'emploi</h1>
-        <p class="summary">{{ totalJobs }} offre{{ totalJobs > 1 ? 's' : '' }} au total dans la base locale.</p>
-
+        {# Grille des offres #}
         {% if jobs is not empty %}
-            <table class="jobs-table">
-                <thead>
-                    <tr>
-                        <th>Offre</th>
-                        <th>Source</th>
-                        <th>Score</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
 
-                <tbody>
-                    {% for job in jobs %}
-                        <tr>
-                            <td class="job-title">
-                                <a href="{{ job.url }}" target="_blank" rel="noopener noreferrer">{{ job.title }}</a>
-                                <span class="job-description job-meta">{{ job.description|striptags|slice(0, 180) }}{{ job.description|length > 180 ? '…' : '' }}</span>
-                            </td>
-                            <td>{{ job.source }}</td>
-                            <td>{{ job.score }}</td>
-                            <td>{{ job.createdAt ? job.createdAt|date('d/m/Y H:i') : '—' }}</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="jobs-grid" role="list" aria-label="Offres d'emploi">
 
+                {% for job in jobs %}
+
+                    {# Calcul de la classe de score #}
+                    {% if job.score >= 75 %}
+                        {% set scoreClass = 'excellent' %}
+                    {% elseif job.score >= 50 %}
+                        {% set scoreClass = 'medium' %}
+                    {% else %}
+                        {% set scoreClass = 'low' %}
+                    {% endif %}
+
+                    {# Ring SVG : r=18, cx=cy=22 → circumference ≈ 113.1 #}
+                    {% set dashoffset = 113.1 * (1 - job.score / 100) %}
+
+                    {# Offre créée aujourd'hui ? #}
+                    {% set isNew = (job.createdAt|date('Y-m-d') == 'now'|date('Y-m-d')) %}
+
+                    <article class="job-card job-card--{{ scoreClass }}" role="article">
+
+                        {# En-tête : score + titre + méta #}
+                        <header class="job-card__header">
+
+                            {# Score ring — SVG conservé : pas d'équivalent FA pour un anneau de progression #}
+                            <div class="score-ring" aria-label="Score de pertinence : {{ job.score }}/100">
+                                <svg class="score-ring__svg" viewBox="0 0 44 44" aria-hidden="true">
+                                    <circle class="score-ring__track" cx="22" cy="22" r="18" />
+                                    <circle
+                                        class="score-ring__fill score-ring__fill--{{ scoreClass }}"
+                                        cx="22"
+                                        cy="22"
+                                        r="18"
+                                        stroke-dasharray="113.1"
+                                        stroke-dashoffset="{{ dashoffset|round(2) }}"
+                                    />
+                                </svg>
+                                <div class="score-ring__label">
+                                    <span class="score-ring__value">{{ job.score }}</span>
+                                </div>
+                            </div>
+
+                            {# Titre + méta #}
+                            <div class="job-card__title-block">
+                                <h2 class="job-card__title">
+                                    <a href="{{ job.url }}"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       title="{{ job.title }}">
+                                        {{ job.title }}
+                                    </a>
+                                </h2>
+                                <div class="job-card__meta">
+                                    <span class="job-card__source">{{ job.source }}</span>
+                                    {% if job.createdAt %}
+                                        <span class="job-card__sep" aria-hidden="true"></span>
+                                        <time class="job-card__date" datetime="{{ job.createdAt|date('c') }}">
+                                            {{ job.createdAt|date('d/m/Y · H:i') }}
+                                        </time>
+                                    {% endif %}
+                                    {% if job.notifiedAt %}
+                                        <span class="job-card__sep" aria-hidden="true"></span>
+                                        <span class="job-card__notified" title="Notifié le {{ job.notifiedAt|date('d/m/Y H:i') }}">
+                                            <i class="fa-solid fa-check" aria-hidden="true"></i>
+                                            Notifié
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </header>
+
+                        {# Description courte #}
+                        <p class="job-card__description">
+                            {{- job.description|striptags|slice(0, 240) -}}
+                            {{- job.description|striptags|length > 240 ? '…' : '' -}}
+                        </p>
+
+                        {# Pied de carte : badges + action #}
+                        <footer class="job-card__footer">
+                            <div class="job-card__badges">
+                                <span class="badge badge--source">{{ job.source }}</span>
+                                {% if isNew %}
+                                    <span class="badge badge--new">Nouveau</span>
+                                {% endif %}
+                            </div>
+                            <a href="{{ job.url }}"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="btn btn--primary btn--sm"
+                               aria-label="Voir l'offre {{ job.title }} (nouvel onglet)">
+                                Voir l'offre
+                                <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                            </a>
+                        </footer>
+
+                    </article>
+
+                {% endfor %}
+
+            </div>
+
+            {# Pagination #}
             {% if totalPages > 1 %}
                 <nav class="pagination" aria-label="Pagination des offres">
                     {% if currentPage > 1 %}
-                        <a href="{{ path('app_job', { page: currentPage - 1 }) }}">Page precedente</a>
+                        <a href="{{ path('app_job', { page: currentPage - 1 }) }}"
+                           class="btn btn--ghost btn--sm"
+                           rel="prev">
+                            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                            Précédent
+                        </a>
                     {% endif %}
 
-                    <span class="pagination-status">Page {{ currentPage }} sur {{ totalPages }}</span>
+                    <span class="pagination__info">Page {{ currentPage }} sur {{ totalPages }}</span>
 
                     {% if currentPage < totalPages %}
-                        <a href="{{ path('app_job', { page: currentPage + 1 }) }}">Page suivante</a>
+                        <a href="{{ path('app_job', { page: currentPage + 1 }) }}"
+                           class="btn btn--ghost btn--sm"
+                           rel="next">
+                            Suivant
+                            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                        </a>
                     {% endif %}
                 </nav>
             {% endif %}
+
         {% else %}
-            <div class="empty-state">
-                Aucune offre disponible pour le moment.
+
+            {# État vide #}
+            <div class="jobs-grid">
+                <div class="empty-state" role="status">
+                    <i class="fa-solid fa-magnifying-glass-plus empty-state__icon" aria-hidden="true"></i>
+                    <h2 class="empty-state__title">Aucune offre disponible</h2>
+                    <p class="empty-state__text">
+                        Lancez le pipeline pour commencer à agréger et scorer des offres d'emploi.
+                    </p>
+                </div>
             </div>
+
         {% endif %}
-    </main>
+    </div>
 {% endblock %}
