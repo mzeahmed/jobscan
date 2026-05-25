@@ -43,6 +43,14 @@ Providers (RSS + SearXNG) → JobProcessor → AIClient (LM Studio) → ScoringS
 * SQLite
 * Docker
 * **LM Studio** installé localement
+* **pipx** + **pre-commit** (qualité de code — voir [guide pre-commit](https://blog.stephane-robert.info/docs/outils/qualite-code/pre-commit/))
+
+```bash
+# Ubuntu/Debian
+sudo apt install pipx
+pipx ensurepath
+pipx install pre-commit
+```
 
 ---
 
@@ -276,7 +284,7 @@ make alerts
 
 Acces application (vue HTML des offres) :
 
-- `http://localhost:8000/job`
+* `http://localhost:8000/job`
 
 > Si LM Studio tourne sur la machine hôte et Symfony dans Docker, `AI_API_BASE` est automatiquement configuré sur `http://host.docker.internal:1234/v1` dans le `docker-compose.yml`.
 
@@ -386,7 +394,7 @@ make bash          # ouvre un shell dans le conteneur app
 
 SQLite :
 
-*  `var/jobscan.db`
+* `var/jobscan.db`
 
 ```bash
 sqlite3 var/jobscan.db "SELECT id, title, score, source FROM job ORDER BY score DESC;"
@@ -411,13 +419,22 @@ Les contributions sont les bienvenues. Consultez [CONTRIBUTING.md](CONTRIBUTING.
 **En bref :**
 
 ```bash
-make setup        # configure les git hooks
+make setup        # configure les git hooks (.githooks/)
 composer install
 cp .env .env.local
 make migrate
 ```
 
-Avant chaque push : PHPStan et Pint s'exécutent via le hook `pre-push`, et si ça ne passe pas le push est bloqué. Assurez-vous de corriger les erreurs avant de pousser.
+### Hooks de qualité (pre-commit)
+
+Ce projet utilise [pre-commit](https://blog.stephane-robert.info/docs/outils/qualite-code/pre-commit/) pour automatiser les vérifications avant chaque commit et push. `make setup` configure le répertoire de hooks ; pre-commit doit être installé séparément (voir [Prérequis](#prérequis)).
+
+| Moment | Vérifications |
+|---|---|
+| `git commit` | trailing whitespace, YAML/JSON, secrets (gitleaks), yamllint, markdownlint, Pint (auto-fix), PHPStan |
+| `git push` | build assets TypeScript + AssetMapper, PHPUnit |
+
+Pour contourner ponctuellement un hook : `git commit --no-verify` (à éviter).
 
 ---
 

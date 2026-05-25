@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOBSCAN Dashboard (Bootstrap)</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+
+    <style>
+        :root {
+            --js-primary: #7c3aed;
+            --js-primary-hover: #6d28d9;
+            --js-bg: #f4f4f8;
+            --js-surface: #ffffff;
+            --js-border: #e5e7eb;
+            --js-text: #111827;
+            --js-muted: #6b7280;
+            --js-success: #10b981;
+            --js-warning: #f59e0b;
+            --js-danger: #ef4444;
+            --js-badge: #f3f4f6;
+        }
+
+        body {
+            font-family: Inter, sans-serif;
+            background-color: var(--js-bg);
+            color: var(--js-text);
+            background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+
+        .bg-surface {
+            background-color: var(--js-surface);
+        }
+
+        .text-muted-soft {
+            color: var(--js-muted);
+        }
+
+        .border-soft {
+            border-color: var(--js-border) !important;
+        }
+
+        .shadow-card {
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .shadow-soft {
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-primary-js {
+            background-color: var(--js-primary);
+            border-color: var(--js-primary);
+            color: #fff;
+        }
+
+        .btn-primary-js:hover {
+            background-color: var(--js-primary-hover);
+            border-color: var(--js-primary-hover);
+            color: #fff;
+        }
+
+        .brand-badge {
+            border: 1px solid rgba(124, 58, 237, 0.2);
+            background-color: rgba(124, 58, 237, 0.1);
+            color: var(--js-primary);
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+
+        .score-ring {
+            width: 48px;
+            height: 48px;
+            border-radius: 999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .score-high {
+            border: 4px solid rgba(16, 185, 129, 0.2);
+            color: var(--js-success);
+            background-color: rgba(16, 185, 129, 0.1);
+        }
+
+        .score-medium {
+            border: 4px solid rgba(245, 158, 11, 0.2);
+            color: var(--js-warning);
+            background-color: rgba(245, 158, 11, 0.1);
+        }
+
+        .score-low {
+            border: 4px solid rgba(239, 68, 68, 0.2);
+            color: var(--js-danger);
+            background-color: rgba(239, 68, 68, 0.1);
+        }
+
+        .chip {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid var(--js-border);
+            border-radius: 0.4rem;
+            background-color: var(--js-badge);
+            color: var(--js-muted);
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        .stat-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.5rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .job-card {
+            border: 1px solid var(--js-border);
+            border-radius: 0.9rem;
+            background: var(--js-surface);
+            padding: 1.25rem;
+            height: 100%;
+            position: relative;
+        }
+
+        .page-wrap {
+            max-width: 1440px;
+        }
+    </style>
+</head>
+<body>
+    <header class="sticky-top border-bottom border-soft bg-surface bg-opacity-75 backdrop-filter-blur shadow-sm">
+        <div class="container-fluid page-wrap px-3 px-lg-4 py-3">
+            <div class="d-flex align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center justify-content-center rounded-3 shadow-soft" style="width:40px;height:40px;background:var(--js-primary);color:#fff;">
+                        <i class="fa-solid fa-radar"></i>
+                    </div>
+                    <div>
+                        <h1 class="h5 fw-bold mb-0">JOBSCAN</h1>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <span class="small text-muted-soft">Opportunites tech detectees automatiquement</span>
+                            <span class="badge rounded-pill brand-badge">Local AI Job Intelligence</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2">
+                        <i class="fa-solid fa-gear"></i>
+                        <span>Settings</span>
+                    </button>
+                    <img src="https://storage.googleapis.com/uxpilot-auth.appspot.com/avatars/avatar-4.jpg" alt="User" class="rounded-circle border border-soft" width="32" height="32">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container-fluid page-wrap px-3 px-lg-4 py-4 py-lg-5">
+        <section class="row g-3 mb-4 mb-lg-5">
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card border-soft shadow-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="stat-icon" style="background:#eff6ff;color:#2563eb;"><i class="fa-solid fa-magnifying-glass-chart"></i></span>
+                            <h2 class="h6 text-muted-soft mb-0">Offres detectees</h2>
+                        </div>
+                        <div class="d-flex align-items-baseline gap-2">
+                            <span class="display-6 fw-bold mb-0">1,284</span>
+                            <span class="small fw-semibold" style="color:var(--js-success);"><i class="fa-solid fa-arrow-up me-1"></i>12%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card border-soft shadow-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="stat-icon" style="background:#f5f3ff;color:#7c3aed;"><i class="fa-solid fa-star-half-stroke"></i></span>
+                            <h2 class="h6 text-muted-soft mb-0">Score moyen</h2>
+                        </div>
+                        <p class="display-6 fw-bold mb-0">76<span class="fs-5 text-muted-soft fw-normal">/100</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card border-soft shadow-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="stat-icon" style="background:#ecfdf5;color:#059669;"><i class="fa-solid fa-crown"></i></span>
+                            <h2 class="h6 text-muted-soft mb-0">Meilleure opportunite</h2>
+                        </div>
+                        <p class="fw-bold mb-1">Senior Fullstack (98)</p>
+                        <p class="small text-muted-soft mb-0">Chez TechFlow Inc.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="card border-soft shadow-card h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="stat-icon" style="background:#fffbeb;color:#d97706;"><i class="fa-solid fa-bolt"></i></span>
+                            <h2 class="h6 text-muted-soft mb-0">Derniere analyse</h2>
+                        </div>
+                        <p class="fw-bold mb-1">Il y a 5 min</p>
+                        <p class="small text-muted-soft mb-0">24 nouvelles offres ajoutees</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="row g-4">
+            <aside class="col-12 col-xl-3">
+                <div class="card border-soft shadow-card sticky-top" style="top:88px;">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h2 class="h6 fw-semibold mb-0">Filtres</h2>
+                            <button class="btn btn-link btn-sm p-0 text-decoration-none" style="color:var(--js-primary);">Reinitialiser</button>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="search-input" class="form-label small text-muted-soft">Recherche</label>
+                            <input id="search-input" type="text" class="form-control" placeholder="Mots-cles...">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="source-select" class="form-label small text-muted-soft">Source</label>
+                            <select id="source-select" class="form-select">
+                                <option>Toutes les sources</option>
+                                <option>LinkedIn</option>
+                                <option>Welcome to the Jungle</option>
+                                <option>WeLoveDevs</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="score-range" class="form-label small text-muted-soft">Score minimum</label>
+                            <input id="score-range" type="range" min="0" max="100" value="70" class="form-range">
+                            <div class="d-flex justify-content-between small text-muted-soft">
+                                <span>0</span>
+                                <span class="fw-semibold" style="color:var(--js-primary);">70+</span>
+                                <span>100</span>
+                            </div>
+                        </div>
+
+                        <fieldset class="mb-3">
+                            <legend class="small text-muted-soft mb-2">Type de contrat</legend>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="contract-cdi" checked>
+                                <label class="form-check-label" for="contract-cdi">CDI</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="contract-freelance">
+                                <label class="form-check-label" for="contract-freelance">Freelance</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="contract-cdd">
+                                <label class="form-check-label" for="contract-cdd">CDD</label>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="mb-0">
+                            <legend class="small text-muted-soft mb-2">Localisation</legend>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="loc-remote" checked>
+                                <label class="form-check-label" for="loc-remote">Full Remote</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="loc-hybrid" checked>
+                                <label class="form-check-label" for="loc-hybrid">Hybride</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="loc-onsite">
+                                <label class="form-check-label" for="loc-onsite">Sur site</label>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+            </aside>
+
+            <div class="col-12 col-xl-9">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                    <h2 class="h5 fw-semibold mb-0">Resultats (4)</h2>
+                    <div class="d-flex align-items-center gap-2">
+                        <label for="sort-select" class="small text-muted-soft mb-0">Trier par:</label>
+                        <select id="sort-select" class="form-select form-select-sm">
+                            <option>Score (Decroissant)</option>
+                            <option>Date (Plus recent)</option>
+                            <option>Salaire (Decroissant)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-12 col-xxl-6">
+                        <article class="job-card shadow-card">
+                            <div class="position-absolute top-0 end-0 p-3">
+                                <div class="score-ring score-high">98</div>
+                            </div>
+                            <div class="pe-5">
+                                <p class="small text-muted-soft mb-1"><i class="fa-brands fa-linkedin me-1" style="color:#0a66c2;"></i>LinkedIn - Il y a 2h</p>
+                                <h3 class="h5 fw-bold mb-1">Lead Developer Symfony / React</h3>
+                                <p class="small text-muted-soft mb-3">TechFlow Solutions Inc.</p>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <span class="badge text-bg-primary-subtle border border-primary-subtle">CDI</span>
+                                <span class="badge text-bg-secondary">Full Remote</span>
+                                <span class="badge text-bg-success-subtle border border-success-subtle">65kEUR - 80kEUR</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <span class="chip">PHP</span>
+                                <span class="chip">Symfony 6</span>
+                                <span class="chip">React</span>
+                                <span class="chip">Docker</span>
+                                <span class="chip">AWS</span>
+                            </div>
+                            <p class="small mb-4">Nous recherchons un Lead Dev experimente pour piloter la refonte de notre architecture monolithique vers des micro-services. Forte culture craft attendue.</p>
+                            <div class="d-flex gap-2 border-top border-soft pt-3">
+                                <button class="btn btn-primary-js flex-grow-1">Voir l'offre</button>
+                                <button class="btn btn-outline-secondary">Ignorer</button>
+                            </div>
+                        </article>
+                    </div>
+
+                    <div class="col-12 col-xxl-6">
+                        <article class="job-card shadow-card">
+                            <div class="position-absolute top-0 end-0 p-3">
+                                <div class="score-ring score-medium">74</div>
+                            </div>
+                            <div class="pe-5">
+                                <p class="small text-muted-soft mb-1"><i class="fa-solid fa-briefcase me-1"></i>Welcome to the Jungle - Hier</p>
+                                <h3 class="h5 fw-bold mb-1">Developpeur Backend PHP (H/F)</h3>
+                                <p class="small text-muted-soft mb-3">EcoLogis App</p>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <span class="badge text-bg-primary-subtle border border-primary-subtle">CDI</span>
+                                <span class="badge text-bg-warning-subtle border border-warning-subtle">Hybride (2j)</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <span class="chip">PHP 8</span>
+                                <span class="chip">Laravel</span>
+                                <span class="chip">MySQL</span>
+                                <span class="chip">Vue.js</span>
+                            </div>
+                            <p class="small mb-4">Rejoignez notre equipe de 5 developpeurs pour faire evoluer notre plateforme SaaS dediee a la gestion energetique des batiments.</p>
+                            <div class="d-flex gap-2 border-top border-soft pt-3">
+                                <button class="btn btn-primary-js flex-grow-1">Voir l'offre</button>
+                                <button class="btn btn-outline-secondary">Ignorer</button>
+                            </div>
+                        </article>
+                    </div>
+
+                    <div class="col-12 col-xxl-6">
+                        <article class="job-card shadow-card opacity-75">
+                            <div class="position-absolute top-0 end-0 p-3">
+                                <div class="score-ring score-low">42</div>
+                            </div>
+                            <div class="pe-5">
+                                <p class="small text-muted-soft mb-1"><i class="fa-solid fa-globe me-1"></i>WeLoveDevs - Il y a 3j</p>
+                                <h3 class="h5 fw-bold mb-1">Integrateur Web / CMS</h3>
+                                <p class="small text-muted-soft mb-3">Agence Web Digital</p>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <span class="badge text-bg-secondary">Freelance</span>
+                                <span class="badge text-bg-secondary">Sur site</span>
+                                <span class="badge text-bg-secondary">TJM: 300EUR</span>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mb-3">
+                                <span class="chip">WordPress</span>
+                                <span class="chip">HTML/CSS</span>
+                                <span class="chip">jQuery</span>
+                            </div>
+                            <p class="small mb-4">Mission de 3 mois pour integrer des maquettes sur des themes WordPress existants. Presence requise dans nos locaux a Paris.</p>
+                            <div class="d-flex gap-2 border-top border-soft pt-3">
+                                <button class="btn btn-outline-primary flex-grow-1">Voir l'offre</button>
+                                <button class="btn btn-outline-secondary">Ignorer</button>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 pt-3 border-top border-soft">
+                    <span class="small text-muted-soft">Affichage 1-4 sur 1,284 offres</span>
+                    <nav aria-label="Pagination offres">
+                        <ul class="pagination pagination-sm mb-0">
+                            <li class="page-item disabled"><span class="page-link"><i class="fa-solid fa-chevron-left"></i></span></li>
+                            <li class="page-item active"><span class="page-link" style="background:var(--js-primary);border-color:var(--js-primary);">1</span></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                            <li class="page-item"><a class="page-link" href="#"><i class="fa-solid fa-chevron-right"></i></a></li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="border-top border-soft bg-surface py-4 mt-5">
+        <div class="container-fluid page-wrap px-3 px-lg-4 d-flex flex-column flex-md-row align-items-center justify-content-between gap-3">
+            <div class="small text-muted-soft d-flex align-items-center gap-2">
+                <i class="fa-solid fa-radar" style="color:var(--js-primary);"></i>
+                <span>Copyright 2026 JOBSCAN. AI-Powered Job Intelligence.</span>
+            </div>
+            <div class="d-flex gap-3 small">
+                <a href="#" class="text-decoration-none text-muted-soft">Documentation</a>
+                <a href="#" class="text-decoration-none text-muted-soft">API</a>
+                <a href="#" class="text-decoration-none text-muted-soft">Support</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

@@ -77,6 +77,19 @@ run-pipeline: ## Lance la pipeline JOBSCAN
 	@echo "$(GREEN)Pipeline JOBSCAN terminée$(NO_COLOR)"
 
 # ========================
+# Assets
+# ========================
+w: ## Lance le watcher TypeScript
+	@echo "$(YELLOW)Lancement du watcher TypeScript...$(NO_COLOR)"
+	php bin/console typescript:build --watch
+
+b: ## Build les assets TypeScript
+	@echo "$(YELLOW)Build des assets TypeScript...$(NO_COLOR)"
+	php bin/console typescript:build
+	php bin/console asset-map:compile
+	@echo "$(GREEN)Build terminé$(NO_COLOR)"
+
+# ========================
 # LM STUDIO
 # ========================
 

@@ -1,0 +1,39 @@
+<header class="topbar" role="banner">
+
+    <div class="topbar__search">
+        <i class="fa-solid fa-magnifying-glass topbar__search-icon" aria-hidden="true"></i>
+        <input
+            type="search"
+            class="topbar__search-input"
+            placeholder="Rechercher une offre, stack, source…"
+            aria-label="Rechercher une offre"
+        >
+    </div>
+
+    <div class="topbar__meta">
+        <div class="topbar__stat">
+            <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
+            <span class="topbar__stat-value">{{ totalJobs ?? '' }}</span>
+            {% if totalJobs is defined and totalJobs > 0 %}
+                offre{{ totalJobs > 1 ? 's' : '' }}
+            {% endif %}
+        </div>
+
+        <div class="topbar__divider" aria-hidden="true"></div>
+
+        <div class="topbar__stat">
+            <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+            {% if currentPage is defined and totalPages is defined %}
+                Page <span class="topbar__stat-value">{{ currentPage }}</span>/{{ totalPages }}
+            {% endif %}
+        </div>
+
+        <div class="topbar__divider" aria-hidden="true"></div>
+
+        <button class="btn btn--ghost btn--sm" type="button" onclick="window.location.reload()">
+            <i class="fa-solid fa-rotate" aria-hidden="true"></i>
+            Actualiser
+        </button>
+    </div>
+
+</header>
