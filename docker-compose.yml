@@ -14,7 +14,7 @@ services:
             APP_ENV: dev
             DATABASE_URL: "sqlite:///%kernel.project_dir%/var/jobscan.db"
             SEARXNG_URL: http://searxng:8080
-            AI_API_BASE: http://host.docker.internal:1234/v1
+            AI_API_BASE: http://host.docker.internal:11434/v1
         extra_hosts:
             - "host.docker.internal:host-gateway"
         depends_on:

@@ -2,7 +2,7 @@
 
 Agrégateur d'opportunités tech (freelance ou CDI) orienté PHP / Symfony / WordPress, avec scoring IA local.
 
-JOBSCAN récupère des offres depuis des providers configurés (flux RSS et recherche web dynamique), filtre les opportunités pertinentes, les analyse avec **LM Studio** via son API compatible OpenAI, leur attribue un score de pertinence, puis déclenche une alerte pour les meilleures opportunités.
+JOBSCAN récupère des offres depuis des providers configurés (flux RSS et recherche web dynamique), filtre les opportunités pertinentes, les analyse avec un **provider IA local compatible OpenAI** (Ollama par défaut), leur attribue un score de pertinence, puis déclenche une alerte pour les meilleures opportunités.
 
 Fonctionne **100% en local**, sans aucune dépendance externe payante.
 
@@ -11,12 +11,12 @@ Fonctionne **100% en local**, sans aucune dépendance externe payante.
 ## Architecture
 
 ```text
-Providers (RSS + SearXNG) → JobProcessor → AIClient (LM Studio) → ScoringService → DB → Notification
+Providers (RSS + SearXNG) → JobProcessor → AIClient (Ollama) → ScoringService → DB → Notification
 ```
 
 1. **Providers** : récupèrent les offres depuis des flux RSS et/ou la recherche web via SearXNG
 2. **Processor** : filtre les doublons et les offres hors scope
-3. **Analyse IA** : LM Studio analyse l'offre et extrait des données structurées
+3. **Analyse IA** : un provider IA local compatible OpenAI (Ollama par défaut) analyse l'offre et extrait des données structurées
 4. **Scoring** : attribution d'un score /100 selon la stack, le remote, le type de contrat, l'urgence, etc.
 5. **Persistance** : sauvegarde en base SQLite
 6. **Notification** : envoi d'une alerte Telegram pour les meilleures opportunités
@@ -28,7 +28,7 @@ Providers (RSS + SearXNG) → JobProcessor → AIClient (LM Studio) → ScoringS
 * PHP 8.3+
 * Symfony
 * SQLite
-* LM Studio (analyse IA locale, API compatible OpenAI)
+* Ollama (provider IA local recommandé, API compatible OpenAI)
 * SearXNG (moteur de recherche open-source local)
 * Telegram Bot API (notifications)
 * Docker
@@ -42,7 +42,7 @@ Providers (RSS + SearXNG) → JobProcessor → AIClient (LM Studio) → ScoringS
 * Symfony CLI
 * SQLite
 * Docker
-* **LM Studio** installé localement
+* **Ollama** installé localement (provider IA recommandé)
 * **pipx** + **pre-commit** (qualité de code — voir [guide pre-commit](https://blog.stephane-robert.info/docs/outils/qualite-code/pre-commit/))
 
 ```bash
@@ -76,10 +76,13 @@ make migrate
 ### Variables d'environnement — `.env.local`
 
 ```dotenv
-# LM Studio (IA locale)
-AI_API_BASE=http://localhost:1234/v1
-AI_API_KEY=lmstudio
-AI_MODEL=local-model
+# Provider IA — Ollama (défaut recommandé)
+AI_API_BASE=http://localhost:11434/v1
+AI_API_KEY=ollama
+AI_MODEL=llama3.1:8b
+
+# Si Symfony tourne dans Docker et Ollama sur l'hôte :
+# AI_API_BASE=http://host.docker.internal:11434/v1
 
 # Telegram
 TELEGRAM_BOT_TOKEN=...
@@ -143,7 +146,7 @@ parameters:
 | `app.filter_keywords` | `JobProcessor` | Écarte les offres hors scope avant tout traitement IA |
 | `app.known_stack` | `AIClient` | Détecte la stack technique en fallback heuristique |
 | `app.searx_queries` | `SearxProvider` | Requêtes envoyées à SearXNG à chaque run |
-| `app.ai_system_prompt` | `AIClient` | Prompt système envoyé à LM Studio |
+| `app.ai_system_prompt` | `AIClient` | Prompt système envoyé au provider IA |
 
 Pour adapter JOBSCAN à un autre profil (ex : Python / Django, ou Java / Spring), il suffit de modifier ce fichier.
 
@@ -220,39 +223,79 @@ Une réponse JSON contenant un tableau `results` confirme que SearXNG est opéra
 
 ---
 
-## LM Studio
+## Provider IA local
 
-JOBSCAN utilise **LM Studio** pour l'analyse locale des offres via son API compatible OpenAI.
+JOBSCAN utilise un **provider IA local compatible OpenAI** pour analyser les offres.
+Ollama est le provider recommandé par défaut.
 
-### Installer LM Studio
+### Ollama (recommandé)
 
-Télécharge et installe LM Studio depuis le site officiel, ou via le paquet `.deb` sur Linux :
+#### Installer Ollama
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+#### Lancer Ollama
+
+```bash
+ollama serve
+```
+
+#### Télécharger un modèle
+
+```bash
+ollama pull llama3.1:8b
+```
+
+#### Vérifier l'API
+
+```bash
+curl http://localhost:11434/v1/models
+```
+
+Le champ `id` retourné correspond à la valeur à utiliser dans `AI_MODEL`.
+
+#### Configuration `.env.local`
+
+```dotenv
+AI_API_BASE=http://localhost:11434/v1
+AI_API_KEY=ollama
+AI_MODEL=llama3.1:8b
+```
+
+---
+
+### LM Studio (legacy — conservé pour compatibilité, non recommandé)
+
+LM Studio reste fonctionnel mais n'est plus le provider par défaut. Il peut être utilisé
+en remplacement d'Ollama sans aucune modification du code.
+
+#### Installer et démarrer LM Studio
+
+Télécharge LM Studio depuis le site officiel, ou via le paquet `.deb` sur Linux :
 
 ```bash
 sudo apt install ./LM-Studio-0.4.12-1-x64.deb
-```
-
-### Lancer LM Studio
-
-```bash
 lm-studio
-```
-
-### Démarrer le serveur API local
-
-```bash
 lms server start
 ```
 
 Le serveur écoute sur `http://localhost:1234` par défaut.
 
-### Vérifier le serveur
+#### Vérifier le serveur
 
 ```bash
 curl http://localhost:1234/v1/models
 ```
 
-Le champ `id` retourné doit être utilisé dans `AI_MODEL`.
+#### Configuration `.env.local`
+
+```dotenv
+AI_API_BASE=http://localhost:1234/v1
+AI_API_KEY=lmstudio
+AI_MODEL=local-model
+```
 
 ---
 
@@ -286,7 +329,7 @@ Acces application (vue HTML des offres) :
 
 * `http://localhost:8000/job`
 
-> Si LM Studio tourne sur la machine hôte et Symfony dans Docker, `AI_API_BASE` est automatiquement configuré sur `http://host.docker.internal:1234/v1` dans le `docker-compose.yml`.
+> Si Ollama tourne sur la machine hôte et Symfony dans Docker, `AI_API_BASE` est automatiquement configuré sur `http://host.docker.internal:11434/v1` dans le `docker-compose.yml`.
 
 ---
 
@@ -324,13 +367,14 @@ tail -f var/cron.log
 systemctl status cron
 ```
 
-> Adapter le chemin du projet et s'assurer que PHP est dans le `PATH` (`which php`). LM Studio et SearXNG doivent être démarrés pour que le pipeline complet fonctionne.
+> Adapter le chemin du projet et s'assurer que PHP est dans le `PATH` (`which php`). Ollama (ou LM Studio en mode legacy) et SearXNG doivent être démarrés pour que le pipeline complet fonctionne.
 
 ---
 
 ## Analyse IA
 
-L'analyse est effectuée par `AIClient`, qui pointe vers **LM Studio**.
+L'analyse est effectuée par `AIClient`, qui appelle le endpoint `POST {AI_API_BASE}/chat/completions`
+d'un provider IA local compatible OpenAI (**Ollama** par défaut, LM Studio en legacy).
 
 L'IA extrait notamment :
 
@@ -404,7 +448,7 @@ sqlite3 var/jobscan.db "SELECT id, title, score, source FROM job ORDER BY score 
 
 ## État actuel du projet
 
-* **LM Studio** est utilisé pour l'analyse IA locale
+* **Ollama** est le provider IA recommandé par défaut (LM Studio conservé en legacy)
 * **SearXNG** est le moteur de recherche d'offres web
 * **RsFeedProvider** et **SearxProvider** sont actifs dans le pipeline
 * le pipeline fonctionne même sans IA grâce au fallback heuristique
@@ -445,5 +489,5 @@ JOBSCAN n'est pas un job board.
 C'est un filtre intelligent qui transforme un flux d'offres brutes en opportunités réellement exploitables — entièrement en local, sans aucun service externe payant.
 
 ```text
-SearXNG (search) + RSS (feed) → Symfony (pipeline) → LM Studio (IA) → Score → Telegram
+SearXNG (search) + RSS (feed) → Symfony (pipeline) → Ollama (IA) → Score → Telegram
 ```
