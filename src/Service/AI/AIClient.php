@@ -6,10 +6,14 @@ namespace App\Service\AI;
 
 use Psr\Log\LoggerInterface;
 use Psr\Cache\CacheItemPoolInterface;
+use Psr\Cache\InvalidArgumentException;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
- * Analyse le texte d'une offre d'emploi via un LLM local (LM Studio).
+ * Analyse le texte d'une offre d'emploi via un provider IA local compatible OpenAI.
+ *
+ * Ollama est le provider recommandé par défaut. LM Studio reste supporté en tant que
+ * provider legacy (voir `.env.example` pour la configuration).
  *
  * Extrait les données structurées suivantes : stack technique, type de contrat,
  * indicateurs remote/freelance/recent, budget et séniorité.
@@ -17,7 +21,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * **Stratégie de résilience :**
  * - Le résultat est mis en cache 24h (clé = SHA-256 du texte nettoyé) pour éviter
  *   d'interroger le LLM plusieurs fois pour la même offre.
- * - Si LM Studio est indisponible ou retourne une réponse non parseable, un fallback
+ * - Si le provider IA est indisponible ou retourne une réponse non parseable, un fallback
  *   heuristique basé sur des regex et des correspondances de chaînes prend le relais.
  * - Les erreurs LLM ne propagent jamais d'exception vers le pipeline.
  *
@@ -27,14 +31,14 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 final class AIClient
 {
     /** Durée de mise en cache des réponses IA en secondes (24h). */
-    private const CACHE_TTL = 86400;
+    private const int CACHE_TTL = 86400;
 
     /**
-     * @param string $apiBase URL de base de l'API LM Studio (env `AI_API_BASE`)
-     * @param string $apiKey Clé d'API (env `AI_API_KEY` — peut être vide pour LM Studio local)
-     * @param string $model Identifiant du modèle à utiliser (env `AI_MODEL`)
-     * @param string $systemPrompt Prompt système injecté en tête de chaque requête (config `app.ai_system_prompt`)
-     * @param list<string> $knownStack Technologies connues pour le fallback heuristique (config `app.known_stack`)
+     * @param  string  $apiBase  URL de base de l'API compatible OpenAI (env `AI_API_BASE`)
+     * @param  string  $apiKey  Clé d'API (env `AI_API_KEY` — `ollama` pour Ollama, `lmstudio` pour LM Studio)
+     * @param  string  $model  Identifiant du modèle à utiliser (env `AI_MODEL`)
+     * @param  string  $systemPrompt  Prompt système injecté en tête de chaque requête (config `app.ai_system_prompt`)
+     * @param  list<string>  $knownStack  Technologies connues pour le fallback heuristique (config `app.known_stack`)
      */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
@@ -64,7 +68,8 @@ final class AIClient
      *     recent: bool,
      *     seniority: string
      * }
-     * @throws \Psr\Cache\InvalidArgumentException
+     *
+     * @throws InvalidArgumentException
      */
     public function analyze(string $text): array
     {
@@ -80,7 +85,7 @@ final class AIClient
             return $item->get();
         }
 
-        $result = $this->callLMStudio($text);
+        $result = $this->callAI($text);
 
         if ($result !== null) {
             $item->set($result)->expiresAfter(self::CACHE_TTL);
@@ -93,7 +98,7 @@ final class AIClient
     }
 
     /**
-     * Envoie le texte au LLM via l'API compatible OpenAI de LM Studio.
+     * Envoie le texte au LLM via l'API compatible OpenAI (Ollama, LM Studio, etc.).
      *
      * Tente deux passes de parsing sur la réponse :
      *   1. `json_decode` direct sur le contenu brut
@@ -111,7 +116,7 @@ final class AIClient
      *     seniority: string
      * }|null
      */
-    private function callLMStudio(string $text): ?array
+    private function callAI(string $text): ?array
     {
         try {
             $response = $this->httpClient
@@ -179,8 +184,7 @@ final class AIClient
      * la qualité de la réponse du modèle. Les valeurs `contract_type` et
      * `seniority` hors vocabulaire contrôlé sont ramenées à `'unknown'`.
      *
-     * @param array<string, mixed> $data Tableau décodé depuis la réponse JSON du LLM
-     *
+     * @param  array<string, mixed>  $data  Tableau décodé depuis la réponse JSON du LLM
      * @return array{
      *     stack: list<string>,
      *     contract_type: string,
@@ -194,12 +198,12 @@ final class AIClient
     private function normalize(array $data): array
     {
         $contractType = strtolower((string) ($data['contract_type'] ?? 'unknown'));
-        if (!\in_array($contractType, ['freelance', 'cdi', 'unknown'], true)) {
+        if (! \in_array($contractType, ['freelance', 'cdi', 'unknown'], true)) {
             $contractType = 'unknown';
         }
 
         $seniority = strtolower((string) ($data['seniority'] ?? 'unknown'));
-        if (!\in_array($seniority, ['junior', 'mid', 'senior', 'unknown'], true)) {
+        if (! \in_array($seniority, ['junior', 'mid', 'senior', 'unknown'], true)) {
             $seniority = 'unknown';
         }
 
@@ -218,7 +222,7 @@ final class AIClient
     }
 
     /**
-     * Fallback heuristique activé quand LM Studio est indisponible ou retourne une réponse invalide.
+     * Fallback heuristique activé quand le provider IA est indisponible ou retourne une réponse invalide.
      *
      * Reproduit une extraction partielle basée sur des correspondances de chaînes :
      *   - Type de contrat : détection de `freelance`, `mission`, `tjm`, `cdi`

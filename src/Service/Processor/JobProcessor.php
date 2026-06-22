@@ -23,21 +23,21 @@ use App\Service\Notification\NotificationService;
  *   4. Déduplication par URL exacte
  *   5. Déduplication par hash de titre normalisé (cross-provider)
  *   6. Pré-score heuristique — les offres sous le seuil n'atteignent pas l'IA
- *   7. Analyse IA (LM Studio) + calcul du score final
+ *   7. Analyse IA (provider compatible OpenAI) + calcul du score final
  *   8. Persistance en base de données
  *   9. Notification Telegram si le score dépasse le seuil de notification
  */
 final class JobProcessor
 {
     /** Score minimum pour déclencher une notification Telegram. */
-    private const NOTIFICATION_THRESHOLD = 60;
+    private const int NOTIFICATION_THRESHOLD = 60;
 
     /** Pré-score heuristique minimum pour appeler l'IA. */
-    private const AI_PRESCORE_THRESHOLD = 15;
+    private const int AI_PRESCORE_THRESHOLD = 15;
 
     /**
      * @param list<string> $filterKeywords Mots-clés requis dans le titre ou la description (config `app.filter_keywords`)
-     * @param int          $maxJobAgeDays  Âge maximum en jours d'une offre datée (config `app.max_job_age_days`)
+     * @param int $maxJobAgeDays Âge maximum en jours d'une offre datée (config `app.max_job_age_days`)
      */
     public function __construct(
         private readonly JobRepository $jobRepository,
