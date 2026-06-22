@@ -33,7 +33,7 @@ final class JobProcessor
     private const int NOTIFICATION_THRESHOLD = 60;
 
     /** Pré-score heuristique minimum pour appeler l'IA. */
-    private const int AI_PRESCORE_THRESHOLD = 15;
+    private const int AI_PRESCORE_THRESHOLD = 10;
 
     /**
      * @param list<string> $filterKeywords Mots-clés requis dans le titre ou la description (config `app.filter_keywords`)

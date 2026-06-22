@@ -51,6 +51,9 @@ parameters:
                 php: 10
                 symfony: 15
                 wordpress: 10
+                backend: 7
+                fullstack: 7
+                api: 5
             remote_keywords:
                 - remote
                 - télétravail
