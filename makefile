@@ -28,7 +28,7 @@ build: ## Build les conteneurs
 	$(COMPOSE) build
 	@echo "$(GREEN)Conteneurs construits$(NO_COLOR)"
 
-up: lms-start build ## Démarre les conteneurs
+up: build ## Démarre les conteneurs
 	@echo "$(YELLOW)Démarrage des conteneurs...$(NO_COLOR)"
 	$(COMPOSE) up -d
 	@echo "$(GREEN)Conteneurs démarrés$(NO_COLOR)"
@@ -40,7 +40,7 @@ up-fast: ## Démarre sans rebuild
 	@echo "$(GREEN)Conteneurs démarrés$(NO_COLOR)"
 	@echo "$(BLUE)Vue HTML: http://localhost:8000/job$(NO_COLOR)"
 
-down: lms-stop ## Stop les conteneurs
+down: ## Stop les conteneurs
 	@echo "$(YELLOW)Arrêt des conteneurs...$(NO_COLOR)"
 	$(COMPOSE) down
 	@echo "$(GREEN)Conteneurs arrêtés$(NO_COLOR)"
@@ -88,20 +88,6 @@ b: ## Build les assets TypeScript
 	php bin/console typescript:build
 	php bin/console asset-map:compile
 	@echo "$(GREEN)Build terminé$(NO_COLOR)"
-
-# ========================
-# LM STUDIO
-# ========================
-
-lms-start: ## Démarre le serveur de LM Studio
-	@echo "$(YELLOW)Démarrage du serveur de LM Studio...$(NO_COLOR)"
-	lms server start
-	@echo "$(GREEN)Serveur de LM Studio démarré$(NO_COLOR)"
-
-lms-stop: ## Arrête le serveur de LM Studio
-	@echo "$(YELLOW)Arrêt du serveur de LM Studio...$(NO_COLOR)"
-	lms server stop
-	@echo "$(GREEN)Serveur de LM Studio arrêté$(NO_COLOR)"
 
 # ========================
 # LOGS / UTILES
