@@ -1,49 +1,12 @@
 parameters:
     app.max_job_age_days: 30
 
-    app.filter_keywords:
-        - php
-        - symfony
-        - wordpress
-        - backend
-        - fullstack
-        - api
-
-    app.known_stack:
-        - php
-        - symfony
-        - wordpress
-        - mysql
-        - postgresql
-        - redis
-        - docker
-        - react
-        - vue
-        - api
-        - rabbitmq
-        - laravel
-        - typescript
-        - javascript
-
-    app.searx_queries:
-        - 'php symfony remote job'
-        - 'php symfony freelance remote'
-        - 'wordpress php remote developer'
-        - 'backend php api remote job'
-        - 'développeur php'
-        - 'développeur php symfony full remote'
-        - 'développeur php WordPress'
-        - 'mission developeur php'
-        - 'mission freelance php symfony remote'
-
-    app.job_locations:
-        - 'Marseille'
-        - 'Paris'
-        - 'Aix-en-Provence'
-        - 'Ile-de-France'
-        - 'Bouches-du-Rhône'
-        - "Provence-Alpes-Côte d'Azur"
-        - 'Remote'
+    # Listes configurables via .env (valeurs séparées par des virgules) pour
+    # permettre une adaptation rapide sans toucher au code ni à ce fichier.
+    app.filter_keywords: '%env(csv:FILTER_KEYWORDS)%'
+    app.known_stack: '%env(csv:KNOWN_STACK)%'
+    app.searx_queries: '%env(csv:SEARX_QUERIES)%'
+    app.job_locations: '%env(csv:JOB_LOCATIONS)%'
 
     app.scoring:
         prescore:

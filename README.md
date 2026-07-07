@@ -106,59 +106,41 @@ SEARXNG_URL=http://localhost:8080      # hors Docker
 JOB_FEED_URL_1=
 JOB_FEED_URL_2=
 JOB_FEED_URL_3=
+
+# Profil métier (voir "Mots-clés, requêtes et stack" plus bas)
+FILTER_KEYWORDS=php,symfony,wordpress,backend,fullstack,api
+KNOWN_STACK=php,symfony,wordpress,mysql,postgresql,redis,docker,react,vue,api
+SEARX_QUERIES="php symfony remote job,php symfony freelance remote"
+JOB_LOCATIONS="Paris,Remote"
 ```
 
-### Mots-clés, requêtes et stack — `app/config/packages/jobscan.yaml`
+### Mots-clés, requêtes et stack — `app/.env`
 
-Toute la configuration métier est centralisée dans un seul fichier YAML. Aucune modification de code PHP n'est nécessaire pour adapter JOBSCAN à un autre profil technique.
+Le profil métier (mots-clés, stack technique, requêtes SearXNG, localisations) est
+configurable via des variables d'environnement — aucune modification de code PHP ni
+de YAML n'est nécessaire pour adapter JOBSCAN à un autre profil technique.
 
-```yaml
-parameters:
-    app.filter_keywords:       # filtre d'entrée du pipeline
-        - php
-        - symfony
-        - wordpress
-        - backend
-        - fullstack
-        - api
-
-    app.known_stack:           # technos reconnues par le fallback heuristique
-        - php
-        - symfony
-        - wordpress
-        - mysql
-        - postgresql
-        - redis
-        - docker
-        - react
-        - vue
-        - api
-        - rabbitmq
-        - laravel
-        - typescript
-        - javascript
-
-    app.searx_queries:         # requêtes envoyées à SearXNG
-        - 'php symfony remote job'
-        - 'php symfony freelance remote'
-        - 'wordpress php remote developer'
-        - 'backend php api remote job'
-        - 'développeur php symfony full remote'
-        - 'développeur php WordPress'
-        - 'mission freelance php symfony remote'
-
-    app.ai_system_prompt: |   # prompt système envoyé à LM Studio
-        ...
+```dotenv
+FILTER_KEYWORDS=php,symfony,wordpress,backend,fullstack,api
+KNOWN_STACK=php,symfony,wordpress,mysql,postgresql,redis,docker,react,vue,api,rabbitmq,laravel,typescript,javascript
+SEARX_QUERIES="php symfony remote job,php symfony freelance remote,wordpress php remote developer,backend php api remote job,développeur php,mission freelance php symfony remote"
+JOB_LOCATIONS="Marseille,Paris,Ile-de-France,Remote"
 ```
 
-| Paramètre | Utilisé par | Rôle |
-|---|---|---|
-| `app.filter_keywords` | `JobProcessor` | Écarte les offres hors scope avant tout traitement IA |
-| `app.known_stack` | `AIClient` | Détecte la stack technique en fallback heuristique |
-| `app.searx_queries` | `SearxProvider` | Requêtes envoyées à SearXNG à chaque run |
-| `app.ai_system_prompt` | `AIClient` | Prompt système envoyé au provider IA |
+`app/config/packages/jobscan.yaml` les expose comme paramètres de service via le
+processeur d'environnement `csv` (`%env(csv:FILTER_KEYWORDS)%`, etc.), qui découpe
+la chaîne sur les virgules — pas d'espace après la virgule, entourer de guillemets
+toute valeur contenant elle-même un espace.
 
-Pour adapter JOBSCAN à un autre profil (ex : Python / Django, ou Java / Spring), il suffit de modifier ce fichier.
+| Paramètre | Env var | Utilisé par | Rôle |
+|---|---|---|---|
+| `app.filter_keywords` | `FILTER_KEYWORDS` | `JobProcessor` | Écarte les offres hors scope avant tout traitement IA |
+| `app.known_stack` | `KNOWN_STACK` | `AIClient` | Détecte la stack technique en fallback heuristique |
+| `app.searx_queries` | `SEARX_QUERIES` | `SearxProvider` | Requêtes envoyées à SearXNG à chaque run |
+| `app.job_locations` | `JOB_LOCATIONS` | `SearxProvider` | Localisations combinées à chaque requête |
+| `app.ai_system_prompt` | — (reste en YAML) | `AIClient` | Prompt système envoyé au provider IA |
+
+Pour adapter JOBSCAN à un autre profil (ex : Python / Django, ou Java / Spring), il suffit d'ajuster ces variables dans `app/.env.local`.
 
 ---
 
