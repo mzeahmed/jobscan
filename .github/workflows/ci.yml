@@ -21,13 +21,13 @@ jobs:
                     coverage: none
 
             -   name: Install dependencies
-                run: composer install --prefer-dist --no-progress --no-interaction --no-scripts
+                run: cd app && composer install --prefer-dist --no-progress --no-interaction --no-scripts
 
             -   name: Pint — code style
-                run: ./vendor/bin/pint --test
+                run: ./app/vendor/bin/pint --test
 
             -   name: PHPStan — static analysis
-                run: ./vendor/bin/phpstan analyse -c phpstan.neon --no-progress
+                run: ./app/vendor/bin/phpstan analyse -c phpstan.neon --no-progress
 
     tests:
         needs: quality
@@ -45,10 +45,10 @@ jobs:
                     coverage: none
 
             -   name: Install dependencies
-                run: composer install --prefer-dist --no-progress --no-interaction --no-scripts
+                run: cd app && composer install --prefer-dist --no-progress --no-interaction --no-scripts
 
             -   name: Setup environment
-                run: cp .env.example .env
+                run: cd app && cp .env.example .env
 
             -   name: PHPUnit
-                run: ./vendor/bin/phpunit --no-coverage
+                run: cd app && ./vendor/bin/phpunit --no-coverage
