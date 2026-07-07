@@ -4,7 +4,9 @@ Agrégateur d'opportunités tech (freelance ou CDI) orienté PHP / Symfony / Wor
 
 JOBSCAN récupère des offres depuis des providers configurés (flux RSS et recherche web dynamique), filtre les opportunités pertinentes, les analyse avec un **moteur IA au choix** (Ollama par défaut, ou Gemini — configurable via `AI_PROVIDER` dans `.env`), leur attribue un score de pertinence, puis déclenche une alerte pour les meilleures opportunités.
 
-Fonctionne **100% en local**, sans aucune dépendance externe payante.
+Fonctionne **100% gratuitement** : en local avec Ollama, ou avec un moteur IA cloud
+(Gemini, et plus tard Claude/OpenAI) en profitant de leurs offres gratuites — aucune
+dépendance payante n'est requise, mais le choix reste ouvert selon vos besoins.
 
 ---
 
@@ -187,7 +189,7 @@ Les deux providers sont complémentaires. Il est possible d'en ajouter d'autres 
 
 [SearXNG](https://github.com/searxng/searxng) est un méta-moteur de recherche open-source, auto-hébergé, qui agrège les résultats de plusieurs moteurs (Google, Bing, DuckDuckGo, etc.) sans tracking ni coût d'API.
 
-JOBSCAN l'utilise comme moteur de recherche d'offres d'emploi en remplacement de tout service tiers payant.
+JOBSCAN l'utilise comme moteur de recherche d'offres d'emploi, en alternative gratuite aux API de recherche tierces payantes.
 
 **Pourquoi SearXNG ?**
 
