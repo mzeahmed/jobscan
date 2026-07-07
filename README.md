@@ -44,6 +44,7 @@ Providers (RSS + SearXNG) → JobProcessor → AIClient (Ollama ou Gemini) → S
 * Symfony CLI
 * SQLite
 * Docker
+* **mkcert** (certificats HTTPS locaux — requis uniquement pour `make up`)
 * **Ollama** installé localement (moteur IA recommandé), ou une clé **Gemini** en alternative cloud
 * **pipx** + **pre-commit** (qualité de code — voir [guide pre-commit](https://blog.stephane-robert.info/docs/outils/qualite-code/pre-commit/))
 
@@ -206,15 +207,15 @@ SearXNG est inclus dans le `docker-compose.yml` du projet :
 searxng:
     image: searxng/searxng
     container_name: jobscan_searxng
-    ports:
-        - "8080:8080"
     volumes:
         - ./.docker/searxng/settings.yml:/etc/searxng/settings.yml
     environment:
-        SEARXNG_BASE_URL: http://localhost:8080
+        SEARXNG_BASE_URL: http://searxng.local
 ```
 
-Le conteneur `app` y accède via le réseau Docker interne :
+Aucun port n'est publié sur l'hôte : SearXNG est exposé via Traefik (`https://searxng.local:8443`,
+voir [Domaines locaux](#avec-docker)) et le conteneur `app` y accède directement via le réseau
+Docker interne :
 
 ```dotenv
 SEARXNG_URL=http://searxng:8080
@@ -223,7 +224,7 @@ SEARXNG_URL=http://searxng:8080
 ### Vérifier que SearXNG fonctionne
 
 ```bash
-curl "http://localhost:8080/search?q=php+symfony+remote&format=json"
+curl "https://searxng.local:8443/search?q=php+symfony+remote&format=json"
 ```
 
 Une réponse JSON contenant un tableau `results` confirme que SearXNG est opérationnel.
@@ -349,15 +350,55 @@ tail -f var/alerts.log
 
 ### Avec Docker
 
+La stack Docker inclut Traefik en reverse proxy HTTPS, qui expose l'application et
+SearXNG sur des domaines locaux (`jobscan.local`, `searxng.local`).
+
+> **Pourquoi `:8443` dans les URLs ?**
+> Traefik écoute sur les ports hôte `8443` (HTTPS) et `9080` (dashboard) plutôt que
+> `443`/`8080`. Le port standard `443` est souvent déjà occupé par le Traefik d'un
+> autre projet local (chaque projet Docker faisant tourner son propre Traefik) — un
+> navigateur assumant toujours le port par défaut (`443` pour HTTPS) quand il est
+> omis, il faut l'expliciter tant que ce port reste pris ailleurs.
+>
+> Pour retirer le suffixe (si le port `443` est libre sur la machine, ou si un seul
+> projet Docker tourne à la fois) :
+>
+> 1. Dans `docker-compose.yml`, remplacer `"8443:443"` par `"443:443"` (et
+>    `"9080:8080"` par `"8080:8080"` si `8080` est libre aussi).
+> 2. Les URLs redeviennent `https://jobscan.local` et `https://searxng.local`,
+>    sans rien changer côté `dynamic.yml`/`traefik.yml` (le port hôte est
+>    uniquement une question de mapping Docker, pas de configuration Traefik).
+
+#### Premier lancement
+
 ```bash
+mkcert -install
+mkdir -p certs && cd certs && mkcert jobscan.local searxng.local && cd ..
+
+make hosts   # ajoute jobscan.local et searxng.local dans /etc/hosts (sudo)
 make up
+make fix-perms     # requis : php-fpm tourne en www-data, différent de l'utilisateur hôte
 make run-pipeline
 make alerts
 ```
 
-Acces application (vue HTML des offres) :
+> **`Unable to write in the "cache" directory` dans le navigateur ?** Le conteneur
+> `app` exécute php-fpm sous l'utilisateur `www-data`, qui n'a pas les droits
+> d'écriture sur `var/` monté depuis l'hôte (appartenant à votre utilisateur local).
+> `make fix-perms` corrige ça (`sudo chmod -R 777 var` — suffisant en local, à ne
+> jamais faire en production).
 
-* `http://localhost:8000/job`
+Accès application (vue HTML des offres) :
+
+* `https://jobscan.local:8443/job`
+
+Accès SearXNG :
+
+* `https://searxng.local:8443`
+
+Dashboard Traefik :
+
+* `http://localhost:9080`
 
 > Si Ollama tourne sur la machine hôte et Symfony dans Docker, `AI_API_BASE` est automatiquement configuré sur `http://host.docker.internal:11434/v1` dans le `docker-compose.yml`.
 
@@ -489,7 +530,7 @@ sqlite3 var/jobscan.db "SELECT id, title, score, source FROM job ORDER BY score 
 
 ## Contribuer
 
-Les contributions sont les bienvenues. Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour le guide complet et [ROADMAP.md](ROADMAP.md) pour les chantiers ouverts.
+Les contributions sont les bienvenues. Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour le guide complet, [ROADMAP.md](ROADMAP.md) pour les chantiers ouverts, et [TROUBLESHOOTING.md](TROUBLESHOOTING.md) en cas de problème avec la stack Docker.
 
 **En bref :**
 

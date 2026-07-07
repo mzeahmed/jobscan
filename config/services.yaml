@@ -22,7 +22,7 @@ services:
         autoconfigure: true
 
     _instanceof:
-        App\Service\Provider\JobProviderInterface:
+        App\Provider\JobProviderInterface:
             tags: ['app.job_provider']
 
     App\:
@@ -32,54 +32,54 @@ services:
         arguments:
             $providers: !tagged_iterator app.job_provider
 
-    App\Service\Notification\TelegramNotifier:
+    App\Notification\TelegramNotifier:
         arguments:
             $botToken: '%telegram.bot_token%'
             $chatId: '%telegram.chat_id%'
 
-    App\Service\AI\Provider\OpenAICompatibleProvider:
+    App\AI\Provider\OpenAICompatibleProvider:
         arguments:
             $apiBase: '%ai.api_base%'
             $apiKey: '%ai.api_key%'
             $model: '%ai.model%'
 
-    App\Service\AI\Provider\GeminiProvider:
+    App\AI\Provider\GeminiProvider:
         arguments:
             $apiKey: '%ai.gemini_api_key%'
             $model: '%ai.gemini_model%'
 
-    App\Service\AI\Provider\AIProviderFactory:
+    App\AI\Provider\AIProviderFactory:
         arguments:
             $providerName: '%ai.provider_name%'
 
     ai.provider:
-        class: App\Service\AI\Provider\AIProviderInterface
-        factory: ['@App\Service\AI\Provider\AIProviderFactory', 'create']
+        class: App\AI\Provider\AIProviderInterface
+        factory: ['@App\AI\Provider\AIProviderFactory', 'create']
 
-    App\Service\AI\AIClient:
+    App\AI\AIClient:
         arguments:
             $provider: '@ai.provider'
             $cache: '@cache.app'
             $systemPrompt: '%app.ai_system_prompt%'
             $knownStack: '%app.known_stack%'
 
-    App\Service\Provider\RsFeedProvider:
+    App\Provider\RsFeedProvider:
         arguments:
             $feedUrls: '%app.job_feed_urls%'
         tags: ['app.job_provider']
 
-    App\Service\Provider\SearxProvider:
+    App\Provider\SearxProvider:
         arguments:
             $baseUrl: '%env(SEARXNG_URL)%'
             $searchQueries: '%app.searx_queries%'
             $locations: '%app.job_locations%'
         tags: [ 'app.job_provider' ]
 
-    App\Service\Processor\JobProcessor:
+    App\Processor\JobProcessor:
         arguments:
             $filterKeywords: '%app.filter_keywords%'
             $maxJobAgeDays: '%app.max_job_age_days%'
 
-    App\Service\Scoring\ScoringService:
+    App\Scoring\Scoring:
         arguments:
             $scoringConfig: '%app.scoring%'

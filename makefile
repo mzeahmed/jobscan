@@ -1,9 +1,11 @@
-.PHONY: help setup build up down logs bash migrate run-pipeline alerts fix-perms
+.PHONY: help setup hosts build up down logs bash migrate run-pipeline alerts fix-perms
 
 COMPOSE = docker compose -f docker-compose.yml
 COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
 APP_CONTAINER = jobscan_app
+
+DOMAINS = jobscan.local searxng.local
 
 RED=\033[0;31m
 GREEN=\033[0;32m
@@ -14,6 +16,17 @@ NO_COLOR=\033[0m
 setup: ## Configure le dépôt (git hooks, etc.)
 	git config core.hooksPath .githooks
 	@echo "$(GREEN)Git hooks configurés → .githooks$(NO_COLOR)"
+
+hosts: ## Ajoute les domaines locaux dans /etc/hosts (nécessite sudo)
+	@echo "$(YELLOW)Mise à jour de /etc/hosts...$(NO_COLOR)"
+	@for domain in $(DOMAINS); do \
+		if grep -qE "^127\.0\.0\.1[[:space:]]+$$domain$$" /etc/hosts; then \
+			echo "$(GREEN)$$domain déjà présent$(NO_COLOR)"; \
+		else \
+			echo "127.0.0.1 $$domain" | sudo tee -a /etc/hosts > /dev/null; \
+			echo "$(GREEN)$$domain ajouté$(NO_COLOR)"; \
+		fi; \
+	done
 
 help: ## Affiche la liste des commandes disponibles
 	@echo ""
@@ -32,13 +45,17 @@ up: build ## Démarre les conteneurs
 	@echo "$(YELLOW)Démarrage des conteneurs...$(NO_COLOR)"
 	$(COMPOSE) up -d
 	@echo "$(GREEN)Conteneurs démarrés$(NO_COLOR)"
-	@echo "$(BLUE)Vue HTML: http://localhost:8000/job$(NO_COLOR)"
+	@echo "$(BLUE)Dashboard Traefik: http://localhost:9080$(NO_COLOR)"
+	@echo "$(BLUE)Application: https://jobscan.local:8443/job$(NO_COLOR)"
+	@echo "$(BLUE)SearXNG: https://searxng.local:8443$(NO_COLOR)"
 
 up-fast: ## Démarre sans rebuild
 	@echo "$(YELLOW)Démarrage sans rebuild des conteneurs...$(NO_COLOR)"
 	$(COMPOSE) up -d
 	@echo "$(GREEN)Conteneurs démarrés$(NO_COLOR)"
-	@echo "$(BLUE)Vue HTML: http://localhost:8000/job$(NO_COLOR)"
+	@echo "$(BLUE)Dashboard Traefik: http://localhost:9080$(NO_COLOR)"
+	@echo "$(BLUE)Application: https://jobscan.local:8443/job$(NO_COLOR)"
+	@echo "$(BLUE)SearXNG: https://searxng.local:8443$(NO_COLOR)"
 
 down: ## Stop les conteneurs
 	@echo "$(YELLOW)Arrêt des conteneurs...$(NO_COLOR)"
@@ -156,5 +173,5 @@ test: ## Lancement des tests PHPUnit
 # PERMISSIONS
 # ========================
 
-fix-perms: ## Corrige les permissions SQLite
-	chmod -R 775 var
+fix-perms: ## Corrige les permissions SQLite/cache (utile après make up, php-fpm tourne en www-data)
+	sudo chmod -R 777 var
