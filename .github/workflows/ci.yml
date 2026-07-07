@@ -16,7 +16,7 @@ jobs:
             -   name: Setup PHP
                 uses: shivammathur/setup-php@v2
                 with:
-                    php-version: '8.3'
+                    php-version: '8.4'
                     extensions: ctype, iconv, libxml, simplexml, sqlite3
                     coverage: none
 
@@ -24,10 +24,10 @@ jobs:
                 run: cd app && composer install --prefer-dist --no-progress --no-interaction --no-scripts
 
             -   name: Pint — code style
-                run: ./app/vendor/bin/pint --test
+                run: cd app && ./vendor/bin/pint --test
 
             -   name: PHPStan — static analysis
-                run: ./app/vendor/bin/phpstan analyse -c phpstan.neon --no-progress
+                run: cd app && ./vendor/bin/phpstan analyse -c phpstan.neon --no-progress
 
     tests:
         needs: quality
@@ -40,7 +40,7 @@ jobs:
             -   name: Setup PHP
                 uses: shivammathur/setup-php@v2
                 with:
-                    php-version: '8.3'
+                    php-version: '8.4'
                     extensions: ctype, iconv, libxml, simplexml, sqlite3
                     coverage: none
 
