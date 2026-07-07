@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Service\Scoring;
+namespace App\Tests\Scoring;
 
-use App\DTO\JobDTO;
-use App\Service\Scoring\ScoringService;
+use App\DTO\JobDto;
+use App\Scoring\Scoring;
 use PHPUnit\Framework\TestCase;
 
-class ScoringServiceTest extends TestCase
+class ScoringTest extends TestCase
 {
-    private ScoringService $service;
+    private Scoring $service;
 
     protected function setUp(): void
     {
-        $this->service = new ScoringService([
+        $this->service = new Scoring([
             'prescore' => [
                 'keywords' => [
                     'php' => 10,
@@ -207,8 +207,8 @@ class ScoringServiceTest extends TestCase
 
     // -------------------------------------------------------------------------
 
-    private function job(string $title, string $description): JobDTO
+    private function job(string $title, string $description): JobDto
     {
-        return new JobDTO($title, 'https://example.com', $description, 'test');
+        return new JobDto($title, 'https://example.com', $description, 'test');
     }
 }

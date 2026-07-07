@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Processor;
+namespace App\Processor;
 
-use App\DTO\JobDTO;
+use App\DTO\JobDto;
 use App\Entity\Job;
-use App\Service\AI\AIClient;
+use App\AI\AIClient;
+use App\Scoring\Scoring;
 use Psr\Log\LoggerInterface;
+use App\Notification\Notifier;
 use App\Repository\JobRepository;
-use App\Service\Scoring\ScoringService;
 use Psr\Cache\InvalidArgumentException;
-use App\Service\Notification\NotificationService;
 
 /**
  * Orchestre le traitement d'une offre d'emploi depuis son ingestion jusqu'à sa persistance.
@@ -42,8 +42,8 @@ final class JobProcessor
     public function __construct(
         private readonly JobRepository $jobRepository,
         private readonly AIClient $AIClient,
-        private readonly ScoringService $scoringService,
-        private readonly NotificationService $notificationService,
+        private readonly Scoring $scoringService,
+        private readonly Notifier $notificationService,
         private readonly LoggerInterface $logger,
         private readonly array $filterKeywords = [],
         private readonly int $maxJobAgeDays = 30,
@@ -58,7 +58,7 @@ final class JobProcessor
      *
      * @throws InvalidArgumentException si le cache IA est inaccessible
      */
-    public function process(JobDTO $dto): void
+    public function process(JobDto $dto): void
     {
         $title = strtolower($dto->title);
         $desc = strtolower($dto->description);

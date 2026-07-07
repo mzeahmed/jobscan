@@ -2,21 +2,23 @@
 
 Agrégateur d'opportunités tech (freelance ou CDI) orienté PHP / Symfony / WordPress, avec scoring IA local.
 
-JOBSCAN récupère des offres depuis des providers configurés (flux RSS et recherche web dynamique), filtre les opportunités pertinentes, les analyse avec un **provider IA local compatible OpenAI** (Ollama par défaut), leur attribue un score de pertinence, puis déclenche une alerte pour les meilleures opportunités.
+JOBSCAN récupère des offres depuis des providers configurés (flux RSS et recherche web dynamique), filtre les opportunités pertinentes, les analyse avec un **moteur IA au choix** (Ollama par défaut, ou Gemini — configurable via `AI_PROVIDER` dans `.env`), leur attribue un score de pertinence, puis déclenche une alerte pour les meilleures opportunités.
 
-Fonctionne **100% en local**, sans aucune dépendance externe payante.
+Fonctionne **100% gratuitement** : en local avec Ollama, ou avec un moteur IA cloud
+(Gemini, et plus tard Claude/OpenAI) en profitant de leurs offres gratuites — aucune
+dépendance payante n'est requise, mais le choix reste ouvert selon vos besoins.
 
 ---
 
 ## Architecture
 
 ```text
-Providers (RSS + SearXNG) → JobProcessor → AIClient (Ollama) → ScoringService → DB → Notification
+Providers (RSS + SearXNG) → JobProcessor → AIClient (Ollama ou Gemini) → ScoringService → DB → Notification
 ```
 
 1. **Providers** : récupèrent les offres depuis des flux RSS et/ou la recherche web via SearXNG
 2. **Processor** : filtre les doublons et les offres hors scope
-3. **Analyse IA** : un provider IA local compatible OpenAI (Ollama par défaut) analyse l'offre et extrait des données structurées
+3. **Analyse IA** : `AIClient` délègue l'appel au moteur sélectionné par `AI_PROVIDER` (Ollama/LM Studio en local, ou Gemini) et extrait des données structurées
 4. **Scoring** : attribution d'un score /100 selon la stack, le remote, le type de contrat, l'urgence, etc.
 5. **Persistance** : sauvegarde en base SQLite
 6. **Notification** : envoi d'une alerte Telegram pour les meilleures opportunités
@@ -28,7 +30,7 @@ Providers (RSS + SearXNG) → JobProcessor → AIClient (Ollama) → ScoringServ
 * PHP 8.3+
 * Symfony
 * SQLite
-* Ollama (provider IA local recommandé, API compatible OpenAI)
+* Ollama (moteur IA local recommandé, API compatible OpenAI) ou Gemini (alternative cloud)
 * SearXNG (moteur de recherche open-source local)
 * Telegram Bot API (notifications)
 * Docker
@@ -42,7 +44,7 @@ Providers (RSS + SearXNG) → JobProcessor → AIClient (Ollama) → ScoringServ
 * Symfony CLI
 * SQLite
 * Docker
-* **Ollama** installé localement (provider IA recommandé)
+* **Ollama** installé localement (moteur IA recommandé), ou une clé **Gemini** en alternative cloud
 * **pipx** + **pre-commit** (qualité de code — voir [guide pre-commit](https://blog.stephane-robert.info/docs/outils/qualite-code/pre-commit/))
 
 ```bash
@@ -76,6 +78,9 @@ make migrate
 ### Variables d'environnement — `.env.local`
 
 ```dotenv
+# Moteur d'analyse IA actif : "ollama" (ou "lmstudio") ou "gemini"
+AI_PROVIDER=ollama
+
 # Provider IA — Ollama (défaut recommandé)
 AI_API_BASE=http://localhost:11434/v1
 AI_API_KEY=ollama
@@ -83,6 +88,10 @@ AI_MODEL=llama3.1:8b
 
 # Si Symfony tourne dans Docker et Ollama sur l'hôte :
 # AI_API_BASE=http://host.docker.internal:11434/v1
+
+# Gemini (si AI_PROVIDER=gemini) — clé sur https://aistudio.google.com/api-keys
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.0-flash
 
 # Telegram
 TELEGRAM_BOT_TOKEN=...
@@ -180,7 +189,7 @@ Les deux providers sont complémentaires. Il est possible d'en ajouter d'autres 
 
 [SearXNG](https://github.com/searxng/searxng) est un méta-moteur de recherche open-source, auto-hébergé, qui agrège les résultats de plusieurs moteurs (Google, Bing, DuckDuckGo, etc.) sans tracking ni coût d'API.
 
-JOBSCAN l'utilise comme moteur de recherche d'offres d'emploi en remplacement de tout service tiers payant.
+JOBSCAN l'utilise comme moteur de recherche d'offres d'emploi, en alternative gratuite aux API de recherche tierces payantes.
 
 **Pourquoi SearXNG ?**
 
@@ -223,10 +232,13 @@ Une réponse JSON contenant un tableau `results` confirme que SearXNG est opéra
 
 ---
 
-## Provider IA local
+## Moteur d'analyse IA
 
-JOBSCAN utilise un **provider IA local compatible OpenAI** pour analyser les offres.
-Ollama est le provider recommandé par défaut.
+JOBSCAN analyse les offres via un moteur IA choisi par la variable `AI_PROVIDER`
+(`.env`) : `ollama` (défaut, provider local compatible OpenAI), `lmstudio` (legacy,
+même famille qu'Ollama) ou `gemini` (API Google, cloud). La sélection est faite par
+`AIProviderFactory` — voir `src/Service/AI/Provider/` pour ajouter un futur provider
+(Claude, OpenAI, ...) sans toucher à `AIClient`.
 
 ### Ollama (recommandé)
 
@@ -295,6 +307,24 @@ curl http://localhost:1234/v1/models
 AI_API_BASE=http://localhost:1234/v1
 AI_API_KEY=lmstudio
 AI_MODEL=local-model
+```
+
+---
+
+### Gemini (alternative cloud)
+
+Gemini est utile quand aucun modèle local n'est disponible (machine sans GPU, CI, etc.).
+
+#### Obtenir une clé d'API
+
+Créer une clé sur [Google AI Studio](https://aistudio.google.com/api-keys).
+
+#### Configuration `.env.local`
+
+```dotenv
+AI_PROVIDER=gemini
+GEMINI_API_KEY=votre-clé
+GEMINI_MODEL=gemini-2.0-flash
 ```
 
 ---
@@ -373,8 +403,9 @@ systemctl status cron
 
 ## Analyse IA
 
-L'analyse est effectuée par `AIClient`, qui appelle le endpoint `POST {AI_API_BASE}/chat/completions`
-d'un provider IA local compatible OpenAI (**Ollama** par défaut, LM Studio en legacy).
+L'analyse est effectuée par `AIClient`, qui délègue l'appel au moteur sélectionné via
+`AI_PROVIDER` : `OpenAICompatibleProvider` (`POST {AI_API_BASE}/chat/completions` —
+**Ollama** par défaut, LM Studio en legacy) ou `GeminiProvider` (API Gemini de Google).
 
 L'IA extrait notamment :
 

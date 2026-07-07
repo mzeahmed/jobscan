@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Notification;
+namespace App\Notification;
 
 use App\Entity\Job;
 use Psr\Log\LoggerInterface;
@@ -15,10 +15,10 @@ use Doctrine\ORM\EntityManagerInterface;
  * de notification concret (Telegram). Il garantit qu'une même offre ne génère
  * jamais deux notifications et n'envoie rien en dessous du seuil de score.
  */
-final class NotificationService
+final class Notifier
 {
     /** Score minimum requis pour qu'une notification soit envoyée. */
-    private const THRESHOLD = 60;
+    private const int THRESHOLD = 60;
 
     public function __construct(
         private readonly TelegramNotifier $telegram,
