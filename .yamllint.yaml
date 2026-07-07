@@ -1,6 +1,7 @@
 extends: default
 ignore: |
-  .docker/
+  docker/
+  traefik/
 
 rules:
   document-start: disable  # Symfony/GH Actions ne préfixent pas leurs fichiers avec ---

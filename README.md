@@ -61,7 +61,7 @@ pipx install pre-commit
 
 ```bash
 git clone https://github.com/mzeahmed/jobscan.git
-cd jobscan
+cd jobscan/app
 composer install
 cp .env .env.local
 ```
@@ -76,7 +76,7 @@ make migrate
 
 ## Configuration
 
-### Variables d'environnement — `.env.local`
+### Variables d'environnement — `app/.env.local`
 
 ```dotenv
 # Moteur d'analyse IA actif : "ollama" (ou "lmstudio") ou "gemini"
@@ -108,7 +108,7 @@ JOB_FEED_URL_2=
 JOB_FEED_URL_3=
 ```
 
-### Mots-clés, requêtes et stack — `config/packages/jobscan.yaml`
+### Mots-clés, requêtes et stack — `app/config/packages/jobscan.yaml`
 
 Toute la configuration métier est centralisée dans un seul fichier YAML. Aucune modification de code PHP n'est nécessaire pour adapter JOBSCAN à un autre profil technique.
 
@@ -208,7 +208,7 @@ searxng:
     image: searxng/searxng
     container_name: jobscan_searxng
     volumes:
-        - ./.docker/searxng/settings.yml:/etc/searxng/settings.yml
+        - ./docker/searxng/settings.yml:/etc/searxng/settings.yml
     environment:
         SEARXNG_BASE_URL: http://searxng.local
 ```
@@ -229,7 +229,7 @@ curl "https://searxng.local:8443/search?q=php+symfony+remote&format=json"
 
 Une réponse JSON contenant un tableau `results` confirme que SearXNG est opérationnel.
 
-> **Note** : SearXNG doit avoir `format: json` activé dans `.docker/searxng/settings.yml` pour retourner des réponses JSON.
+> **Note** : SearXNG doit avoir `format: json` activé dans `docker/searxng/settings.yml` pour retourner des réponses JSON.
 
 ---
 
@@ -337,7 +337,7 @@ GEMINI_MODEL=gemini-2.0-flash
 ```bash
 make run-pipeline
 # ou
-php bin/console app:jobs:run
+cd app && php bin/console app:jobs:run
 ```
 
 ### Suivre les alertes en temps réel
@@ -345,7 +345,7 @@ php bin/console app:jobs:run
 ```bash
 make alerts
 # ou
-tail -f var/alerts.log
+tail -f app/var/alerts.log
 ```
 
 ### Avec Docker
@@ -384,8 +384,8 @@ make alerts
 
 > **`Unable to write in the "cache" directory` dans le navigateur ?** Le conteneur
 > `app` exécute php-fpm sous l'utilisateur `www-data`, qui n'a pas les droits
-> d'écriture sur `var/` monté depuis l'hôte (appartenant à votre utilisateur local).
-> `make fix-perms` corrige ça (`sudo chmod -R 777 var` — suffisant en local, à ne
+> d'écriture sur `app/var/` monté depuis l'hôte (appartenant à votre utilisateur local).
+> `make fix-perms` corrige ça (`sudo chmod -R 777 app/var` — suffisant en local, à ne
 > jamais faire en production).
 
 Accès application (vue HTML des offres) :
@@ -415,7 +415,7 @@ crontab -e
 #### Toutes les 30 minutes
 
 ```bash
-*/30 * * * * cd /home/USER/chemin/vers/jobscan && php bin/console app:jobs:run >> var/cron.log 2>&1
+*/30 * * * * cd /home/USER/chemin/vers/jobscan/app && php bin/console app:jobs:run >> var/cron.log 2>&1
 ```
 
 #### Version avec lock (recommandée)
@@ -423,13 +423,13 @@ crontab -e
 Évite les exécutions simultanées si le pipeline est long :
 
 ```bash
-*/30 * * * * cd /home/USER/chemin/vers/jobscan && flock -n /tmp/jobscan.lock php bin/console app:jobs:run >> var/cron.log 2>&1
+*/30 * * * * cd /home/USER/chemin/vers/jobscan/app && flock -n /tmp/jobscan.lock php bin/console app:jobs:run >> var/cron.log 2>&1
 ```
 
 ### Logs cron
 
 ```bash
-tail -f var/cron.log
+tail -f app/var/cron.log
 ```
 
 ### Vérifier que le cron tourne
@@ -510,10 +510,10 @@ make bash          # ouvre un shell dans le conteneur app
 
 SQLite :
 
-* `var/jobscan.db`
+* `app/var/jobscan.db`
 
 ```bash
-sqlite3 var/jobscan.db "SELECT id, title, score, source FROM job ORDER BY score DESC;"
+sqlite3 app/var/jobscan.db "SELECT id, title, score, source FROM job ORDER BY score DESC;"
 ```
 
 ---
@@ -530,14 +530,16 @@ sqlite3 var/jobscan.db "SELECT id, title, score, source FROM job ORDER BY score 
 
 ## Contribuer
 
-Les contributions sont les bienvenues. Consultez [CONTRIBUTING.md](CONTRIBUTING.md) pour le guide complet, [ROADMAP.md](ROADMAP.md) pour les chantiers ouverts, et [TROUBLESHOOTING.md](TROUBLESHOOTING.md) en cas de problème avec la stack Docker.
+Les contributions sont les bienvenues. Consultez [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) pour le guide complet, [docs/ROADMAP.md](docs/ROADMAP.md) pour les chantiers ouverts, et [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) en cas de problème avec la stack Docker.
 
 **En bref :**
 
 ```bash
 make setup        # configure les git hooks (.githooks/)
+cd app
 composer install
 cp .env .env.local
+cd ..
 make migrate
 ```
 

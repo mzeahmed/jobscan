@@ -9,7 +9,7 @@ Problèmes connus et solutions pour la stack Docker (Traefik + nginx + php-fpm) 
 **Symptôme** : erreur affichée dans le navigateur en accédant à `https://jobscan.local:8443`.
 
 **Cause** : le conteneur `app` exécute php-fpm sous l'utilisateur `www-data` (uid 33).
-`var/` est monté depuis l'hôte (`./var:/app/var`) et appartient à votre utilisateur
+`app/var/` est monté depuis l'hôte (`./app:/app`) et appartient à votre utilisateur
 local — `www-data` n'a donc pas les droits d'écriture dessus.
 
 **Solution** :
@@ -18,7 +18,7 @@ local — `www-data` n'a donc pas les droits d'écriture dessus.
 make fix-perms
 ```
 
-Équivaut à `sudo chmod -R 777 var` (le `sudo` est nécessaire si certains fichiers de
+Équivaut à `sudo chmod -R 777 app/var` (le `sudo` est nécessaire si certains fichiers de
 cache ont déjà été créés par un processus root). Suffisant en local ; à ne jamais
 faire en production.
 
@@ -76,7 +76,7 @@ logs (`make logs`).
 `app` n'est pas encore inscrit dans le DNS interne de Docker à ce moment-là (ordre
 de démarrage), la résolution échoue et nginx refuse de démarrer.
 
-**Solution** : déjà en place dans `.docker/nginx/default.conf` — le nom `app` est
+**Solution** : déjà en place dans `docker/nginx/default.conf` — le nom `app` est
 résolu via une variable (`set $upstream_app app:9000;` + `resolver 127.0.0.11
 valid=10s;`) plutôt qu'en dur dans `fastcgi_pass`, ce qui reporte la résolution DNS
 à la requête plutôt qu'au démarrage. Si l'erreur revient après une modification de
@@ -89,7 +89,7 @@ ce fichier, vérifier que ce pattern n'a pas été perdu.
 **Symptôme** : Traefik ne trouve pas de certificat, ou le navigateur affiche une
 alerte de sécurité malgré `mkcert -install`.
 
-**Cause** : `.docker/traefik/dynamic.yml` référence des fichiers nommés précisément
+**Cause** : `traefik/dynamic.yml` référence des fichiers nommés précisément
 `jobscan.local+1.pem` / `jobscan.local+1-key.pem` — c'est la convention de nommage
 de mkcert quand on lui donne plusieurs domaines (`<premier domaine>+<n domaines
 supplémentaires>`).
@@ -102,4 +102,4 @@ mkdir -p certs && cd certs && mkcert jobscan.local searxng.local && cd ..
 ```
 
 Si les fichiers générés portent un autre nom, mettre à jour les chemins dans
-`.docker/traefik/dynamic.yml` (bloc `tls.certificates`) en conséquence.
+`traefik/dynamic.yml` (bloc `tls.certificates`) en conséquence.

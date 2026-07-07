@@ -25,6 +25,7 @@ cd jobscan
 make setup
 
 # Installer les dépendances
+cd app
 composer install
 
 # Copier et adapter la configuration
@@ -44,19 +45,21 @@ symfony console doctrine:migrations:migrate --no-interaction
 make run-pipeline
 
 # Ou directement
-symfony console app:jobs:run
+cd app && symfony console app:jobs:run
 ```
 
 ---
 
 ## Avant de soumettre une PR
 
-1. **PHPStan** — analyse statique, niveau configuré dans `phpstan.neon`
+1. **PHPStan** — analyse statique, niveau configuré dans `app/phpstan.neon`
+
    ```bash
    make stan
    ```
 
 2. **Pint** — vérifier le style de code (PSR-12 + règles Laravel Pint)
+
    ```bash
    make pint       # vérification
    make pintf      # correction automatique

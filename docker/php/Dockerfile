@@ -11,7 +11,7 @@ COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
 WORKDIR /app
 
-COPY . /app
+COPY app /app
 
 RUN APP_ENV=prod composer install --no-dev --optimize-autoloader
 

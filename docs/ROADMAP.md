@@ -11,6 +11,7 @@ JOBSCAN est un pipeline d'intelligence emploi, local et sans coût externe.
 Il remplace la navigation manuelle sur les job boards par un pipeline automatisé : ingestion d'offres brutes depuis RSS et recherche web, filtrage du bruit, analyse de chaque offre par un LLM local, scoring selon un profil configuré, et envoi des meilleures opportunités sur Telegram.
 
 **Contraintes de conception non négociables :**
+
 - Aucune dépendance à une API externe payante
 - Fonctionne entièrement sur la machine du développeur
 - Un seul fichier YAML pour reconfigurer pour n'importe quel profil technique
@@ -31,12 +32,12 @@ Providers (RSS + SearXNG)
 
 | Fichier | Rôle |
 |---------|------|
-| `src/Service/Provider/JobProviderInterface.php` | Contrat de tous les providers |
-| `src/Service/Processor/JobProcessor.php` | Déduplication, filtrage, orchestration |
-| `src/Service/AI/AIClient.php` | API LM Studio + fallback heuristique |
-| `src/Service/Scoring/ScoringService.php` | Calcul du score |
-| `src/Service/Notification/TelegramNotifier.php` | Alerte Telegram |
-| `config/packages/jobscan.yaml` | Toute la configuration métier |
+| `app/src/Provider/JobProviderInterface.php` | Contrat de tous les providers |
+| `app/src/Processor/JobProcessor.php` | Déduplication, filtrage, orchestration |
+| `app/src/AI/AIClient.php` | Délègue au provider IA actif (Ollama/Gemini) + fallback heuristique |
+| `app/src/Scoring/Scoring.php` | Calcul du score |
+| `app/src/Notification/TelegramNotifier.php` | Alerte Telegram |
+| `app/config/packages/jobscan.yaml` | Toute la configuration métier |
 
 ---
 
@@ -148,8 +149,10 @@ Tâches bien délimitées, idéales pour une première PR :
 git clone https://github.com/mzeahmed/jobscan.git
 cd jobscan
 make setup
+cd app
 composer install
 cp .env .env.local
+cd ..
 make migrate
 ```
 

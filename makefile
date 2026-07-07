@@ -81,16 +81,16 @@ bash: ## Accède au container app
 # ========================
 
 console: ## Lance une commande Symfony
-	symfony console $(filter-out $@,$(MAKECMDGOALS))
+	cd app && symfony console $(filter-out $@,$(MAKECMDGOALS))
 
 migrate: ## Lance les migrations
 	@echo "$(YELLOW)Lancement des migrations...$(NO_COLOR)"
-	symfony console doctrine:migrations:migrate --no-interaction
+	cd app && symfony console doctrine:migrations:migrate --no-interaction
 	@echo "$(GREEN)Migrations terminées$(NO_COLOR)"
 
 run-pipeline: ## Lance la pipeline JOBSCAN
 	@echo "$(YELLOW)Lancement de la pipeline JOBSCAN...$(NO_COLOR)"
-	php bin/console app:jobs:run
+	cd app && php bin/console app:jobs:run
 	@echo "$(GREEN)Pipeline JOBSCAN terminée$(NO_COLOR)"
 
 # ========================
@@ -98,12 +98,12 @@ run-pipeline: ## Lance la pipeline JOBSCAN
 # ========================
 w: ## Lance le watcher TypeScript
 	@echo "$(YELLOW)Lancement du watcher TypeScript...$(NO_COLOR)"
-	php bin/console typescript:build --watch
+	cd app && php bin/console typescript:build --watch
 
 b: ## Build les assets TypeScript
 	@echo "$(YELLOW)Build des assets TypeScript...$(NO_COLOR)"
-	php bin/console typescript:build
-	php bin/console asset-map:compile
+	cd app && php bin/console typescript:build
+	cd app && php bin/console asset-map:compile
 	@echo "$(GREEN)Build terminé$(NO_COLOR)"
 
 # ========================
@@ -112,7 +112,7 @@ b: ## Build les assets TypeScript
 
 alerts: ## Affiche les alertes JOBSCAN
 	@echo "$(YELLOW)Affichage des alertes JOBSCAN...$(NO_COLOR)"
-	tail -f var/alerts.log
+	tail -f app/var/alerts.log
 
 pipeline-logs: ## Logs du cron (si configuré)
 	@echo "$(YELLOW)Affichage des logs du pipeline...$(NO_COLOR)"
@@ -120,17 +120,17 @@ pipeline-logs: ## Logs du cron (si configuré)
 
 pint: ## Lancement de Laravel Pint
 	@echo "$(YELLOW)Lancement de Laravel Pint...$(NO_COLOR)"
-	composer run lint
+	cd app && composer run lint
 	@echo "$(GREEN)Pint terminé$(NO_COLOR)"
 
 pintf: ## Lancement de Laravel Pint avec correction
 	@echo "$(YELLOW)Lancement de Laravel Pint avec correction$(NO_COLOR)"
-	composer run lint:fix
+	cd app && composer run lint:fix
 	@echo "$(GREEN)Pint terminé$(NO_COLOR)"
 
 stan: ## Lancement de PHPStan
 	@echo "$(YELLOW)Lancement de PHPStan...$(NO_COLOR)"
-	./vendor/bin/phpstan analyse -c phpstan.neon
+	cd app && ./vendor/bin/phpstan analyse -c phpstan.neon
 	@echo "$(GREEN)PHPStan terminé$(NO_COLOR)"
 
 hard: ## Reinitialisation du dépôt (attention, toutes les modifications non commit seront perdues)
@@ -166,7 +166,7 @@ clean: ## Supprimer toutes les branches locales et distantes sauf main
 # ========================
 test: ## Lancement des tests PHPUnit
 	@echo "$(YELLOW)Lancement des tests PHPUnit...$(NO_COLOR)"
-	php bin/phpunit
+	cd app && php bin/phpunit
 	@echo "$(GREEN)Tests PHPUnit terminés$(NO_COLOR)"
 
 # ========================
@@ -174,4 +174,4 @@ test: ## Lancement des tests PHPUnit
 # ========================
 
 fix-perms: ## Corrige les permissions SQLite/cache (utile après make up, php-fpm tourne en www-data)
-	sudo chmod -R 777 var
+	sudo chmod -R 777 app/var

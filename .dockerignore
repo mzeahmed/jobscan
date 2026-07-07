@@ -1,8 +1,9 @@
 .git
-node_modules
-var/*
-vendor/*
+app/node_modules
+app/var/*
+app/vendor/*
 docker-compose.yml
 docker-compose.override.yml
 docker-compose.prod.yml
-.docker/
+docker/
+traefik/
