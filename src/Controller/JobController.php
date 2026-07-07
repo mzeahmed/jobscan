@@ -19,8 +19,14 @@ final class JobController extends AbstractController
     ) {
     }
 
-    #[Route('/job', name: 'app_job', methods: ['GET'])]
+    #[Route('/', name: 'app_job_index')]
     public function index(Request $request): Response
+    {
+        return $this->redirectToRoute('app_job');
+    }
+
+    #[Route('/job', name: 'app_job', methods: ['GET'])]
+    public function jobs(Request $request): Response
     {
         $requestedPage = max(1, $request->query->getInt('page', 1));
         $totalJobs = $this->jobRepository->countAll();
