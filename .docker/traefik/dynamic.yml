@@ -1,0 +1,31 @@
+http:
+  routers:
+    jobscan:
+      rule: Host(`jobscan.local`)
+      entryPoints:
+        - websecure
+      service: jobscan
+      tls: { }
+
+    searxng:
+      rule: Host(`searxng.local`)
+      entryPoints:
+        - websecure
+      service: searxng
+      tls: { }
+
+  services:
+    jobscan:
+      loadBalancer:
+        servers:
+          - url: http://nginx:80
+
+    searxng:
+      loadBalancer:
+        servers:
+          - url: http://searxng:8080
+
+tls:
+  certificates:
+    - certFile: /certs/jobscan.local+1.pem
+      keyFile: /certs/jobscan.local+1-key.pem

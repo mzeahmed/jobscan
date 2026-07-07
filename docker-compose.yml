@@ -1,4 +1,21 @@
 services:
+    traefik:
+        image: traefik:v3.4
+        container_name: jobscan_traefik
+        command:
+            - --configFile=/etc/traefik/traefik.yml
+        # Ports décalés (443→8443, 8080→9080) pour coexister avec le Traefik
+        # d'un autre projet Docker déjà sur les ports standards. Si 443/8080
+        # sont libres, remettre "443:443"/"8080:8080" pour des URLs sans port
+        # (voir README > Avec Docker).
+        ports:
+            - "8443:443"
+            - "9080:8080"
+        volumes:
+            - ./.docker/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+            - ./.docker/traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+            - ./certs:/certs
+
     app:
         build:
             context: .
@@ -8,8 +25,6 @@ services:
         volumes:
             - ./:/app
             - ./var:/app/var
-        ports:
-            - "8000:8000"
         environment:
             APP_ENV: dev
             DATABASE_URL: "sqlite:///%kernel.project_dir%/var/jobscan.db"
@@ -19,14 +34,20 @@ services:
             - "host.docker.internal:host-gateway"
         depends_on:
             - searxng
-        command: php -S 0.0.0.0:8000 -t public
+
+    nginx:
+        image: nginx:alpine
+        container_name: jobscan_nginx
+        volumes:
+            - ./:/app
+            - ./.docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+        depends_on:
+            - app
 
     searxng:
         image: searxng/searxng
         container_name: jobscan_searxng
-        ports:
-            - "8080:8080"
         volumes:
             - ./.docker/searxng/settings.yml:/etc/searxng/settings.yml
         environment:
-            SEARXNG_BASE_URL: http://localhost:8080
+            SEARXNG_BASE_URL: http://searxng.local

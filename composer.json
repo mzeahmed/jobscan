@@ -4,36 +4,36 @@
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
-        "php": ">=8.2",
+        "php": ">=8.4",
         "ext-ctype": "*",
         "ext-iconv": "*",
         "ext-libxml": "*",
         "ext-simplexml": "*",
-        "doctrine/doctrine-bundle": "^2.18",
+        "doctrine/doctrine-bundle": ">=3.2.4",
         "doctrine/doctrine-migrations-bundle": "^3.7",
-        "doctrine/orm": "^3.6",
+        "doctrine/orm": "^3.6.7",
         "sensiolabs/typescript-bundle": "^0.2.2",
-        "symfony/asset": "^7.4",
-        "symfony/asset-mapper": "^7.4",
-        "symfony/console": "7.4.*",
-        "symfony/dotenv": "7.4.*",
-        "symfony/flex": "^2",
-        "symfony/framework-bundle": "7.4.*",
-        "symfony/http-client": "7.4.*",
-        "symfony/monolog-bundle": "^4.0",
-        "symfony/runtime": "7.4.*",
-        "symfony/twig-bundle": "7.4.*",
-        "symfony/yaml": "7.4.*"
+        "symfony/asset": "8.1.*",
+        "symfony/asset-mapper": "8.1.*",
+        "symfony/console": "8.1.*",
+        "symfony/dotenv": "8.1.*",
+        "symfony/flex": ">=2.11",
+        "symfony/framework-bundle": "8.1.*",
+        "symfony/http-client": "8.1.*",
+        "symfony/monolog-bundle": "^4.0.2",
+        "symfony/runtime": "8.1.*",
+        "symfony/twig-bundle": "8.1.*",
+        "symfony/yaml": "8.1.*"
     },
     "require-dev": {
-        "laravel/pint": "^1.29",
-        "phpstan/phpstan": "^2.1",
-        "phpstan/phpstan-doctrine": "^2.0",
-        "phpunit/phpunit": "^12.5",
-        "symfony/browser-kit": "7.4.*",
-        "symfony/css-selector": "7.4.*",
+        "laravel/pint": "^1.29.3",
+        "phpstan/phpstan": "^2.2.5",
+        "phpstan/phpstan-doctrine": "^2.0.27",
+        "phpunit/phpunit": "^12.5.31",
+        "symfony/browser-kit": "8.1.*",
+        "symfony/css-selector": "8.1.*",
         "symfony/maker-bundle": "^1.67",
-        "symfony/var-dumper": "7.4.*"
+        "symfony/var-dumper": "8.1.*"
     },
     "config": {
         "allow-plugins": {
@@ -85,7 +85,7 @@
     "extra": {
         "symfony": {
             "allow-contrib": false,
-            "require": "7.4.*"
+            "require": "8.1.*"
         }
     }
 }
