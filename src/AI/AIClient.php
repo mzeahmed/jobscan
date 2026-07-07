@@ -2,18 +2,17 @@
 
 declare(strict_types=1);
 
-namespace App\Service\AI;
+namespace App\AI;
 
 use Psr\Log\LoggerInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Cache\InvalidArgumentException;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
+use App\AI\Provider\AIProviderInterface;
 
 /**
- * Analyse le texte d'une offre d'emploi via un provider IA local compatible OpenAI.
- *
- * Ollama est le provider recommandé par défaut. LM Studio reste supporté en tant que
- * provider legacy (voir `.env.example` pour la configuration).
+ * Analyse le texte d'une offre d'emploi via un moteur d'analyse IA pluggable
+ * (`AIProviderInterface` — Ollama/LM Studio ou Gemini, sélectionné par `AI_PROVIDER`
+ * dans `.env`, voir `AIProviderFactory`).
  *
  * Extrait les données structurées suivantes : stack technique, type de contrat,
  * indicateurs remote/freelance/recent, budget et séniorité.
@@ -34,19 +33,13 @@ final class AIClient
     private const int CACHE_TTL = 86400;
 
     /**
-     * @param  string  $apiBase  URL de base de l'API compatible OpenAI (env `AI_API_BASE`)
-     * @param  string  $apiKey  Clé d'API (env `AI_API_KEY` — `ollama` pour Ollama, `lmstudio` pour LM Studio)
-     * @param  string  $model  Identifiant du modèle à utiliser (env `AI_MODEL`)
      * @param  string  $systemPrompt  Prompt système injecté en tête de chaque requête (config `app.ai_system_prompt`)
      * @param  list<string>  $knownStack  Technologies connues pour le fallback heuristique (config `app.known_stack`)
      */
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
+        private readonly AIProviderInterface $provider,
         private readonly LoggerInterface $logger,
         private readonly CacheItemPoolInterface $cache,
-        private readonly string $apiBase,
-        private readonly string $apiKey,
-        private readonly string $model,
         private readonly string $systemPrompt,
         private readonly array $knownStack = [],
     ) {
@@ -118,62 +111,41 @@ final class AIClient
      */
     private function callAI(string $text): ?array
     {
-        try {
-            $response = $this->httpClient
-                ->request('POST', rtrim($this->apiBase, '/') . '/chat/completions', [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $this->apiKey,
-                        'Content-Type' => 'application/json',
-                    ],
-                    'json' => [
-                        'model' => $this->model,
-                        'messages' => [
-                            ['role' => 'system', 'content' => $this->systemPrompt],
-                            ['role' => 'user', 'content' => $text],
-                        ],
-                        'temperature' => 0,
-                        'max_tokens' => 1024,
-                        'think' => false,
-                    ],
-                    'timeout' => 120,
-                    'max_duration' => 120,
-                ]);
+        $content = $this->provider->complete($this->systemPrompt, $text);
 
-            $data = $response->toArray(false);
-            $content = trim((string) ($data['choices'][0]['message']['content'] ?? ''));
+        if ($content === null) {
+            $this->logger->warning('AIClient: provider IA indisponible ou réponse vide, fallback heuristique.');
 
-            $parsed = json_decode($content, true);
+            return null;
+        }
+
+        $parsed = json_decode($content, true);
+        if (\is_array($parsed)) {
+            $this->logger->debug('AIClient: réponse parsée avec succès.', [
+                'content' => $content,
+                'parsed' => $parsed,
+            ]);
+
+            return $this->normalize($parsed);
+        }
+
+        if (preg_match('/\{[\s\S]*\}/', $content, $matches)) {
+            $parsed = json_decode($matches[0], true);
+
             if (\is_array($parsed)) {
-                $this->logger->debug('AIClient: réponse parsée avec succès.', [
+                $this->logger->debug('AIClient: réponse parsée avec succès après extraction heuristique.', [
                     'content' => $content,
+                    'extracted' => $matches[0],
                     'parsed' => $parsed,
                 ]);
 
                 return $this->normalize($parsed);
             }
-
-            if (preg_match('/\{[\s\S]*\}/', $content, $matches)) {
-                $parsed = json_decode($matches[0], true);
-
-                if (\is_array($parsed)) {
-                    $this->logger->debug('AIClient: réponse parsée avec succès après extraction heuristique.', [
-                        'content' => $content,
-                        'extracted' => $matches[0],
-                        'parsed' => $parsed,
-                    ]);
-
-                    return $this->normalize($parsed);
-                }
-            }
-
-            $this->logger->warning('AIClient: réponse non parseable, fallback heuristique.', [
-                'content' => $content,
-            ]);
-        } catch (\Throwable $e) {
-            $this->logger->warning('AIClient::analyze() a échoué, fallback heuristique.', [
-                'error' => $e->getMessage(),
-            ]);
         }
+
+        $this->logger->warning('AIClient: réponse non parseable, fallback heuristique.', [
+            'content' => $content,
+        ]);
 
         return null;
     }
@@ -305,15 +277,15 @@ final class AIClient
      */
     private function extractBudget(string $text): string
     {
-        if (preg_match('/(\d{3,4})\s*€?\s*\/?\s*j(our)?/i', $text, $matches)) {
+        if (preg_match('/(\d{3,4})\s*€?\s*\/?\s*j(our)?/iu', $text, $matches)) {
             return $matches[1] . '€/j';
         }
 
-        if (preg_match('/(\d{2,3})\s*[-–]\s*(\d{2,3})\s*k/i', $text, $matches)) {
+        if (preg_match('/(\d{2,3})\s*[-–]\s*(\d{2,3})\s*k/iu', $text, $matches)) {
             return $matches[1] . '-' . $matches[2] . 'k€/an';
         }
 
-        if (preg_match('/(\d{2,3})\s*k\s*€?/i', $text, $matches)) {
+        if (preg_match('/(\d{2,3})\s*k\s*€?/iu', $text, $matches)) {
             return $matches[1] . 'k€/an';
         }
 

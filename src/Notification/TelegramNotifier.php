@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Notification;
+namespace App\Notification;
 
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -20,7 +20,7 @@ final class TelegramNotifier
 
     /**
      * @param string $botToken Token du bot Telegram (env `TELEGRAM_BOT_TOKEN`)
-     * @param string $chatId   Identifiant du canal ou du chat cible (env `TELEGRAM_CHAT_ID`)
+     * @param string $chatId Identifiant du canal ou du chat cible (env `TELEGRAM_CHAT_ID`)
      */
     public function __construct(
         private readonly HttpClientInterface $httpClient,

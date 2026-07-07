@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Scoring;
+namespace App\Scoring;
 
-use App\DTO\JobDTO;
+use App\DTO\JobDto;
 
 /**
  * Calcule le score de pertinence d'une offre d'emploi en deux passes.
@@ -22,7 +22,7 @@ use App\DTO\JobDTO;
  * Toute la configuration est externalisée dans `config/packages/jobscan.yaml`
  * sous la clé `app.scoring` — aucune valeur n'est codée en dur dans cette classe.
  */
-final class ScoringService
+final class Scoring
 {
     /**
      * @param array{
@@ -54,7 +54,7 @@ final class ScoringService
      * applique un bonus remote et soustrait les points des mots-clés négatifs.
      * Le résultat n'est pas borné — il peut être négatif si des mots-clés négatifs dominent.
      */
-    public function preScore(JobDTO $job): int
+    public function preScore(JobDto $job): int
     {
         $score = 0;
         $config = $this->scoringConfig['prescore'];
@@ -99,7 +99,7 @@ final class ScoringService
      * @param array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string} $ai Données extraites par `AIClient`
      * @return array{score: int, breakdown: string[]}
      */
-    public function compute(JobDTO $job, array $ai): array
+    public function compute(JobDto $job, array $ai): array
     {
         $score = 0;
         $breakdown = [];

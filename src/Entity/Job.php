@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
-use App\DTO\JobDTO;
+use App\DTO\JobDto;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\JobRepository;
@@ -60,7 +60,7 @@ class Job
         return trim($title);
     }
 
-    public static function fromDTO(JobDTO $dto): self
+    public static function fromDTO(JobDto $dto): self
     {
         $job = new self();
 

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Provider;
+namespace App\Provider;
 
-use App\DTO\JobDTO;
+use App\DTO\JobDto;
 
 /**
  * Contrat commun à toutes les sources d'offres d'emploi.
@@ -24,7 +24,7 @@ interface JobProviderInterface
      * Les erreurs réseau ou de parsing doivent être absorbées en interne :
      * cette méthode ne doit jamais propager d'exception vers le pipeline.
      *
-     * @return JobDTO[]
+     * @return JobDto[]
      */
     public function fetch(): array;
 }

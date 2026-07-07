@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Provider;
+namespace App\Provider;
 
-use App\DTO\JobDTO;
+use App\DTO\JobDto;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -22,9 +22,9 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 final class SearxProvider implements JobProviderInterface
 {
     /**
-     * @param string         $baseUrl        URL de base de l'instance SearXNG (env `SEARXNG_URL`)
-     * @param list<string>   $searchQueries  Requêtes de base (config `app.searx_queries`)
-     * @param list<string>   $locations      Localisations à combiner avec chaque requête (config `app.job_locations`)
+     * @param string $baseUrl URL de base de l'instance SearXNG (env `SEARXNG_URL`)
+     * @param list<string> $searchQueries Requêtes de base (config `app.searx_queries`)
+     * @param list<string> $locations Localisations à combiner avec chaque requête (config `app.job_locations`)
      */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
@@ -38,7 +38,7 @@ final class SearxProvider implements JobProviderInterface
     /**
      * Exécute toutes les requêtes combinées et retourne les offres dédupliquées.
      *
-     * @return JobDTO[]
+     * @return JobDto[]
      */
     public function fetch(): array
     {
@@ -64,7 +64,7 @@ final class SearxProvider implements JobProviderInterface
 
                 $publishedAt = $this->extractPublishedDate($result);
 
-                $jobs[$url] = new JobDTO(
+                $jobs[$url] = new JobDto(
                     title: $this->cleanText($title),
                     url: $url,
                     description: $this->cleanText($description),
@@ -205,7 +205,11 @@ final class SearxProvider implements JobProviderInterface
         } catch (\Throwable) {
         }
 
-        if (preg_match('/(\d{1,2})\s+(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+(\d{4})/iu', $raw, $m)) {
+        if (preg_match(
+            '/(\d{1,2})\s+(janvier|février|mars|avril|mai|juin|juillet|août|septembre|octobre|novembre|décembre)\s+(\d{4})/iu',
+            $raw,
+            $m
+        )) {
             $months = [
                 'janvier' => '01',
                 'février' => '02',

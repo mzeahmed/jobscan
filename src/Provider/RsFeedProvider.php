@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Service\Provider;
+namespace App\Provider;
 
-use App\DTO\JobDTO;
+use App\DTO\JobDto;
 use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -21,7 +21,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 final class RsFeedProvider implements JobProviderInterface
 {
     /**
-     * @param string[] $feedUrls URLs des flux à interroger (config `app.job_feed_urls`)
+     * @param  string[]  $feedUrls  URLs des flux à interroger (config `app.job_feed_urls`)
      */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
@@ -33,7 +33,7 @@ final class RsFeedProvider implements JobProviderInterface
     /**
      * Récupère et agrège toutes les offres depuis les flux configurés.
      *
-     * @return JobDTO[]
+     * @return JobDto[]
      */
     public function fetch(): array
     {
@@ -92,7 +92,7 @@ final class RsFeedProvider implements JobProviderInterface
     /**
      * Détecte le format du flux (RSS 2.0 ou Atom) et délègue au parseur approprié.
      *
-     * @return JobDTO[]
+     * @return JobDto[]
      */
     private function parseFeed(string $xml, string $feedUrl): array
     {
@@ -128,8 +128,9 @@ final class RsFeedProvider implements JobProviderInterface
      * Extrait `<title>`, `<link>`, `<description>` et `<pubDate>` de chaque item.
      * Les items sans titre ou sans URL sont ignorés.
      *
-     * @param array<mixed>|\SimpleXMLElement $items
-     * @return JobDTO[]
+     * @param  array<mixed>|\SimpleXMLElement  $items
+     *
+     * @return JobDto[]
      */
     private function rss20(array | \SimpleXMLElement $items): array
     {
@@ -144,7 +145,7 @@ final class RsFeedProvider implements JobProviderInterface
                 continue;
             }
 
-            $jobs[] = new JobDTO(
+            $jobs[] = new JobDto(
                 title: $title,
                 url: $url,
                 description: $description,
@@ -163,8 +164,9 @@ final class RsFeedProvider implements JobProviderInterface
      * `<published>` (ou `<updated>` en fallback) de chaque entrée.
      * Les entrées sans titre ou sans URL sont ignorées.
      *
-     * @param array<mixed>|\SimpleXMLElement $entries
-     * @return JobDTO[]
+     * @param  array<mixed>|\SimpleXMLElement  $entries
+     *
+     * @return JobDto[]
      */
     private function atom(array | \SimpleXMLElement $entries): array
     {
@@ -191,7 +193,7 @@ final class RsFeedProvider implements JobProviderInterface
 
             $rawDate = trim((string) ($entry->published ?? $entry->updated ?? ''));
 
-            $jobs[] = new JobDTO(
+            $jobs[] = new JobDto(
                 title: $title,
                 url: $url,
                 description: $description,
