@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Scoring;
 
 use App\DTO\JobDto;
+use App\DTO\ContractType;
+use App\DTO\AiAnalysisDto;
 
 /**
  * Calcule le score de pertinence d'une offre d'emploi en deux passes.
@@ -39,6 +41,8 @@ final class Scoring
      *         flag_bonuses: array<string, int>,
      *         description_keywords: array<string, int>,
      *         negative_keywords: array<string, int>,
+     *         seniority_bonuses: array<string, int>,
+     *         budget_bonus: array{min_daily_rate: int, min_annual_salary: int, points: int},
      *     },
      * } $scoringConfig Configuration issue de `app.scoring` dans `jobscan.yaml`
      */
@@ -92,21 +96,22 @@ final class Scoring
      *   - Flags booléens IA (remote, recent)
      *   - Mots-clés dans la description (mission, urgent, asap…)
      *   - Mots-clés négatifs (stage, alternance…)
+     *   - Bonus de séniorité (`app.scoring.compute.seniority_bonuses`)
+     *   - Bonus de budget si le TJM ou le salaire annuel dépasse un seuil configuré
      *
      * Le score est clampé entre 0 et 100. Le breakdown liste chaque contribution
      * sous la forme `+N (critère)` pour faciliter le débogage.
      *
-     * @param array{stack: list<string>, contract_type: string, freelance: bool, remote: bool, budget: string, recent: bool, seniority: string} $ai Données extraites par `AIClient`
      * @return array{score: int, breakdown: string[]}
      */
-    public function compute(JobDto $job, array $ai): array
+    public function compute(JobDto $job, AiAnalysisDto $ai): array
     {
         $score = 0;
         $breakdown = [];
         $config = $this->scoringConfig['compute'];
         $title = strtolower($job->title);
         $desc = strtolower($job->description);
-        $stack = array_map('strtolower', $ai['stack']);
+        $stack = array_map('strtolower', $ai->stack);
 
         foreach ($config['title_keywords'] as $keyword => $points) {
             if (str_contains($title, $keyword)) {
@@ -122,19 +127,19 @@ final class Scoring
             }
         }
 
-        $contractType = $ai['contract_type'];
-        if ('freelance' === $contractType || $ai['freelance']) {
+        if (ContractType::Freelance === $ai->contractType || $ai->freelance) {
             $points = $config['contract_bonuses']['freelance'];
             $score += $points;
             $breakdown[] = sprintf('%+d (freelance)', $points);
-        } elseif ('cdi' === $contractType) {
+        } elseif (ContractType::Cdi === $ai->contractType) {
             $points = $config['contract_bonuses']['cdi'];
             $score += $points;
             $breakdown[] = sprintf('%+d (CDI)', $points);
         }
 
+        $flags = ['remote' => $ai->remote, 'recent' => $ai->recent];
         foreach ($config['flag_bonuses'] as $flag => $points) {
-            if ($ai[$flag] ?? false) {
+            if ($flags[$flag] ?? false) {
                 $score += $points;
                 $breakdown[] = sprintf('%+d (%s)', $points, $flag);
             }
@@ -154,6 +159,47 @@ final class Scoring
             }
         }
 
+        $seniorityPoints = $config['seniority_bonuses'][$ai->seniority->value] ?? 0;
+        if (0 !== $seniorityPoints) {
+            $score += $seniorityPoints;
+            $breakdown[] = sprintf('%+d (séniorité %s)', $seniorityPoints, $ai->seniority->value);
+        }
+
+        $budgetBonus = $this->budgetBonus($ai->budget, $config['budget_bonus']);
+        if ($budgetBonus !== null) {
+            $score += $budgetBonus['points'];
+            $breakdown[] = sprintf('%+d (%s)', $budgetBonus['points'], $budgetBonus['label']);
+        }
+
         return ['score' => max(0, min($score, 100)), 'breakdown' => $breakdown];
+    }
+
+    /**
+     * Calcule un bonus si le budget annoncé dépasse un seuil configuré.
+     *
+     * Reconnaît le même format de sortie que `AIClient::extractBudget()` :
+     * TJM journalier (`500€/j`) ou salaire annuel (`45k€/an`, `60-80k€/an`,
+     * la borne haute étant retenue pour les fourchettes).
+     *
+     * @param  array{min_daily_rate: int, min_annual_salary: int, points: int}  $config
+     * @return array{points: int, label: string}|null
+     */
+    private function budgetBonus(string $budget, array $config): ?array
+    {
+        if (preg_match('/(\d{3,4})\s*€?\s*\/?\s*j/iu', $budget, $matches)
+            && (int) $matches[1] >= $config['min_daily_rate']
+        ) {
+            return ['points' => $config['points'], 'label' => 'budget TJM'];
+        }
+
+        if (preg_match('/(\d{2,3})(?:\s*[-–]\s*(\d{2,3}))?\s*k/iu', $budget, $matches)) {
+            $salary = isset($matches[2]) ? (int) $matches[2] : (int) $matches[1];
+
+            if ($salary >= $config['min_annual_salary']) {
+                return ['points' => $config['points'], 'label' => 'budget annuel'];
+            }
+        }
+
+        return null;
     }
 }

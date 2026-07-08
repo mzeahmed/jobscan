@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\AI;
 
+use App\DTO\Seniority;
 use Psr\Log\NullLogger;
 use App\AI\AIClient;
+use App\DTO\ContractType;
+use App\DTO\AiAnalysisDto;
 use PHPUnit\Framework\TestCase;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
@@ -42,13 +45,13 @@ class AIClientTest extends TestCase
         $client = $this->makeClient();
         $result = $client->analyze('Développeur PHP Symfony senior remote freelance 500€/j');
 
-        $this->assertSame('freelance', $result['contract_type']);
-        $this->assertTrue($result['freelance']);
-        $this->assertTrue($result['remote']);
-        $this->assertSame('senior', $result['seniority']);
-        $this->assertContains('php', $result['stack']);
-        $this->assertContains('symfony', $result['stack']);
-        $this->assertSame('500€/j', $result['budget']);
+        $this->assertSame(ContractType::Freelance, $result->contractType);
+        $this->assertTrue($result->freelance);
+        $this->assertTrue($result->remote);
+        $this->assertSame(Seniority::Senior, $result->seniority);
+        $this->assertContains('php', $result->stack);
+        $this->assertContains('symfony', $result->stack);
+        $this->assertSame('500€/j', $result->budget);
     }
 
     public function testHeuristicFallbackDetectsCdi(): void
@@ -57,8 +60,8 @@ class AIClientTest extends TestCase
 
         $result = $this->makeClient()->analyze('Poste CDI développeur backend Paris');
 
-        $this->assertSame('cdi', $result['contract_type']);
-        $this->assertFalse($result['freelance']);
+        $this->assertSame(ContractType::Cdi, $result->contractType);
+        $this->assertFalse($result->freelance);
     }
 
     public function testHeuristicFallbackDetectsJunior(): void
@@ -67,7 +70,7 @@ class AIClientTest extends TestCase
 
         $result = $this->makeClient()->analyze('Développeur PHP junior débutant accepté');
 
-        $this->assertSame('junior', $result['seniority']);
+        $this->assertSame(Seniority::Junior, $result->seniority);
     }
 
     public function testHeuristicFallbackExtractsBudgetRange(): void
@@ -76,7 +79,7 @@ class AIClientTest extends TestCase
 
         $result = $this->makeClient()->analyze('Salaire 60-80k selon profil');
 
-        $this->assertSame('60-80k€/an', $result['budget']);
+        $this->assertSame('60-80k€/an', $result->budget);
     }
 
     public function testHeuristicFallbackReturnsNonPreciseWhenNoBudget(): void
@@ -85,7 +88,7 @@ class AIClientTest extends TestCase
 
         $result = $this->makeClient()->analyze('Mission PHP sans précision de budget');
 
-        $this->assertSame('non précisé', $result['budget']);
+        $this->assertSame('non précisé', $result->budget);
     }
 
     // -------------------------------------------------------------------------
@@ -108,11 +111,11 @@ class AIClientTest extends TestCase
 
         $result = $this->makeClient()->analyze('Mission PHP Symfony remote senior');
 
-        $this->assertSame(['php', 'symfony'], $result['stack']);
-        $this->assertSame('freelance', $result['contract_type']);
-        $this->assertTrue($result['remote']);
-        $this->assertSame('600€/j', $result['budget']);
-        $this->assertSame('senior', $result['seniority']);
+        $this->assertSame(['php', 'symfony'], $result->stack);
+        $this->assertSame(ContractType::Freelance, $result->contractType);
+        $this->assertTrue($result->remote);
+        $this->assertSame('600€/j', $result->budget);
+        $this->assertSame(Seniority::Senior, $result->seniority);
     }
 
     public function testParsesJsonEmbeddedInText(): void
@@ -123,9 +126,9 @@ class AIClientTest extends TestCase
 
         $result = $this->makeClient()->analyze('Développeur React CDI');
 
-        $this->assertSame(['react'], $result['stack']);
-        $this->assertSame('cdi', $result['contract_type']);
-        $this->assertSame('mid', $result['seniority']);
+        $this->assertSame(['react'], $result->stack);
+        $this->assertSame(ContractType::Cdi, $result->contractType);
+        $this->assertSame(Seniority::Mid, $result->seniority);
     }
 
     public function testFallsBackWhenAIReturnsUnparseableContent(): void
@@ -134,14 +137,7 @@ class AIClientTest extends TestCase
 
         $result = $this->makeClient()->analyze('Mission PHP Symfony freelance remote');
 
-        // Should fall back to heuristic — check key fields exist
-        $this->assertArrayHasKey('stack', $result);
-        $this->assertArrayHasKey('contract_type', $result);
-        $this->assertArrayHasKey('freelance', $result);
-        $this->assertArrayHasKey('remote', $result);
-        $this->assertArrayHasKey('budget', $result);
-        $this->assertArrayHasKey('recent', $result);
-        $this->assertArrayHasKey('seniority', $result);
+        $this->assertInstanceOf(AiAnalysisDto::class, $result);
     }
 
     public function testNormalizesUnknownContractType(): void
@@ -160,7 +156,7 @@ class AIClientTest extends TestCase
 
         $result = $this->makeClient()->analyze('Poste CDD générique');
 
-        $this->assertSame('unknown', $result['contract_type']);
+        $this->assertSame(ContractType::Unknown, $result->contractType);
     }
 
     public function testNormalizesUnknownSeniority(): void
@@ -179,7 +175,7 @@ class AIClientTest extends TestCase
 
         $result = $this->makeClient()->analyze('Poste CDI expert');
 
-        $this->assertSame('unknown', $result['seniority']);
+        $this->assertSame(Seniority::Unknown, $result->seniority);
     }
 
     // -------------------------------------------------------------------------
@@ -188,15 +184,15 @@ class AIClientTest extends TestCase
 
     public function testReturnsCachedResultWithoutCallingAI(): void
     {
-        $cached = [
-            'stack' => ['php'],
-            'contract_type' => 'freelance',
-            'freelance' => true,
-            'remote' => true,
-            'budget' => '500€/j',
-            'recent' => true,
-            'seniority' => 'senior',
-        ];
+        $cached = new AiAnalysisDto(
+            stack: ['php'],
+            contractType: ContractType::Freelance,
+            freelance: true,
+            remote: true,
+            budget: '500€/j',
+            recent: true,
+            seniority: Seniority::Senior,
+        );
 
         $cacheItem = $this->createStub(CacheItemInterface::class);
         $cacheItem->method('isHit')->willReturn(true);

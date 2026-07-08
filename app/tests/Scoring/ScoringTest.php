@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Tests\Scoring;
 
 use App\DTO\JobDto;
+use App\DTO\Seniority;
 use App\Scoring\Scoring;
+use App\DTO\ContractType;
+use App\DTO\AiAnalysisDto;
 use PHPUnit\Framework\TestCase;
 
 class ScoringTest extends TestCase
@@ -35,6 +38,8 @@ class ScoringTest extends TestCase
                 'flag_bonuses' => ['remote' => 10, 'recent' => 20],
                 'description_keywords' => ['mission' => 10, 'urgent' => 15, 'asap' => 15],
                 'negative_keywords' => ['stage' => -50, 'alternance' => -50],
+                'seniority_bonuses' => ['senior' => 15, 'mid' => 5, 'junior' => -10],
+                'budget_bonus' => ['min_daily_rate' => 500, 'min_annual_salary' => 55, 'points' => 10],
             ],
         ]);
     }
@@ -102,13 +107,7 @@ class ScoringTest extends TestCase
     public function testComputeSymfonyFreelanceRemoteRecent(): void
     {
         $job = $this->job('Développeur PHP Symfony', 'Mission freelance remote');
-        $ai = [
-            'stack' => ['php', 'symfony'],
-            'contract_type' => 'freelance',
-            'freelance' => true,
-            'remote' => true,
-            'recent' => true,
-        ];
+        $ai = $this->ai(stack: ['php', 'symfony'], contractType: ContractType::Freelance, freelance: true, remote: true, recent: true);
 
         ['score' => $score, 'breakdown' => $breakdown] = $this->service->compute($job, $ai);
 
@@ -123,13 +122,7 @@ class ScoringTest extends TestCase
     public function testComputeWordPressCdi(): void
     {
         $job = $this->job('Développeur WordPress', 'Poste CDI Paris');
-        $ai = [
-            'stack' => ['wordpress', 'php'],
-            'contract_type' => 'cdi',
-            'freelance' => false,
-            'remote' => false,
-            'recent' => false,
-        ];
+        $ai = $this->ai(stack: ['wordpress', 'php'], contractType: ContractType::Cdi);
 
         ['score' => $score] = $this->service->compute($job, $ai);
 
@@ -139,7 +132,7 @@ class ScoringTest extends TestCase
     public function testComputeDescriptionKeywordsUrgentAndMission(): void
     {
         $job = $this->job('Développeur PHP', 'Mission urgent à pourvoir');
-        $ai = ['stack' => [], 'contract_type' => 'unknown', 'freelance' => false, 'remote' => false, 'recent' => false];
+        $ai = $this->ai();
 
         ['score' => $score, 'breakdown' => $breakdown] = $this->service->compute($job, $ai);
 
@@ -151,7 +144,7 @@ class ScoringTest extends TestCase
     public function testComputePenalizesStage(): void
     {
         $job = $this->job('Développeur PHP', 'Offre de stage symfony');
-        $ai = ['stack' => ['symfony'], 'contract_type' => 'unknown', 'freelance' => false, 'remote' => false, 'recent' => false];
+        $ai = $this->ai(stack: ['symfony']);
 
         ['score' => $score] = $this->service->compute($job, $ai);
 
@@ -161,13 +154,7 @@ class ScoringTest extends TestCase
     public function testComputeScoreIsClampedAt100(): void
     {
         $job = $this->job('php developer', 'mission urgent asap');
-        $ai = [
-            'stack' => ['symfony', 'wordpress'],
-            'contract_type' => 'freelance',
-            'freelance' => true,
-            'remote' => true,
-            'recent' => true,
-        ];
+        $ai = $this->ai(stack: ['symfony', 'wordpress'], contractType: ContractType::Freelance, freelance: true, remote: true, recent: true);
 
         ['score' => $score] = $this->service->compute($job, $ai);
 
@@ -177,7 +164,7 @@ class ScoringTest extends TestCase
     public function testComputeScoreIsClampedAtZero(): void
     {
         $job = $this->job('', 'stage alternance débutant');
-        $ai = ['stack' => [], 'contract_type' => 'unknown', 'freelance' => false, 'remote' => false, 'recent' => false];
+        $ai = $this->ai();
 
         ['score' => $score] = $this->service->compute($job, $ai);
 
@@ -187,7 +174,7 @@ class ScoringTest extends TestCase
     public function testComputeUnknownContractAddsNoBonus(): void
     {
         $job = $this->job('Développeur', 'Poste à définir');
-        $ai = ['stack' => [], 'contract_type' => 'unknown', 'freelance' => false, 'remote' => false, 'recent' => false];
+        $ai = $this->ai();
 
         ['score' => $score] = $this->service->compute($job, $ai);
 
@@ -197,7 +184,7 @@ class ScoringTest extends TestCase
     public function testComputeFreelanceFlagOverridesContractType(): void
     {
         $job = $this->job('Dev', 'Mission');
-        $ai = ['stack' => [], 'contract_type' => 'unknown', 'freelance' => true, 'remote' => false, 'recent' => false];
+        $ai = $this->ai(freelance: true);
 
         ['score' => $score, 'breakdown' => $breakdown] = $this->service->compute($job, $ai);
 
@@ -206,9 +193,90 @@ class ScoringTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // Bonus séniorité et budget
+    // -------------------------------------------------------------------------
+
+    public function testComputeSeniorityBonusForSenior(): void
+    {
+        $job = $this->job('Développeur PHP', 'Poste confirmé');
+        $ai = $this->ai(seniority: Seniority::Senior);
+
+        ['score' => $score, 'breakdown' => $breakdown] = $this->service->compute($job, $ai);
+
+        $this->assertSame(35, $score); // php titre:20 + séniorité senior:15
+        $this->assertContains('+15 (séniorité senior)', $breakdown);
+    }
+
+    public function testComputeSeniorityPenaltyForJunior(): void
+    {
+        $job = $this->job('Développeur PHP', 'Poste débutant accepté');
+        $ai = $this->ai(seniority: Seniority::Junior);
+
+        ['score' => $score] = $this->service->compute($job, $ai);
+
+        $this->assertSame(10, $score); // php titre:20 - séniorité junior:10
+    }
+
+    public function testComputeSeniorityUnknownAddsNoBonus(): void
+    {
+        $job = $this->job('Développeur PHP', 'Poste à définir');
+        $ai = $this->ai();
+
+        ['score' => $score, 'breakdown' => $breakdown] = $this->service->compute($job, $ai);
+
+        $this->assertSame(20, $score); // php titre:20 uniquement
+        $this->assertEmpty(array_filter($breakdown, static fn (string $line) => str_contains($line, 'séniorité')));
+    }
+
+    public function testComputeBudgetBonusForHighDailyRate(): void
+    {
+        $job = $this->job('Développeur PHP', 'Poste freelance à distance');
+        $ai = $this->ai(freelance: true, budget: '600€/j');
+
+        ['score' => $score, 'breakdown' => $breakdown] = $this->service->compute($job, $ai);
+
+        $this->assertSame(45, $score); // php titre:20 + freelance:15 + budget TJM:10
+        $this->assertContains('+10 (budget TJM)', $breakdown);
+    }
+
+    public function testComputeBudgetBonusForHighAnnualSalary(): void
+    {
+        $job = $this->job('Développeur PHP', 'Poste à distance');
+        $ai = $this->ai(contractType: ContractType::Cdi, budget: '60-80k€/an');
+
+        ['score' => $score, 'breakdown' => $breakdown] = $this->service->compute($job, $ai);
+
+        $this->assertSame(40, $score); // php titre:20 + cdi:10 + budget annuel (borne haute 80k):10
+        $this->assertContains('+10 (budget annuel)', $breakdown);
+    }
+
+    public function testComputeNoBudgetBonusBelowThreshold(): void
+    {
+        $job = $this->job('Développeur PHP', 'Poste freelance');
+        $ai = $this->ai(freelance: true, budget: '300€/j');
+
+        ['score' => $score, 'breakdown' => $breakdown] = $this->service->compute($job, $ai);
+
+        $this->assertSame(35, $score); // php titre:20 + freelance:15, pas de bonus budget
+        $this->assertEmpty(array_filter($breakdown, static fn (string $line) => str_contains($line, 'budget')));
+    }
+
+    // -------------------------------------------------------------------------
 
     private function job(string $title, string $description): JobDto
     {
         return new JobDto($title, 'https://example.com', $description, 'test');
+    }
+
+    private function ai(
+        array $stack = [],
+        ContractType $contractType = ContractType::Unknown,
+        bool $freelance = false,
+        bool $remote = false,
+        bool $recent = false,
+        string $budget = 'non précisé',
+        Seniority $seniority = Seniority::Unknown,
+    ): AiAnalysisDto {
+        return new AiAnalysisDto($stack, $contractType, $freelance, $remote, $budget, $recent, $seniority);
     }
 }

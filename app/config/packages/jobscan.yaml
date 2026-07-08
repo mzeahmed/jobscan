@@ -7,6 +7,8 @@ parameters:
     app.known_stack: '%env(csv:KNOWN_STACK)%'
     app.searx_queries: '%env(csv:SEARX_QUERIES)%'
     app.job_locations: '%env(csv:JOB_LOCATIONS)%'
+    app.ai_model: '%env(AI_MODEL)%'
+    app.ai_gemini_model: '%env(GEMINI_MODEL)%'
 
     app.scoring:
         prescore:
@@ -44,6 +46,14 @@ parameters:
             negative_keywords:
                 stage: -50
                 alternance: -50
+            seniority_bonuses:
+                senior: 15
+                mid: 5
+                junior: -10
+            budget_bonus:
+                min_daily_rate: 500
+                min_annual_salary: 55
+                points: 10
 
     app.ai_system_prompt: |
         Tu es un extracteur de données d'offres d'emploi.

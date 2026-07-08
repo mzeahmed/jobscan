@@ -66,9 +66,9 @@ Providers (RSS + SearXNG)
 - [ ] Source RSS basée sur le domaine du flux — #3
 - [ ] Pagination SearXNG — #4
 - [ ] Délai configurable entre les requêtes SearXNG — #5
-- [ ] Modèle LM Studio configurable via `jobscan.yaml` — #6
-- [ ] Normalisation typée de la sortie IA — #7
-- [ ] Bonus de scoring par séniorité et budget — #8
+- [x] Modèle LM Studio configurable via `jobscan.yaml` — #6
+- [x] Normalisation typée de la sortie IA — #7
+- [x] Bonus de scoring par séniorité et budget — #8
 
 ---
 

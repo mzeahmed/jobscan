@@ -6,9 +6,7 @@ parameters:
     ai.provider_name: '%env(AI_PROVIDER)%'
     ai.api_base: '%env(AI_API_BASE)%'
     ai.api_key: '%env(AI_API_KEY)%'
-    ai.model: '%env(AI_MODEL)%'
     ai.gemini_api_key: '%env(GEMINI_API_KEY)%'
-    ai.gemini_model: '%env(GEMINI_MODEL)%'
     app.job_feed_urls:
         - '%env(default::JOB_FEED_URL_1)%'
         - '%env(default::JOB_FEED_URL_2)%'
@@ -41,12 +39,12 @@ services:
         arguments:
             $apiBase: '%ai.api_base%'
             $apiKey: '%ai.api_key%'
-            $model: '%ai.model%'
+            $model: '%app.ai_model%'
 
     App\AI\Provider\GeminiProvider:
         arguments:
             $apiKey: '%ai.gemini_api_key%'
-            $model: '%ai.gemini_model%'
+            $model: '%app.ai_gemini_model%'
 
     App\AI\Provider\AIProviderFactory:
         arguments:

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\AI;
 
+use App\DTO\Seniority;
+use App\DTO\ContractType;
+use App\DTO\AiAnalysisDto;
 use Psr\Log\LoggerInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Cache\InvalidArgumentException;
@@ -52,19 +55,9 @@ final class AIClient
      * En cas de cache hit, le LLM n'est pas sollicité.
      * En cas d'échec LLM, le fallback heuristique est automatiquement utilisé.
      *
-     * @return array{
-     *     stack: list<string>,
-     *     contract_type: string,
-     *     freelance: bool,
-     *     remote: bool,
-     *     budget: string,
-     *     recent: bool,
-     *     seniority: string
-     * }
-     *
      * @throws InvalidArgumentException
      */
-    public function analyze(string $text): array
+    public function analyze(string $text): AiAnalysisDto
     {
         $text = $this->cleanText($text);
         $text = mb_substr($text, 0, 3000);
@@ -98,18 +91,8 @@ final class AIClient
      *   2. Extraction par regex d'un bloc JSON si le LLM a ajouté du texte autour
      *
      * Retourne `null` si la réponse est non parseable ou si une exception est levée.
-     *
-     * @return array{
-     *     stack: list<string>,
-     *     contract_type: string,
-     *     freelance: bool,
-     *     remote: bool,
-     *     budget: string,
-     *     recent: bool,
-     *     seniority: string
-     * }|null
      */
-    private function callAI(string $text): ?array
+    private function callAI(string $text): ?AiAnalysisDto
     {
         $content = $this->provider->complete($this->systemPrompt, $text);
 
@@ -155,43 +138,30 @@ final class AIClient
      *
      * Garantit que chaque champ est présent avec le bon type, quelle que soit
      * la qualité de la réponse du modèle. Les valeurs `contract_type` et
-     * `seniority` hors vocabulaire contrôlé sont ramenées à `'unknown'`.
+     * `seniority` hors vocabulaire contrôlé sont ramenées à `Unknown`.
      *
      * @param  array<string, mixed>  $data  Tableau décodé depuis la réponse JSON du LLM
-     * @return array{
-     *     stack: list<string>,
-     *     contract_type: string,
-     *     freelance: bool,
-     *     remote: bool,
-     *     budget: string,
-     *     recent: bool,
-     *     seniority: string
-     * }
      */
-    private function normalize(array $data): array
+    private function normalize(array $data): AiAnalysisDto
     {
-        $contractType = strtolower((string) ($data['contract_type'] ?? 'unknown'));
-        if (! \in_array($contractType, ['freelance', 'cdi', 'unknown'], true)) {
-            $contractType = 'unknown';
-        }
+        $contractType = ContractType::tryFrom(strtolower((string) ($data['contract_type'] ?? 'unknown')))
+            ?? ContractType::Unknown;
 
-        $seniority = strtolower((string) ($data['seniority'] ?? 'unknown'));
-        if (! \in_array($seniority, ['junior', 'mid', 'senior', 'unknown'], true)) {
-            $seniority = 'unknown';
-        }
+        $seniority = Seniority::tryFrom(strtolower((string) ($data['seniority'] ?? 'unknown')))
+            ?? Seniority::Unknown;
 
-        return [
-            'stack' => array_values(array_unique(array_map(
+        return new AiAnalysisDto(
+            stack: array_values(array_unique(array_map(
                 static fn ($item) => strtolower(trim((string) $item)),
                 (array) ($data['stack'] ?? [])
             ))),
-            'contract_type' => $contractType,
-            'freelance' => (bool) ($data['freelance'] ?? false),
-            'remote' => (bool) ($data['remote'] ?? false),
-            'budget' => (string) ($data['budget'] ?? 'non précisé'),
-            'recent' => (bool) ($data['recent'] ?? true),
-            'seniority' => $seniority,
-        ];
+            contractType: $contractType,
+            freelance: (bool) ($data['freelance'] ?? false),
+            remote: (bool) ($data['remote'] ?? false),
+            budget: (string) ($data['budget'] ?? 'non précisé'),
+            recent: (bool) ($data['recent'] ?? true),
+            seniority: $seniority,
+        );
     }
 
     /**
@@ -205,51 +175,37 @@ final class AIClient
      *   - Remote : détection de `remote`, `télétravail`
      *
      * Le champ `recent` vaut toujours `true` — sans IA, l'information n'est pas déductible.
-     *
-     * @return array{
-     *     stack: list<string>,
-     *     contract_type: string,
-     *     freelance: bool,
-     *     remote: bool,
-     *     budget: string,
-     *     recent: bool,
-     *     seniority: string
-     * }
      */
-    private function heuristicFallback(string $text): array
+    private function heuristicFallback(string $text): AiAnalysisDto
     {
         $lower = strtolower($text);
         $freelance = str_contains($lower, 'freelance') || str_contains($lower, 'mission') || str_contains($lower, 'tjm');
         $cdi = str_contains($lower, 'cdi') || str_contains($lower, 'contrat à durée indéterminée');
 
-        if ($freelance) {
-            $contractType = 'freelance';
-        } elseif ($cdi) {
-            $contractType = 'cdi';
-        } else {
-            $contractType = 'unknown';
-        }
+        $contractType = match (true) {
+            $freelance => ContractType::Freelance,
+            $cdi => ContractType::Cdi,
+            default => ContractType::Unknown,
+        };
 
-        $seniority = 'unknown';
-        if (str_contains($lower, 'senior') || str_contains($lower, 'confirmé') || str_contains($lower, 'confirme')) {
-            $seniority = 'senior';
-        } elseif (str_contains($lower, 'junior') || str_contains($lower, 'débutant') || str_contains($lower, 'debutant')) {
-            $seniority = 'junior';
-        } elseif (str_contains($lower, 'mid') || str_contains($lower, 'intermédiaire') || str_contains($lower, 'intermediaire')) {
-            $seniority = 'mid';
-        }
+        $seniority = match (true) {
+            str_contains($lower, 'senior') || str_contains($lower, 'confirmé') || str_contains($lower, 'confirme') => Seniority::Senior,
+            str_contains($lower, 'junior') || str_contains($lower, 'débutant') || str_contains($lower, 'debutant') => Seniority::Junior,
+            str_contains($lower, 'mid') || str_contains($lower, 'intermédiaire') || str_contains($lower, 'intermediaire') => Seniority::Mid,
+            default => Seniority::Unknown,
+        };
 
-        return [
-            'stack' => $this->extractStack($lower),
-            'contract_type' => $contractType,
-            'freelance' => $freelance,
-            'remote' => str_contains($lower, 'remote')
+        return new AiAnalysisDto(
+            stack: $this->extractStack($lower),
+            contractType: $contractType,
+            freelance: $freelance,
+            remote: str_contains($lower, 'remote')
                         || str_contains($lower, 'télétravail')
                         || str_contains($lower, 'teletravail'),
-            'budget' => $this->extractBudget($lower),
-            'recent' => true,
-            'seniority' => $seniority,
-        ];
+            budget: $this->extractBudget($lower),
+            recent: true,
+            seniority: $seniority,
+        );
     }
 
     /**
