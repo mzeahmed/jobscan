@@ -1,5 +1,10 @@
 # JOBSCAN
 
+[![CI](https://github.com/mzeahmed/jobscan/actions/workflows/ci.yml/badge.svg)](https://github.com/mzeahmed/jobscan/actions/workflows/ci.yml)
+[![PHP Version](https://img.shields.io/badge/PHP-8.4+-777BB4?logo=php&logoColor=white)](https://github.com/mzeahmed/jobscan/blob/main/app/composer.json)
+[![Symfony](https://img.shields.io/badge/Symfony-8.1-000000?logo=symfony&logoColor=white)](https://symfony.com)
+[![Ollama](https://img.shields.io/badge/AI-Ollama%20%7C%20Gemini-1793D1)](https://ollama.com)
+
 Agrégateur d'opportunités tech (freelance ou CDI) orienté PHP / Symfony / WordPress, avec scoring IA local.
 
 JOBSCAN récupère des offres depuis des providers configurés (flux RSS et recherche web dynamique), filtre les opportunités pertinentes, les analyse avec un **moteur IA au choix** (Ollama par défaut, ou Gemini — configurable via `AI_PROVIDER` dans `.env`), leur attribue un score de pertinence, puis déclenche une alerte pour les meilleures opportunités.
