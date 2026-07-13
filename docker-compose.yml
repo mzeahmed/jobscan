@@ -58,6 +58,7 @@ services:
             SEARXNG_BASE_URL: http://searxng.local
         networks:
             - frontend
+            - application
 
 networks:
     application:
