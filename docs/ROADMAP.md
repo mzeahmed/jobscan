@@ -159,9 +159,10 @@ make migrate
 Avant d'ouvrir une PR :
 
 ```bash
-make stan    # PHPStan
-make pintf   # Pint (style PSR-12)
-make test    # PHPUnit
+make stan          # PHPStan
+make csf           # PHP-CS-Fixer (style PSR-12)
+make rector-check  # Rector (vérification)
+make test          # PHPUnit
 ```
 
 Nommage des branches : `feat/`, `fix/`, `test/`, `refactor/`

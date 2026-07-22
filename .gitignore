@@ -21,6 +21,10 @@
 /app/.phpunit.cache/
 ###< phpunit/phpunit ###
 
+###> rector/rector ###
+/app/.rector.cache
+###< rector/rector ###
+
 ###> traefik ###
 /certs/*.pem
 ###< traefik ###

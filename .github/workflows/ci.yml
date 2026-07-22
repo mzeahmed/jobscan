@@ -23,8 +23,11 @@ jobs:
             -   name: Install dependencies
                 run: cd app && composer install --prefer-dist --no-progress --no-interaction --no-scripts
 
-            -   name: Pint — code style
-                run: cd app && ./vendor/bin/pint --test
+            -   name: PHP-CS-Fixer — code style
+                run: cd app && ./vendor/bin/php-cs-fixer fix --dry-run --diff
+
+            -   name: Rector — vérification uniquement (process --dry-run)
+                run: cd app && ./vendor/bin/rector process --dry-run
 
             -   name: PHPStan — static analysis
                 run: cd app && ./vendor/bin/phpstan analyse -c phpstan.neon --no-progress

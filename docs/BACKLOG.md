@@ -239,6 +239,7 @@ Enrichir `ScoringService` avec des bonus configurables basés sur la séniorité
 #### Pistes techniques
 
 - Ajouter dans `jobscan.yaml` sous `scoring_weights` :
+
   ```yaml
   seniority_senior: 10
   seniority_lead: 15
@@ -368,8 +369,9 @@ Déclarer toutes les targets non-fichiers en `.PHONY` en tête du Makefile.
 #### Pistes techniques
 
 - Ajouter en tête du `makefile` :
+
   ```makefile
-  .PHONY: help build up down logs bash migrate run-pipeline alerts fix-perms stan pint pintf setup test
+  .PHONY: help build up down logs bash migrate run-pipeline alerts fix-perms stan cs csf rector rector-check setup test
   ```
 
 #### Critères d'acceptation
@@ -672,6 +674,7 @@ Afficher un tableau récapitulatif en fin de `RunPipelineCommand::execute()`.
 #### Critères d'acceptation
 
 - Après `app:jobs:run`, le résumé suivant est toujours affiché (même avec 0 résultats) :
+
   ```
   Offres récupérées  : 87
   Nouvelles offres   : 34
@@ -680,6 +683,7 @@ Afficher un tableau récapitulatif en fin de `RunPipelineCommand::execute()`.
   Notifiées          : 5
   Durée totale       : 12.4s
   ```
+
 - Tous les compteurs sont exacts
 - La durée est mesurée du démarrage de la commande à la fin
 - Le résumé est supprimé quand le flag `--quiet` est utilisé
@@ -763,6 +767,7 @@ Externaliser tous les poids dans `jobscan.yaml` et les injecter dans `ScoringSer
 #### Pistes techniques
 
 - Définir dans `jobscan.yaml` :
+
   ```yaml
   scoring_weights:
     php_in_title: 20
@@ -777,6 +782,7 @@ Externaliser tous les poids dans `jobscan.yaml` et les injecter dans `ScoringSer
     internship_penalty: -50
     apprenticeship_penalty: -50
   ```
+
 - Injecter en tant que `array $weights` dans le constructeur de `ScoringService` via `%app.scoring_weights%`
 - Valider la présence de toutes les clés requises à la compilation du container via un `CompilerPass` ou une vérification `array_key_exists` dans le constructeur
 

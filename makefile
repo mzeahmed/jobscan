@@ -118,20 +118,30 @@ pipeline-logs: ## Logs du cron (si configuré)
 	@echo "$(YELLOW)Affichage des logs du pipeline...$(NO_COLOR)"
 	tail -f /var/log/jobscan.log
 
-pint: ## Lancement de Laravel Pint
-	@echo "$(YELLOW)Lancement de Laravel Pint...$(NO_COLOR)"
+cs: ## Lancement de php-cs-fixer en mode test
+	@echo "$(YELLOW)Lancement de php-cs-fixer...$(NO_COLOR)"
 	cd app && composer run lint
-	@echo "$(GREEN)Pint terminé$(NO_COLOR)"
+	@echo "$(GREEN)php-cs-fixer terminé$(NO_COLOR)"
 
-pintf: ## Lancement de Laravel Pint avec correction
-	@echo "$(YELLOW)Lancement de Laravel Pint avec correction$(NO_COLOR)"
+csf: ## Lancement de php-cs-fixer avec correction
+	@echo "$(YELLOW)Lancement de php-cs-fixer avec correction$(NO_COLOR)"
 	cd app && composer run lint:fix
-	@echo "$(GREEN)Pint terminé$(NO_COLOR)"
+	@echo "$(GREEN)php-cs-fixer terminé$(NO_COLOR)"
 
 stan: ## Lancement de PHPStan
 	@echo "$(YELLOW)Lancement de PHPStan...$(NO_COLOR)"
 	cd app && ./vendor/bin/phpstan analyse -c phpstan.neon
 	@echo "$(GREEN)PHPStan terminé$(NO_COLOR)"
+
+rector: ## Appliquer les transformations de Rector
+	@echo "$(YELLOW)Application des transformations de Rector...$(NO_COLOR)"
+	cd app && ./vendor/bin/rector process
+	@echo "$(GREEN)Transformations de Rector appliquées$(NO_COLOR)"
+
+rector-check: ## Vérifie les transformations de Rector sans les appliquer
+	@echo "$(YELLOW)Vérification des transformations de Rector...$(NO_COLOR)"
+	cd app && ./vendor/bin/rector process --dry-run
+	@echo "$(GREEN)Vérification des transformations de Rector terminée$(NO_COLOR)"
 
 hard: ## Reinitialisation du dépôt (attention, toutes les modifications non commit seront perdues)
 	@echo "$(RED)⚠️  Cette action va supprimer toutes les modifications non commitées.$(NO_COLOR)"

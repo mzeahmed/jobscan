@@ -490,6 +490,11 @@ make alerts        # suit les alertes en live
 make fix-perms     # corrige les permissions SQLite
 make logs          # affiche les logs Docker
 make bash          # ouvre un shell dans le conteneur app
+make cs            # PHP-CS-Fixer — vérification
+make csf           # PHP-CS-Fixer — correction automatique
+make rector-check  # Rector — vérification
+make rector        # Rector — application
+make stan          # PHPStan — analyse statique
 ```
 
 ---
@@ -537,7 +542,7 @@ Ce projet utilise [pre-commit](https://blog.stephane-robert.info/docs/outils/qua
 
 | Moment | Vérifications |
 |---|---|
-| `git commit` | trailing whitespace, YAML/JSON, secrets (gitleaks), yamllint, markdownlint, Pint (auto-fix), PHPStan |
+| `git commit` | trailing whitespace, YAML/JSON, secrets (gitleaks), yamllint, markdownlint, PHP-CS-Fixer, PHPStan |
 | `git push` | build assets TypeScript + AssetMapper, PHPUnit |
 
 Pour contourner ponctuellement un hook : `git commit --no-verify` (à éviter).
