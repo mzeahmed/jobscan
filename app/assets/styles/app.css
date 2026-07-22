@@ -118,8 +118,15 @@ body {
    APP SHELL
    ============================================================ */
 
+/*
+ * Pas de `display: flex` ici : `.sidebar` est en `position: fixed` (donc hors
+ * flux, ignorée par flex) et `.main-content` compense déjà son emplacement
+ * via `margin-left: var(--sidebar-w)`. Un flex row sur ce parent ne laissait
+ * qu'un seul enfant en flux (`.main-content`), qui se retrouvait alors
+ * sized to content (flex-basis: auto) au lieu de remplir la largeur
+ * disponible — cassant la grille de cards en aval (`.jobs-grid`).
+ */
 .app-shell {
-    display: flex;
     min-height: 100vh;
 }
 
