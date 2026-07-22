@@ -12,19 +12,19 @@ use App\DTO\AiAnalysisDto;
 use PHPUnit\Framework\TestCase;
 use Psr\Cache\CacheItemInterface;
 use Psr\Cache\CacheItemPoolInterface;
-use App\AI\Provider\AIProviderInterface;
+use App\AI\Provider\LLMClientInterface;
 
 class AIClientTest extends TestCase
 {
     private const array KNOWN_STACK = ['php', 'symfony', 'wordpress', 'mysql', 'react'];
 
-    private AIProviderInterface $provider;
+    private LLMClientInterface $provider;
     private CacheItemPoolInterface $cache;
     private CacheItemInterface $cacheItem;
 
     protected function setUp(): void
     {
-        $this->provider = $this->createStub(AIProviderInterface::class);
+        $this->provider = $this->createStub(LLMClientInterface::class);
         $this->cacheItem = $this->createStub(CacheItemInterface::class);
         $this->cacheItem->method('isHit')->willReturn(false);
         $this->cacheItem->method('set')->willReturnSelf();
@@ -40,7 +40,7 @@ class AIClientTest extends TestCase
 
     public function testHeuristicFallbackUsedWhenAIFails(): void
     {
-        $this->provider->method('complete')->willReturn(null);
+        $this->provider->method('analyze')->willReturn(null);
 
         $client = $this->makeClient();
         $result = $client->analyze('Développeur PHP Symfony senior remote freelance 500€/j');
@@ -56,7 +56,7 @@ class AIClientTest extends TestCase
 
     public function testHeuristicFallbackDetectsCdi(): void
     {
-        $this->provider->method('complete')->willReturn(null);
+        $this->provider->method('analyze')->willReturn(null);
 
         $result = $this->makeClient()->analyze('Poste CDI développeur backend Paris');
 
@@ -66,7 +66,7 @@ class AIClientTest extends TestCase
 
     public function testHeuristicFallbackDetectsJunior(): void
     {
-        $this->provider->method('complete')->willReturn(null);
+        $this->provider->method('analyze')->willReturn(null);
 
         $result = $this->makeClient()->analyze('Développeur PHP junior débutant accepté');
 
@@ -75,7 +75,7 @@ class AIClientTest extends TestCase
 
     public function testHeuristicFallbackExtractsBudgetRange(): void
     {
-        $this->provider->method('complete')->willReturn(null);
+        $this->provider->method('analyze')->willReturn(null);
 
         $result = $this->makeClient()->analyze('Salaire 60-80k selon profil');
 
@@ -84,7 +84,7 @@ class AIClientTest extends TestCase
 
     public function testHeuristicFallbackReturnsNonPreciseWhenNoBudget(): void
     {
-        $this->provider->method('complete')->willReturn(null);
+        $this->provider->method('analyze')->willReturn(null);
 
         $result = $this->makeClient()->analyze('Mission PHP sans précision de budget');
 
@@ -107,7 +107,7 @@ class AIClientTest extends TestCase
             'seniority' => 'senior',
         ]);
 
-        $this->provider->method('complete')->willReturn($json);
+        $this->provider->method('analyze')->willReturn($json);
 
         $result = $this->makeClient()->analyze('Mission PHP Symfony remote senior');
 
@@ -122,7 +122,7 @@ class AIClientTest extends TestCase
     {
         $json = 'Voici ma réponse : {"stack":["react"],"contract_type":"cdi","freelance":false,"remote":false,"budget":"non précisé","recent":true,"seniority":"mid"} fin.';
 
-        $this->provider->method('complete')->willReturn($json);
+        $this->provider->method('analyze')->willReturn($json);
 
         $result = $this->makeClient()->analyze('Développeur React CDI');
 
@@ -133,7 +133,7 @@ class AIClientTest extends TestCase
 
     public function testFallsBackWhenAIReturnsUnparseableContent(): void
     {
-        $this->provider->method('complete')->willReturn('Je ne sais pas répondre en JSON désolé.');
+        $this->provider->method('analyze')->willReturn('Je ne sais pas répondre en JSON désolé.');
 
         $result = $this->makeClient()->analyze('Mission PHP Symfony freelance remote');
 
@@ -152,7 +152,7 @@ class AIClientTest extends TestCase
             'seniority' => 'unknown',
         ]);
 
-        $this->provider->method('complete')->willReturn($json);
+        $this->provider->method('analyze')->willReturn($json);
 
         $result = $this->makeClient()->analyze('Poste CDD générique');
 
@@ -171,7 +171,7 @@ class AIClientTest extends TestCase
             'seniority' => 'expert',
         ]);
 
-        $this->provider->method('complete')->willReturn($json);
+        $this->provider->method('analyze')->willReturn($json);
 
         $result = $this->makeClient()->analyze('Poste CDI expert');
 
@@ -201,8 +201,8 @@ class AIClientTest extends TestCase
         $cache = $this->createStub(CacheItemPoolInterface::class);
         $cache->method('getItem')->willReturn($cacheItem);
 
-        $provider = $this->createMock(AIProviderInterface::class);
-        $provider->expects($this->never())->method('complete');
+        $provider = $this->createMock(LLMClientInterface::class);
+        $provider->expects($this->never())->method('analyze');
 
         $client = new AIClient(
             $provider,

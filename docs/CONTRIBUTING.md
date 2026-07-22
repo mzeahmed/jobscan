@@ -30,7 +30,7 @@ composer install
 
 # Copier et adapter la configuration
 cp .env .env.local
-# → Renseigner TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, AI_API_BASE, etc.
+# → Renseigner TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, OLLAMA_BASE_URL, etc.
 
 # Créer la base de données et appliquer les migrations
 symfony console doctrine:migrations:migrate --no-interaction

@@ -6,11 +6,11 @@ namespace App\Tests\AI\Provider;
 
 use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
+use App\AI\Provider\OllamaClient;
 use Symfony\Component\HttpClient\MockHttpClient;
-use App\AI\Provider\OpenAICompatibleProvider;
 use Symfony\Component\HttpClient\Response\MockResponse;
 
-class OpenAICompatibleProviderTest extends TestCase
+class OllamaClientTest extends TestCase
 {
     public function testReturnsContentFromChatCompletionsResponse(): void
     {
@@ -23,9 +23,9 @@ class OpenAICompatibleProviderTest extends TestCase
             ]));
         });
 
-        $provider = new OpenAICompatibleProvider($httpClient, new NullLogger(), 'http://localhost:11434/v1', 'ollama', 'qwen3:8b');
+        $client = new OllamaClient($httpClient, new NullLogger(), 'http://localhost:11434/v1', 'qwen3:8b');
 
-        $this->assertSame('{"stack":["php"]}', $provider->complete('system', 'user text'));
+        $this->assertSame('{"stack":["php"]}', $client->analyze('system', 'user text'));
     }
 
     public function testReturnsNullOnEmptyContent(): void
@@ -34,9 +34,9 @@ class OpenAICompatibleProviderTest extends TestCase
             'choices' => [['message' => ['content' => '']]],
         ])));
 
-        $provider = new OpenAICompatibleProvider($httpClient, new NullLogger(), 'http://localhost:11434/v1', 'ollama', 'qwen3:8b');
+        $client = new OllamaClient($httpClient, new NullLogger(), 'http://localhost:11434/v1', 'qwen3:8b');
 
-        $this->assertNull($provider->complete('system', 'user text'));
+        $this->assertNull($client->analyze('system', 'user text'));
     }
 
     public function testReturnsNullOnTransportFailure(): void
@@ -45,8 +45,8 @@ class OpenAICompatibleProviderTest extends TestCase
             throw new \RuntimeException('connection refused');
         });
 
-        $provider = new OpenAICompatibleProvider($httpClient, new NullLogger(), 'http://localhost:11434/v1', 'ollama', 'qwen3:8b');
+        $client = new OllamaClient($httpClient, new NullLogger(), 'http://localhost:11434/v1', 'qwen3:8b');
 
-        $this->assertNull($provider->complete('system', 'user text'));
+        $this->assertNull($client->analyze('system', 'user text'));
     }
 }

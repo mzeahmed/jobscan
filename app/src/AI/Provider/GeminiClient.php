@@ -8,17 +8,17 @@ use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
- * Moteur d'analyse IA basé sur l'API Gemini de Google (Generative Language API).
+ * Moteur d'analyse LLM basé sur l'API Gemini de Google (Generative Language API).
  *
  * @see https://ai.google.dev/gemini-api/docs
  */
-final class GeminiProvider implements AIProviderInterface
+final class GeminiClient implements LLMClientInterface
 {
     private const string API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
     /**
-     * @param  string  $apiKey  Clé d'API Gemini (env `GEMINI_API_KEY`)
-     * @param  string  $model  Identifiant du modèle à utiliser (env `GEMINI_MODEL`)
+     * @param  string  $apiKey  Clé d'API Gemini (config `jobscan.llm.gemini.api_key`)
+     * @param  string  $model  Identifiant du modèle à utiliser (config `jobscan.llm.gemini.model`)
      */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
@@ -28,7 +28,7 @@ final class GeminiProvider implements AIProviderInterface
     ) {
     }
 
-    public function complete(string $systemPrompt, string $userText): ?string
+    public function analyze(string $systemPrompt, string $userText): ?string
     {
         try {
             $response = $this->httpClient
@@ -58,7 +58,7 @@ final class GeminiProvider implements AIProviderInterface
 
             return $content !== '' ? $content : null;
         } catch (\Throwable $e) {
-            $this->logger->warning('GeminiProvider::complete() a échoué.', [
+            $this->logger->warning('GeminiClient::analyze() a échoué.', [
                 'error' => $e->getMessage(),
             ]);
 
