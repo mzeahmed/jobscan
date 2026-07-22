@@ -10,12 +10,12 @@ use App\DTO\AiAnalysisDto;
 use Psr\Log\LoggerInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use Psr\Cache\InvalidArgumentException;
-use App\AI\Provider\AIProviderInterface;
+use App\AI\Provider\LLMClientInterface;
 
 /**
- * Analyse le texte d'une offre d'emploi via un moteur d'analyse IA pluggable
- * (`AIProviderInterface` — Ollama/LM Studio ou Gemini, sélectionné par `AI_PROVIDER`
- * dans `.env`, voir `AIProviderFactory`).
+ * Analyse le texte d'une offre d'emploi via un moteur LLM pluggable
+ * (`LLMClientInterface` — Ollama, LM Studio ou Gemini, sélectionné par
+ * `jobscan.llm.provider` dans `jobscan.yaml`, voir `LLMClientFactory`).
  *
  * Extrait les données structurées suivantes : stack technique, type de contrat,
  * indicateurs remote/freelance/recent, budget et séniorité.
@@ -40,7 +40,7 @@ final class AIClient
      * @param  list<string>  $knownStack  Technologies connues pour le fallback heuristique (config `app.known_stack`)
      */
     public function __construct(
-        private readonly AIProviderInterface $provider,
+        private readonly LLMClientInterface $provider,
         private readonly LoggerInterface $logger,
         private readonly CacheItemPoolInterface $cache,
         private readonly string $systemPrompt,
@@ -84,7 +84,7 @@ final class AIClient
     }
 
     /**
-     * Envoie le texte au LLM via l'API compatible OpenAI (Ollama, LM Studio, etc.).
+     * Envoie le texte au moteur LLM actif (Ollama, LM Studio ou Gemini).
      *
      * Tente deux passes de parsing sur la réponse :
      *   1. `json_decode` direct sur le contenu brut
@@ -94,7 +94,7 @@ final class AIClient
      */
     private function callAI(string $text): ?AiAnalysisDto
     {
-        $content = $this->provider->complete($this->systemPrompt, $text);
+        $content = $this->provider->analyze($this->systemPrompt, $text);
 
         if ($content === null) {
             $this->logger->warning('AIClient: provider IA indisponible ou réponse vide, fallback heuristique.');

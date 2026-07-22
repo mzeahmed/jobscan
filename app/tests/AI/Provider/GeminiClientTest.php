@@ -6,11 +6,11 @@ namespace App\Tests\AI\Provider;
 
 use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
-use App\AI\Provider\GeminiProvider;
+use App\AI\Provider\GeminiClient;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 
-class GeminiProviderTest extends TestCase
+class GeminiClientTest extends TestCase
 {
     public function testReturnsContentFromGenerateContentResponse(): void
     {
@@ -26,9 +26,9 @@ class GeminiProviderTest extends TestCase
             ]));
         });
 
-        $provider = new GeminiProvider($httpClient, new NullLogger(), 'api-key', 'gemini-2.0-flash');
+        $client = new GeminiClient($httpClient, new NullLogger(), 'api-key', 'gemini-2.0-flash');
 
-        $this->assertSame('{"stack":["php"]}', $provider->complete('system', 'user text'));
+        $this->assertSame('{"stack":["php"]}', $client->analyze('system', 'user text'));
     }
 
     public function testReturnsNullOnEmptyContent(): void
@@ -37,9 +37,9 @@ class GeminiProviderTest extends TestCase
             'candidates' => [],
         ])));
 
-        $provider = new GeminiProvider($httpClient, new NullLogger(), 'api-key', 'gemini-2.0-flash');
+        $client = new GeminiClient($httpClient, new NullLogger(), 'api-key', 'gemini-2.0-flash');
 
-        $this->assertNull($provider->complete('system', 'user text'));
+        $this->assertNull($client->analyze('system', 'user text'));
     }
 
     public function testReturnsNullOnTransportFailure(): void
@@ -48,8 +48,8 @@ class GeminiProviderTest extends TestCase
             throw new \RuntimeException('connection refused');
         });
 
-        $provider = new GeminiProvider($httpClient, new NullLogger(), 'api-key', 'gemini-2.0-flash');
+        $client = new GeminiClient($httpClient, new NullLogger(), 'api-key', 'gemini-2.0-flash');
 
-        $this->assertNull($provider->complete('system', 'user text'));
+        $this->assertNull($client->analyze('system', 'user text'));
     }
 }

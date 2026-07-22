@@ -8,7 +8,7 @@
 
 Agrégateur d'opportunités tech (freelance ou CDI) orienté PHP / Symfony / WordPress, avec scoring IA local.
 
-JOBSCAN récupère des offres depuis des providers configurés (flux RSS et recherche web dynamique), filtre les opportunités pertinentes, les analyse avec un **moteur IA au choix** (Ollama par défaut, ou Gemini — configurable via `AI_PROVIDER` dans `.env`), leur attribue un score de pertinence, puis déclenche une alerte pour les meilleures opportunités.
+JOBSCAN récupère des offres depuis des providers configurés (flux RSS et recherche web dynamique), filtre les opportunités pertinentes, les analyse avec un **moteur LLM au choix** (Ollama par défaut, LM Studio ou Gemini — configurable via `jobscan.llm.provider` dans `config/packages/jobscan.yaml`), leur attribue un score de pertinence, puis déclenche une alerte pour les meilleures opportunités.
 
 Fonctionne **100% gratuitement** : en local avec Ollama, ou avec un moteur IA cloud
 (Gemini, et plus tard Claude/OpenAI) en profitant de leurs offres gratuites — aucune
@@ -24,7 +24,7 @@ Providers (RSS + SearXNG) → JobProcessor → AIClient (Ollama ou Gemini) → S
 
 1. **Providers** : récupèrent les offres depuis des flux RSS et/ou la recherche web via SearXNG
 2. **Processor** : filtre les doublons et les offres hors scope
-3. **Analyse IA** : `AIClient` délègue l'appel au moteur sélectionné par `AI_PROVIDER` (Ollama/LM Studio en local, ou Gemini) et extrait des données structurées
+3. **Analyse IA** : `AIClient` délègue l'appel au moteur sélectionné par `jobscan.llm.provider` (Ollama/LM Studio en local, ou Gemini) et extrait des données structurées
 4. **Scoring** : attribution d'un score /100 selon la stack, le remote, le type de contrat, l'urgence, etc.
 5. **Persistance** : sauvegarde en base SQLite
 6. **Notification** : envoi d'une alerte Telegram pour les meilleures opportunités
@@ -85,18 +85,18 @@ make migrate
 ### Variables d'environnement — `app/.env.local`
 
 ```dotenv
-# Moteur d'analyse IA actif : "ollama" (ou "lmstudio") ou "gemini"
-AI_PROVIDER=ollama
-
-# Provider IA — Ollama (défaut recommandé)
-AI_API_BASE=http://localhost:11434/v1
-AI_API_KEY=ollama
-AI_MODEL=llama3.1:8b
+# Provider LLM — Ollama (défaut recommandé)
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=llama3.1:8b
 
 # Si Symfony tourne dans Docker et Ollama sur l'hôte :
-# AI_API_BASE=http://host.docker.internal:11434/v1
+# OLLAMA_BASE_URL=http://host.docker.internal:11434/v1
 
-# Gemini (si AI_PROVIDER=gemini) — clé sur https://aistudio.google.com/api-keys
+# LM Studio (legacy)
+LMSTUDIO_BASE_URL=http://localhost:1234/v1
+LMSTUDIO_MODEL=local-model
+
+# Gemini — clé sur https://aistudio.google.com/api-keys
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.0-flash
 
@@ -119,6 +119,12 @@ KNOWN_STACK=php,symfony,wordpress,mysql,postgresql,redis,docker,react,vue,api
 SEARX_QUERIES="php symfony remote job,php symfony freelance remote"
 JOB_LOCATIONS="Paris,Remote"
 ```
+
+> Le moteur LLM actif (`ollama`, `lmstudio` ou `gemini`) ne se choisit **pas** via `.env` :
+> c'est la clé `jobscan.llm.provider` dans `config/packages/jobscan.yaml`. Les variables
+> d'environnement ci-dessus n'alimentent que `base_url`/`model`/`api_key` de chaque
+> provider — le reste de l'application ne sait jamais lequel est actif (voir
+> [Moteur d'analyse IA](#moteur-danalyse-ia)).
 
 ### Mots-clés, requêtes et stack — `app/.env`
 
@@ -223,11 +229,15 @@ Une réponse JSON contenant un tableau `results` confirme que SearXNG est opéra
 
 ## Moteur d'analyse IA
 
-JOBSCAN analyse les offres via un moteur IA choisi par la variable `AI_PROVIDER`
-(`.env`) : `ollama` (défaut, provider local compatible OpenAI), `lmstudio` (legacy,
-même famille qu'Ollama) ou `gemini` (API Google, cloud). La sélection est faite par
-`AIProviderFactory` — voir `src/Service/AI/Provider/` pour ajouter un futur provider
-(Claude, OpenAI, ...) sans toucher à `AIClient`.
+JOBSCAN analyse les offres via un moteur LLM choisi par `jobscan.llm.provider`
+(`config/packages/jobscan.yaml`) : `ollama` (défaut, provider local compatible OpenAI),
+`lmstudio` (legacy, même famille qu'Ollama) ou `gemini` (API Google, cloud).
+
+Le reste de l'application ne dépend que de `LLMClientInterface::analyze()` — jamais
+d'un provider concret. La sélection est faite par `LLMClientFactory` — voir
+`src/AI/Provider/` pour ajouter un futur provider (Claude, OpenAI, ...) sans toucher
+à `AIClient` : créer une classe implémentant `LLMClientInterface`, la déclarer dans
+`config/services.yaml`, et ajouter une entrée dans le `match()` de `LLMClientFactory`.
 
 ### Ollama (recommandé)
 
@@ -255,15 +265,17 @@ ollama pull llama3.1:8b
 curl http://localhost:11434/v1/models
 ```
 
-Le champ `id` retourné correspond à la valeur à utiliser dans `AI_MODEL`.
+Le champ `id` retourné correspond à la valeur à utiliser dans `OLLAMA_MODEL`.
 
 #### Configuration `.env.local`
 
 ```dotenv
-AI_API_BASE=http://localhost:11434/v1
-AI_API_KEY=ollama
-AI_MODEL=llama3.1:8b
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=llama3.1:8b
 ```
+
+`jobscan.llm.provider` doit valoir `ollama` dans `config/packages/jobscan.yaml`
+(valeur par défaut).
 
 ---
 
@@ -293,10 +305,11 @@ curl http://localhost:1234/v1/models
 #### Configuration `.env.local`
 
 ```dotenv
-AI_API_BASE=http://localhost:1234/v1
-AI_API_KEY=lmstudio
-AI_MODEL=local-model
+LMSTUDIO_BASE_URL=http://localhost:1234/v1
+LMSTUDIO_MODEL=local-model
 ```
+
+Puis passer `jobscan.llm.provider: lmstudio` dans `config/packages/jobscan.yaml`.
 
 ---
 
@@ -311,10 +324,11 @@ Créer une clé sur [Google AI Studio](https://aistudio.google.com/api-keys).
 #### Configuration `.env.local`
 
 ```dotenv
-AI_PROVIDER=gemini
 GEMINI_API_KEY=votre-clé
 GEMINI_MODEL=gemini-2.0-flash
 ```
+
+Puis passer `jobscan.llm.provider: gemini` dans `config/packages/jobscan.yaml`.
 
 ---
 
@@ -388,7 +402,7 @@ Dashboard Traefik :
 
 * `http://localhost:9080`
 
-> Si Ollama tourne sur la machine hôte et Symfony dans Docker, `AI_API_BASE` est automatiquement configuré sur `http://host.docker.internal:11434/v1` dans le `docker-compose.yml`.
+> Si Ollama tourne sur la machine hôte et Symfony dans Docker, `OLLAMA_BASE_URL` est automatiquement configuré sur `http://host.docker.internal:11434/v1` dans le `docker-compose.yml`.
 
 ---
 
