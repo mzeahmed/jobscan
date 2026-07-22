@@ -16,3 +16,5 @@ COPY app /app
 RUN APP_ENV=prod composer install --no-dev --optimize-autoloader
 
 RUN mkdir -p var && chmod -R 775 var
+
+RUN APP_ENV=prod php bin/console asset-map:compile
