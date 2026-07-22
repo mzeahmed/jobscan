@@ -118,8 +118,15 @@ body {
    APP SHELL
    ============================================================ */
 
+/*
+ * Pas de `display: flex` ici : `.sidebar` est en `position: fixed` (donc hors
+ * flux, ignorée par flex) et `.main-content` compense déjà son emplacement
+ * via `margin-left: var(--sidebar-w)`. Un flex row sur ce parent ne laissait
+ * qu'un seul enfant en flux (`.main-content`), qui se retrouvait alors
+ * sized to content (flex-basis: auto) au lieu de remplir la largeur
+ * disponible — cassant la grille de cards en aval (`.jobs-grid`).
+ */
 .app-shell {
-    display: flex;
     min-height: 100vh;
 }
 
@@ -878,7 +885,14 @@ body {
     gap: 6px;
 }
 
-.badge {
+/*
+ * Spécificité `.job-card__badges .badge` (0,2,0) plutôt que `.badge` (0,1,0) :
+ * bootstrap.min.css est importé après app.css (cf. assets/app.js) et définit
+ * lui aussi `.badge { color: #fff; ... }` — à spécificité égale, sa règle
+ * chargée en dernier gagnait sur la couleur (texte blanc sur fond clair,
+ * donc invisible). On protège tous les badges avec ce préfixe.
+ */
+.job-card__badges .badge {
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -891,37 +905,37 @@ body {
     border: 1px solid transparent;
 }
 
-.badge--tech {
+.job-card__badges .badge--tech {
     background: var(--c-primary-subtle);
     color: var(--c-primary);
     border-color: var(--c-primary-border);
 }
 
-.badge--contract {
+.job-card__badges .badge--contract {
     background: rgba(6, 182, 212, 0.07);
     color: #0891B2;
     border-color: rgba(6, 182, 212, 0.18);
 }
 
-.badge--remote {
+.job-card__badges .badge--remote {
     background: var(--c-success-subtle);
     color: #15803D;
     border-color: var(--c-success-border);
 }
 
-.badge--budget {
+.job-card__badges .badge--budget {
     background: var(--c-warning-subtle);
     color: #B45309;
     border-color: var(--c-warning-border);
 }
 
-.badge--source {
+.job-card__badges .badge--source {
     background: var(--c-border-subtle);
     color: var(--c-text-muted);
     border-color: var(--c-border);
 }
 
-.badge--new {
+.job-card__badges .badge--new {
     background: rgba(37, 99, 235, 0.07);
     color: var(--c-primary);
     border-color: var(--c-primary-border);

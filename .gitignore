@@ -9,6 +9,10 @@
 /app/vendor/
 ###< symfony/framework-bundle ###
 
+###> symfony/asset-mapper ###
+/app/public/assets/
+###< symfony/asset-mapper ###
+
 ###> ideas###
 .idea
 .vscode
@@ -20,6 +24,10 @@
 /app/phpunit.xml
 /app/.phpunit.cache/
 ###< phpunit/phpunit ###
+
+###> rector/rector ###
+/app/.rector.cache
+###< rector/rector ###
 
 ###> traefik ###
 /certs/*.pem

@@ -18,15 +18,15 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * Les doublons intra-provider (même URL dans plusieurs flux) sont éliminés
  * en indexant les résultats par URL avant de les retourner.
  */
-final class RsFeedProvider implements JobProviderInterface
+final readonly class RsFeedProvider implements JobProviderInterface
 {
     /**
      * @param  string[]  $feedUrls  URLs des flux à interroger (config `app.job_feed_urls`)
      */
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
-        private readonly LoggerInterface $logger,
-        private readonly array $feedUrls = [],
+        private HttpClientInterface $httpClient,
+        private LoggerInterface $logger,
+        private array $feedUrls = [],
     ) {
     }
 

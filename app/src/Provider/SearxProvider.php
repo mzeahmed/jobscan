@@ -19,7 +19,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * manifestement hors-sujet (tutoriels, documentation, etc.) sont écartés via
  * une liste de patterns bloquants avant d'atteindre le pipeline.
  */
-final class SearxProvider implements JobProviderInterface
+final readonly class SearxProvider implements JobProviderInterface
 {
     /**
      * @param string $baseUrl URL de base de l'instance SearXNG (env `SEARXNG_URL`)
@@ -27,11 +27,11 @@ final class SearxProvider implements JobProviderInterface
      * @param list<string> $locations Localisations à combiner avec chaque requête (config `app.job_locations`)
      */
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
-        private readonly LoggerInterface $logger,
-        private readonly string $baseUrl,
-        private readonly array $searchQueries = [],
-        private readonly array $locations = [],
+        private HttpClientInterface $httpClient,
+        private LoggerInterface $logger,
+        private string $baseUrl,
+        private array $searchQueries = [],
+        private array $locations = [],
     ) {
     }
 
@@ -172,14 +172,7 @@ final class SearxProvider implements JobProviderInterface
             'full stack',
             'fullstack',
         ];
-
-        foreach ($jobSignals as $signal) {
-            if (str_contains($text, $signal)) {
-                return false;
-            }
-        }
-
-        return true;
+        return array_all($jobSignals, fn ($signal) => !str_contains($text, (string) $signal));
     }
 
     /**

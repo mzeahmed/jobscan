@@ -1,3 +1,19 @@
+jobscan:
+    llm:
+        provider: lmstudio # ollama | lmstudio | gemini
+
+        ollama:
+            base_url: '%env(OLLAMA_BASE_URL)%'
+            model: '%env(OLLAMA_MODEL)%'
+
+        lmstudio:
+            base_url: '%env(LMSTUDIO_BASE_URL)%'
+            model: '%env(LMSTUDIO_MODEL)%'
+
+        gemini:
+            api_key: '%env(GEMINI_API_KEY)%'
+            model: '%env(GEMINI_MODEL)%'
+
 parameters:
     app.max_job_age_days: 30
 
@@ -7,8 +23,6 @@ parameters:
     app.known_stack: '%env(csv:KNOWN_STACK)%'
     app.searx_queries: '%env(csv:SEARX_QUERIES)%'
     app.job_locations: '%env(csv:JOB_LOCATIONS)%'
-    app.ai_model: '%env(AI_MODEL)%'
-    app.ai_gemini_model: '%env(GEMINI_MODEL)%'
 
     app.scoring:
         prescore:

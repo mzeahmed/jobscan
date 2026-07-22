@@ -14,7 +14,8 @@
 ## Checklist
 
 - [ ] `make stan` passe sans erreur
-- [ ] `make pint` passe sans erreur
+- [ ] `make cs` passe sans erreur
+- [ ] `make rector-check` passe sans erreur
 - [ ] La pipeline `make run-pipeline` s'exécute correctement en local
 - [ ] Les tests existants passent (si applicables)
 - [ ] La documentation est mise à jour si nécessaire (README, ROADMAP, CONTRIBUTING)

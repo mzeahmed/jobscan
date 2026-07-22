@@ -9,7 +9,7 @@
         "ext-iconv": "*",
         "ext-libxml": "*",
         "ext-simplexml": "*",
-        "doctrine/doctrine-bundle": ">=3.2.4",
+        "doctrine/doctrine-bundle": ">=3.3.0",
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^3.6.7",
         "sensiolabs/typescript-bundle": "^0.2.2",
@@ -26,10 +26,11 @@
         "symfony/yaml": "8.1.*"
     },
     "require-dev": {
-        "laravel/pint": "^1.29.3",
+        "friendsofphp/php-cs-fixer": "^3.95.15",
         "phpstan/phpstan": "^2.2.5",
-        "phpstan/phpstan-doctrine": "^2.0.27",
+        "phpstan/phpstan-doctrine": "^2.0.28",
         "phpunit/phpunit": "^12.5.31",
+        "rector/rector": "^2.5.7",
         "symfony/browser-kit": "8.1.*",
         "symfony/css-selector": "8.1.*",
         "symfony/maker-bundle": "^1.67",
@@ -65,8 +66,8 @@
         "symfony/polyfill-php82": "*"
     },
     "scripts": {
-        "lint": "pint --test",
-        "lint:fix": "pint",
+        "lint": "php-cs-fixer fix --dry-run --diff",
+        "lint:fix": "php-cs-fixer fix --diff",
         "auto-scripts": {
             "cache:clear": "symfony-cmd",
             "assets:install %PUBLIC_DIR%": "symfony-cmd",

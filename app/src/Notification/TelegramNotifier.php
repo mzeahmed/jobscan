@@ -14,19 +14,19 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * absorbées et journalisées — elles ne propagent jamais d'exception vers
  * l'appelant afin de ne pas interrompre le pipeline.
  */
-final class TelegramNotifier
+final readonly class TelegramNotifier
 {
-    private const API_URL = 'https://api.telegram.org';
+    private const string API_URL = 'https://api.telegram.org';
 
     /**
      * @param string $botToken Token du bot Telegram (env `TELEGRAM_BOT_TOKEN`)
      * @param string $chatId Identifiant du canal ou du chat cible (env `TELEGRAM_CHAT_ID`)
      */
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
-        private readonly LoggerInterface $logger,
-        private readonly string $botToken,
-        private readonly string $chatId,
+        private HttpClientInterface $httpClient,
+        private LoggerInterface $logger,
+        private string $botToken,
+        private string $chatId,
     ) {
     }
 

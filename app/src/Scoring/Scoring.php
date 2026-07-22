@@ -24,7 +24,7 @@ use App\DTO\AiAnalysisDto;
  * Toute la configuration est externalisée dans `config/packages/jobscan.yaml`
  * sous la clé `app.scoring` — aucune valeur n'est codée en dur dans cette classe.
  */
-final class Scoring
+final readonly class Scoring
 {
     /**
      * @param array{
@@ -47,7 +47,7 @@ final class Scoring
      * } $scoringConfig Configuration issue de `app.scoring` dans `jobscan.yaml`
      */
     public function __construct(
-        private readonly array $scoringConfig,
+        private array $scoringConfig,
     ) {
     }
 
@@ -111,7 +111,7 @@ final class Scoring
         $config = $this->scoringConfig['compute'];
         $title = strtolower($job->title);
         $desc = strtolower($job->description);
-        $stack = array_map('strtolower', $ai->stack);
+        $stack = array_map(strtolower(...), $ai->stack);
 
         foreach ($config['title_keywords'] as $keyword => $points) {
             if (str_contains($title, $keyword)) {

@@ -30,7 +30,7 @@ composer install
 
 # Copier et adapter la configuration
 cp .env .env.local
-# → Renseigner TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, AI_API_BASE, etc.
+# → Renseigner TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, OLLAMA_BASE_URL, etc.
 
 # Créer la base de données et appliquer les migrations
 symfony console doctrine:migrations:migrate --no-interaction
@@ -58,14 +58,21 @@ cd app && symfony console app:jobs:run
    make stan
    ```
 
-2. **Pint** — vérifier le style de code (PSR-12 + règles Laravel Pint)
+2. **PHP-CS-Fixer** — vérifier le style de code (PSR-12 + règles projet)
 
    ```bash
-   make pint       # vérification
-   make pintf      # correction automatique
+   make cs         # vérification
+   make csf        # correction automatique
    ```
 
-3. S'assurer que le pipeline tourne sans erreur en local.
+3. **Rector** — vérifier les transformations de modernisation du code
+
+   ```bash
+   make rector-check   # vérification
+   make rector         # application
+   ```
+
+4. S'assurer que le pipeline tourne sans erreur en local.
 
 Le hook `pre-push` lance PHPStan automatiquement. Si le hook ne se déclenche pas, lancer `make setup`.
 

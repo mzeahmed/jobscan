@@ -8,32 +8,30 @@ use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
- * Moteur d'analyse IA pour tout provider local compatible OpenAI (Ollama par défaut,
- * LM Studio en legacy) via l'endpoint `/chat/completions`.
+ * Base commune aux moteurs LLM locaux exposant une API compatible OpenAI
+ * (`/chat/completions`) : Ollama et LM Studio.
+ *
+ * Ces serveurs locaux ne valident pas la clé d'API — un jeton factice suffit.
  */
-final class OpenAICompatibleProvider implements AIProviderInterface
+abstract class AbstractOpenAiCompatibleClient implements LLMClientInterface
 {
-    /**
-     * @param  string  $apiBase  URL de base de l'API compatible OpenAI (env `AI_API_BASE`)
-     * @param  string  $apiKey  Clé d'API (env `AI_API_KEY` — `ollama` pour Ollama, `lmstudio` pour LM Studio)
-     * @param  string  $model  Identifiant du modèle à utiliser (env `AI_MODEL`)
-     */
+    private const string DUMMY_API_KEY = 'not-required';
+
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly LoggerInterface $logger,
         private readonly string $apiBase,
-        private readonly string $apiKey,
         private readonly string $model,
     ) {
     }
 
-    public function complete(string $systemPrompt, string $userText): ?string
+    public function analyze(string $systemPrompt, string $userText): ?string
     {
         try {
             $response = $this->httpClient
                 ->request('POST', rtrim($this->apiBase, '/') . '/chat/completions', [
                     'headers' => [
-                        'Authorization' => 'Bearer ' . $this->apiKey,
+                        'Authorization' => 'Bearer ' . self::DUMMY_API_KEY,
                         'Content-Type' => 'application/json',
                     ],
                     'json' => [
@@ -55,7 +53,7 @@ final class OpenAICompatibleProvider implements AIProviderInterface
 
             return $content !== '' ? $content : null;
         } catch (\Throwable $e) {
-            $this->logger->warning('OpenAICompatibleProvider::complete() a échoué.', [
+            $this->logger->warning(static::class . '::analyze() a échoué.', [
                 'error' => $e->getMessage(),
             ]);
 

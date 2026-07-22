@@ -55,9 +55,9 @@ class Job
     {
         $title = mb_strtolower($title, 'UTF-8');
         $title = preg_replace('/[^a-z0-9\p{L}\s]/u', '', $title);
-        $title = preg_replace('/\s+/', ' ', $title);
+        $title = preg_replace('/\s+/', ' ', (string) $title);
 
-        return trim($title);
+        return trim((string) $title);
     }
 
     public static function fromDTO(JobDto $dto): self

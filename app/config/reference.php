@@ -1096,6 +1096,23 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     swc_config_file?: scalar|Param|null, // Path to .swcrc configuration file to use // Default: "%kernel.project_dir%/.swcrc"
  *     swc_version?: scalar|Param|null, // The SWC version to use // Default: "v1.3.92"
  * }
+ * @psalm-type JobscanConfig = array{
+ *     llm?: array{
+ *         provider?: "ollama"|"lmstudio"|"gemini"|Param, // Moteur LLM actif utilisé par LLMClientFactory. // Default: "ollama"
+ *         ollama?: array{
+ *             base_url?: scalar|Param|null, // Default: "http://localhost:11434/v1"
+ *             model?: scalar|Param|null, // Default: "qwen3:8b"
+ *         },
+ *         lmstudio?: array{
+ *             base_url?: scalar|Param|null, // Default: "http://localhost:1234/v1"
+ *             model?: scalar|Param|null, // Default: "local-model"
+ *         },
+ *         gemini?: array{
+ *             api_key?: scalar|Param|null, // Default: ""
+ *             model?: scalar|Param|null, // Default: "gemini-2.0-flash"
+ *         },
+ *     },
+ * }
  * @psalm-type ConfigType = array{
  *     imports?: ImportsConfig,
  *     parameters?: ParametersConfig,
@@ -1106,6 +1123,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     monolog?: MonologConfig,
  *     twig?: TwigConfig,
  *     sensiolabs_typescript?: SensiolabsTypescriptConfig,
+ *     jobscan?: JobscanConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,
@@ -1117,6 +1135,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         monolog?: MonologConfig,
  *         twig?: TwigConfig,
  *         sensiolabs_typescript?: SensiolabsTypescriptConfig,
+ *         jobscan?: JobscanConfig,
  *     },
  *     "when@prod"?: array{
  *         imports?: ImportsConfig,
@@ -1128,6 +1147,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         monolog?: MonologConfig,
  *         twig?: TwigConfig,
  *         sensiolabs_typescript?: SensiolabsTypescriptConfig,
+ *         jobscan?: JobscanConfig,
  *     },
  *     "when@test"?: array{
  *         imports?: ImportsConfig,
@@ -1139,6 +1159,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         monolog?: MonologConfig,
  *         twig?: TwigConfig,
  *         sensiolabs_typescript?: SensiolabsTypescriptConfig,
+ *         jobscan?: JobscanConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias
  *         imports?: ImportsConfig,

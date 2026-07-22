@@ -3,10 +3,6 @@
 parameters:
     telegram.bot_token: '%env(TELEGRAM_BOT_TOKEN)%'
     telegram.chat_id: '%env(TELEGRAM_CHAT_ID)%'
-    ai.provider_name: '%env(AI_PROVIDER)%'
-    ai.api_base: '%env(AI_API_BASE)%'
-    ai.api_key: '%env(AI_API_KEY)%'
-    ai.gemini_api_key: '%env(GEMINI_API_KEY)%'
     app.job_feed_urls:
         - '%env(default::JOB_FEED_URL_1)%'
         - '%env(default::JOB_FEED_URL_2)%'
@@ -25,6 +21,9 @@ services:
 
     App\:
         resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/JobscanBundle.php'
 
     App\Command\RunPipelineCommand:
         arguments:
@@ -35,28 +34,32 @@ services:
             $botToken: '%telegram.bot_token%'
             $chatId: '%telegram.chat_id%'
 
-    App\AI\Provider\OpenAICompatibleProvider:
+    App\AI\Provider\OllamaClient:
         arguments:
-            $apiBase: '%ai.api_base%'
-            $apiKey: '%ai.api_key%'
-            $model: '%app.ai_model%'
+            $apiBase: '%jobscan.llm.ollama.base_url%'
+            $model: '%jobscan.llm.ollama.model%'
 
-    App\AI\Provider\GeminiProvider:
+    App\AI\Provider\LMStudioClient:
         arguments:
-            $apiKey: '%ai.gemini_api_key%'
-            $model: '%app.ai_gemini_model%'
+            $apiBase: '%jobscan.llm.lmstudio.base_url%'
+            $model: '%jobscan.llm.lmstudio.model%'
 
-    App\AI\Provider\AIProviderFactory:
+    App\AI\Provider\GeminiClient:
         arguments:
-            $providerName: '%ai.provider_name%'
+            $apiKey: '%jobscan.llm.gemini.api_key%'
+            $model: '%jobscan.llm.gemini.model%'
 
-    ai.provider:
-        class: App\AI\Provider\AIProviderInterface
-        factory: ['@App\AI\Provider\AIProviderFactory', 'create']
+    App\AI\Provider\LLMClientFactory:
+        arguments:
+            $providerName: '%jobscan.llm.provider%'
+
+    llm.client:
+        class: App\AI\Provider\LLMClientInterface
+        factory: ['@App\AI\Provider\LLMClientFactory', 'create']
 
     App\AI\AIClient:
         arguments:
-            $provider: '@ai.provider'
+            $provider: '@llm.client'
             $cache: '@cache.app'
             $systemPrompt: '%app.ai_system_prompt%'
             $knownStack: '%app.known_stack%'

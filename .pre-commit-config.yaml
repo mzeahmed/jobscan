@@ -40,10 +40,10 @@ repos:
   # PHP et assets — hooks locaux sur les binaires Composer
   - repo: local
     hooks:
-      - id: pint
-        name: Laravel Pint (code style PHP)
+      - id: php-cs-fixer
+        name: PHP CS Fixer (code style PHP)
         language: system
-        entry: bash -c 'cd app && ./vendor/bin/pint --test'
+        entry: bash -c 'cd app && ./vendor/bin/php-cs-fixer fix --dry-run --diff'
         types: [php]
         pass_filenames: false
 
