@@ -18,25 +18,29 @@ declare(strict_types=1);
 
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
+use App\CsFixer\SplitMethodAttributeArgsFixer;
 
 $finder = Finder::create()
-    ->in(__DIR__)
-    ->exclude([
-        '.docker',
-        'node_modules',
-        'public/build',
-        'public/uploads',
-        'templates',
-        'tests',
-        'translations',
-        'var',
-        'vendor',
-    ])
-    ->notPath('config/reference.php')
-    ->ignoreDotFiles(true)
-    ->ignoreVCS(true);
+                ->in(__DIR__)
+                ->exclude([
+                    '.docker',
+                    'node_modules',
+                    'public/build',
+                    'public/uploads',
+                    'templates',
+                    'tests',
+                    'translations',
+                    'var',
+                    'vendor',
+                ])
+                ->notPath('config/reference.php')
+                ->ignoreDotFiles(true)
+                ->ignoreVCS(true);
 
 return (new Config())
+    ->registerCustomFixers([
+        new SplitMethodAttributeArgsFixer(),
+    ])
     ->setRules([
         // Preset "psr12" de Pint
         '@PSR12' => true,
@@ -76,6 +80,9 @@ return (new Config())
         'statement_indentation' => [
             'stick_comment_to_next_continuous_control_statement' => true,
         ],
+
+        // Règle custom : un argument par ligne sur les attributs de méthode 2+ args
+        'CsFixer/split_method_attribute_args' => true
     ])
     ->setRiskyAllowed(true)
     ->setUsingCache(true)
