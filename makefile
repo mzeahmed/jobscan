@@ -170,6 +170,31 @@ clean: ## Supprimer toutes les branches locales et distantes sauf main
 
 	@echo "$(GREEN)Nettoyage des branches terminé$(NO_COLOR)"
 
+# ==============================================================================
+# Fork
+# ==============================================================================
+
+# BRANCH accepts BRANCH=, branch= B= or b= (defaults to main)
+BRANCH := $(or $(BRANCH),$(branch),$(B),$(b),main)
+
+upstream-add: ## make upstream-add URL=git@github.com:owner/repo.git
+	@test -n "$(URL)" || (echo "Usage: make upstream-add URL=git@github.com:owner/repo.git" && exit 1)
+	git remote add upstream $(URL)
+	@echo "$(GREEN)✓ Upstream remote added$(RESET)"
+
+sync-upstream: ## make sync-upstream BRANCH=main (aliases: B, b — default: main)
+	git fetch upstream
+	git merge upstream/$(BRANCH)
+	@echo "$(GREEN)✓ Branch synced with upstream/$(BRANCH)$(RESET)"
+
+sync-upstream-rebase: ## make sync-upstream-rebase BRANCH=main (aliases: B, b — default: main)
+	git fetch upstream
+	git rebase upstream/$(BRANCH)
+	@echo "$(GREEN)✓ Branch rebased onto upstream/$(BRANCH)$(RESET)"
+
+push-fork: ## make push-fork BRANCH=main (aliases: B, b — default: main)
+	git push origin $(BRANCH)
+	@echo "$(GREEN)✓ Pushed to origin/$(BRANCH)$(RESET)"
 
 # ========================
 # TESTES
