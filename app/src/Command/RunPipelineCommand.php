@@ -38,7 +38,7 @@ final class RunPipelineCommand extends Command
         $total = 0;
 
         foreach ($this->providers as $provider) {
-            $name = (new \ReflectionClass($provider))->getShortName();
+            $name = new \ReflectionClass($provider)->getShortName();
             $io->section('Provider : ' . $name);
 
             $jobs = $provider->fetch();

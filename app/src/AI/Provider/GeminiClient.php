@@ -12,7 +12,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  *
  * @see https://ai.google.dev/gemini-api/docs
  */
-final class GeminiClient implements LLMClientInterface
+final readonly class GeminiClient implements LLMClientInterface
 {
     private const string API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -21,10 +21,10 @@ final class GeminiClient implements LLMClientInterface
      * @param  string  $model  Identifiant du modèle à utiliser (config `jobscan.llm.gemini.model`)
      */
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
-        private readonly LoggerInterface $logger,
-        private readonly string $apiKey,
-        private readonly string $model,
+        private HttpClientInterface $httpClient,
+        private LoggerInterface $logger,
+        private string $apiKey,
+        private string $model,
     ) {
     }
 

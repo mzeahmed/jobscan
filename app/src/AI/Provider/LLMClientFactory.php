@@ -11,16 +11,16 @@ namespace App\AI\Provider;
  * `LLMClientInterface`, la déclarer dans `config/services.yaml`, l'injecter ici et
  * ajouter une entrée dans le `match()` ci-dessous.
  */
-final class LLMClientFactory
+final readonly class LLMClientFactory
 {
     /**
      * @param  string  $providerName  Moteur LLM à utiliser (config `jobscan.llm.provider` — `ollama`, `lmstudio` ou `gemini`)
      */
     public function __construct(
-        private readonly OllamaClient $ollamaClient,
-        private readonly LMStudioClient $lmStudioClient,
-        private readonly GeminiClient $geminiClient,
-        private readonly string $providerName,
+        private OllamaClient $ollamaClient,
+        private LMStudioClient $lmStudioClient,
+        private GeminiClient $geminiClient,
+        private string $providerName,
     ) {
     }
 

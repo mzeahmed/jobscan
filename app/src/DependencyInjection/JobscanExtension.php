@@ -18,6 +18,7 @@ final class JobscanExtension extends Extension
     /**
      * @param array<mixed> $config
      */
+    #[\Override]
     public function getConfiguration(array $config, ContainerBuilder $container): ConfigurationInterface
     {
         return new Configuration();

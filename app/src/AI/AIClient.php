@@ -30,7 +30,7 @@ use Psr\Cache\InvalidArgumentException;
  * Le prompt système est entièrement configurable via `app.ai_system_prompt` dans
  * `jobscan.yaml`, sans modifier le code.
  */
-final class AIClient
+final readonly class AIClient
 {
     /** Durée de mise en cache des réponses IA en secondes (24h). */
     private const int CACHE_TTL = 86400;
@@ -40,11 +40,11 @@ final class AIClient
      * @param  list<string>  $knownStack  Technologies connues pour le fallback heuristique (config `app.known_stack`)
      */
     public function __construct(
-        private readonly LLMClientInterface $provider,
-        private readonly LoggerInterface $logger,
-        private readonly CacheItemPoolInterface $cache,
-        private readonly string $systemPrompt,
-        private readonly array $knownStack = [],
+        private LLMClientInterface $provider,
+        private LoggerInterface $logger,
+        private CacheItemPoolInterface $cache,
+        private string $systemPrompt,
+        private array $knownStack = [],
     ) {
     }
 

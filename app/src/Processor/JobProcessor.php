@@ -27,7 +27,7 @@ use Psr\Cache\InvalidArgumentException;
  *   8. Persistance en base de données
  *   9. Notification Telegram si le score dépasse le seuil de notification
  */
-final class JobProcessor
+final readonly class JobProcessor
 {
     /** Score minimum pour déclencher une notification Telegram. */
     private const int NOTIFICATION_THRESHOLD = 60;
@@ -40,13 +40,13 @@ final class JobProcessor
      * @param int $maxJobAgeDays Âge maximum en jours d'une offre datée (config `app.max_job_age_days`)
      */
     public function __construct(
-        private readonly JobRepository $jobRepository,
-        private readonly AIClient $AIClient,
-        private readonly Scoring $scoringService,
-        private readonly Notifier $notificationService,
-        private readonly LoggerInterface $logger,
-        private readonly array $filterKeywords = [],
-        private readonly int $maxJobAgeDays = 30,
+        private JobRepository $jobRepository,
+        private AIClient $AIClient,
+        private Scoring $scoringService,
+        private Notifier $notificationService,
+        private LoggerInterface $logger,
+        private array $filterKeywords = [],
+        private int $maxJobAgeDays = 30,
     ) {
     }
 
@@ -62,14 +62,7 @@ final class JobProcessor
     {
         $title = strtolower($dto->title);
         $desc = strtolower($dto->description);
-
-        $matches = false;
-        foreach ($this->filterKeywords as $keyword) {
-            if (str_contains($title, $keyword) || str_contains($desc, $keyword)) {
-                $matches = true;
-                break;
-            }
-        }
+        $matches = array_any($this->filterKeywords, fn ($keyword) => str_contains($title, (string) $keyword) || str_contains($desc, (string) $keyword));
 
         if (!$matches) {
             return;

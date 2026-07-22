@@ -15,15 +15,15 @@ use Doctrine\ORM\EntityManagerInterface;
  * de notification concret (Telegram). Il garantit qu'une même offre ne génère
  * jamais deux notifications et n'envoie rien en dessous du seuil de score.
  */
-final class Notifier
+final readonly class Notifier
 {
     /** Score minimum requis pour qu'une notification soit envoyée. */
     private const int THRESHOLD = 60;
 
     public function __construct(
-        private readonly TelegramNotifier $telegram,
-        private readonly LoggerInterface $logger,
-        private readonly EntityManagerInterface $em,
+        private TelegramNotifier $telegram,
+        private LoggerInterface $logger,
+        private EntityManagerInterface $em,
     ) {
     }
 
