@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\DependencyInjection;
 
-use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 /**
@@ -15,6 +15,9 @@ use Symfony\Component\Config\Definition\ConfigurationInterface;
  */
 final class JobscanExtension extends Extension
 {
+    /**
+     * @param array<mixed> $config
+     */
     public function getConfiguration(array $config, ContainerBuilder $container): ConfigurationInterface
     {
         return new Configuration();

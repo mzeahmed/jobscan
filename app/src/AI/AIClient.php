@@ -9,8 +9,8 @@ use App\DTO\ContractType;
 use App\DTO\AiAnalysisDto;
 use Psr\Log\LoggerInterface;
 use Psr\Cache\CacheItemPoolInterface;
-use Psr\Cache\InvalidArgumentException;
 use App\AI\Provider\LLMClientInterface;
+use Psr\Cache\InvalidArgumentException;
 
 /**
  * Analyse le texte d'une offre d'emploi via un moteur LLM pluggable

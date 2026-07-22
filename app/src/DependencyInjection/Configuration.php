@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\DependencyInjection;
 
-use Symfony\Component\Config\Definition\ConfigurationInterface;
 use Symfony\Component\Config\Definition\Builder\TreeBuilder;
+use Symfony\Component\Config\Definition\ConfigurationInterface;
 
 /**
  * Arbre de configuration du namespace `jobscan:` (`config/packages/jobscan.yaml`).
