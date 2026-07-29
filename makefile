@@ -3,6 +3,11 @@
 COMPOSE = docker compose -f docker-compose.yml
 COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
+# Le projet requiert PHP >= 8.4.1 : on prend php8.4 s'il existe, sinon le php par défaut.
+# Surchargeable : make run-pipeline PHP=php8.5
+PHP ?= $(shell command -v php8.4 2>/dev/null || command -v php)
+COMPOSER ?= $(PHP) $(shell command -v composer)
+
 APP_CONTAINER = jobscan_app
 
 DOMAINS = jobscan.local searxng.local
@@ -90,7 +95,7 @@ migrate: ## Lance les migrations
 
 run-pipeline: ## Lance la pipeline JOBSCAN
 	@echo "$(YELLOW)Lancement de la pipeline JOBSCAN...$(NO_COLOR)"
-	cd app && php bin/console app:jobs:run
+	cd app && $(PHP) bin/console app:jobs:run
 	@echo "$(GREEN)Pipeline JOBSCAN terminée$(NO_COLOR)"
 
 # ========================
@@ -98,12 +103,12 @@ run-pipeline: ## Lance la pipeline JOBSCAN
 # ========================
 w: ## Lance le watcher TypeScript
 	@echo "$(YELLOW)Lancement du watcher TypeScript...$(NO_COLOR)"
-	cd app && php bin/console typescript:build --watch
+	cd app && $(PHP) bin/console typescript:build --watch
 
 b: ## Build les assets TypeScript
 	@echo "$(YELLOW)Build des assets TypeScript...$(NO_COLOR)"
-	cd app && php bin/console typescript:build
-	cd app && php bin/console asset-map:compile
+	cd app && $(PHP) bin/console typescript:build
+	cd app && $(PHP) bin/console asset-map:compile
 	@echo "$(GREEN)Build terminé$(NO_COLOR)"
 
 # ========================
@@ -120,27 +125,27 @@ pipeline-logs: ## Logs du cron (si configuré)
 
 cs: ## Lancement de php-cs-fixer en mode test
 	@echo "$(YELLOW)Lancement de php-cs-fixer...$(NO_COLOR)"
-	cd app && composer run lint
+	cd app && $(COMPOSER) run lint
 	@echo "$(GREEN)php-cs-fixer terminé$(NO_COLOR)"
 
 csf: ## Lancement de php-cs-fixer avec correction
 	@echo "$(YELLOW)Lancement de php-cs-fixer avec correction$(NO_COLOR)"
-	cd app && composer run lint:fix
+	cd app && $(COMPOSER) run lint:fix
 	@echo "$(GREEN)php-cs-fixer terminé$(NO_COLOR)"
 
 stan: ## Lancement de PHPStan
 	@echo "$(YELLOW)Lancement de PHPStan...$(NO_COLOR)"
-	cd app && ./vendor/bin/phpstan analyse -c phpstan.neon
+	cd app && $(PHP) ./vendor/bin/phpstan analyse -c phpstan.neon
 	@echo "$(GREEN)PHPStan terminé$(NO_COLOR)"
 
 rector: ## Appliquer les transformations de Rector
 	@echo "$(YELLOW)Application des transformations de Rector...$(NO_COLOR)"
-	cd app && ./vendor/bin/rector process
+	cd app && $(PHP) ./vendor/bin/rector process
 	@echo "$(GREEN)Transformations de Rector appliquées$(NO_COLOR)"
 
 rector-check: ## Vérifie les transformations de Rector sans les appliquer
 	@echo "$(YELLOW)Vérification des transformations de Rector...$(NO_COLOR)"
-	cd app && ./vendor/bin/rector process --dry-run
+	cd app && $(PHP) ./vendor/bin/rector process --dry-run
 	@echo "$(GREEN)Vérification des transformations de Rector terminée$(NO_COLOR)"
 
 hard: ## Reinitialisation du dépôt (attention, toutes les modifications non commit seront perdues)
@@ -201,7 +206,7 @@ push-fork: ## make push-fork BRANCH=main (aliases: B, b — default: main)
 # ========================
 test: ## Lancement des tests PHPUnit
 	@echo "$(YELLOW)Lancement des tests PHPUnit...$(NO_COLOR)"
-	cd app && php bin/phpunit
+	cd app && $(PHP) bin/phpunit
 	@echo "$(GREEN)Tests PHPUnit terminés$(NO_COLOR)"
 
 # ========================
