@@ -6,7 +6,7 @@ Merci de l'intérêt porté au projet. Ce guide explique comment installer, lanc
 
 ## Prérequis
 
-- PHP 8.2+
+- PHP 8.4.1+ (contrainte de Symfony 8.1 ; voir [TROUBLESHOOTING.md](TROUBLESHOOTING.md) si le `php` par défaut de la machine est plus ancien)
 - Composer
 - Symfony CLI
 - SQLite
@@ -117,7 +117,7 @@ App\Service\Provider\MonProvider:
 
 ## Style de code
 
-- PHP 8.2+ — utiliser les types natifs, `readonly`, les attributs Symfony
+- PHP 8.4+ — utiliser les types natifs, `readonly`, les attributs Symfony
 - `declare(strict_types=1)` dans chaque fichier
 - Classes `final` par défaut, sauf héritage nécessaire
 - Pas de commentaires évidents — le code doit se lire seul

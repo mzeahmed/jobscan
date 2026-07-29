@@ -33,7 +33,7 @@ Providers (RSS + SearXNG) → JobProcessor → AIClient (Ollama ou Gemini) → S
 
 ## Stack technique
 
-* PHP 8.3+
+* PHP 8.4.1+
 * Symfony
 * SQLite
 * Ollama (moteur IA local recommandé, API compatible OpenAI) ou Gemini (alternative cloud)
@@ -45,7 +45,7 @@ Providers (RSS + SearXNG) → JobProcessor → AIClient (Ollama ou Gemini) → S
 
 ## Prérequis
 
-* PHP 8.3+
+* PHP 8.4.1+ (contrainte de Symfony 8.1 ; voir [Troubleshooting](docs/TROUBLESHOOTING.md) si le `php` par défaut de la machine est plus ancien)
 * Composer
 * Symfony CLI
 * SQLite
@@ -537,7 +537,7 @@ sqlite3 app/var/jobscan.db "SELECT id, title, score, source FROM job ORDER BY sc
 
 ## Contribuer
 
-Les contributions sont les bienvenues. Consultez [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) pour le guide complet, [docs/ROADMAP.md](docs/ROADMAP.md) pour les chantiers ouverts, et [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) en cas de problème avec la stack Docker.
+Les contributions sont les bienvenues. Consultez [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) pour le guide complet, [docs/ROADMAP.md](docs/ROADMAP.md) pour les chantiers ouverts, et [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) en cas de problème avec la stack Docker ou l'exécution locale.
 
 **En bref :**
 
