@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Provider;
+namespace App\Tests\Unit\Provider;
 
 use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;

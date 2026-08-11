@@ -28,7 +28,6 @@ $finder = Finder::create()
                     'public/build',
                     'public/uploads',
                     'templates',
-                    'tests',
                     'translations',
                     'var',
                     'vendor',

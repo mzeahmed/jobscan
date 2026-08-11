@@ -2,28 +2,31 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\AI\Provider;
+namespace App\Tests\Unit\AI\Provider;
 
 use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
-use App\AI\Provider\OllamaClient;
+use App\AI\Provider\GeminiClient;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 
-class OllamaClientTest extends TestCase
+class GeminiClientTest extends TestCase
 {
-    public function testReturnsContentFromChatCompletionsResponse(): void
+    public function testReturnsContentFromGenerateContentResponse(): void
     {
         $httpClient = new MockHttpClient(function (string $method, string $url) {
             $this->assertSame('POST', $method);
-            $this->assertSame('http://localhost:11434/v1/chat/completions', $url);
+            $this->assertSame(
+                'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+                $url
+            );
 
             return new MockResponse(json_encode([
-                'choices' => [['message' => ['content' => '{"stack":["php"]}']]],
+                'candidates' => [['content' => ['parts' => [['text' => '{"stack":["php"]}']]]]],
             ]));
         });
 
-        $client = new OllamaClient($httpClient, new NullLogger(), 'http://localhost:11434/v1', 'qwen3:8b');
+        $client = new GeminiClient($httpClient, new NullLogger(), 'api-key', 'gemini-2.0-flash');
 
         $this->assertSame('{"stack":["php"]}', $client->analyze('system', 'user text'));
     }
@@ -31,10 +34,10 @@ class OllamaClientTest extends TestCase
     public function testReturnsNullOnEmptyContent(): void
     {
         $httpClient = new MockHttpClient(new MockResponse(json_encode([
-            'choices' => [['message' => ['content' => '']]],
+            'candidates' => [],
         ])));
 
-        $client = new OllamaClient($httpClient, new NullLogger(), 'http://localhost:11434/v1', 'qwen3:8b');
+        $client = new GeminiClient($httpClient, new NullLogger(), 'api-key', 'gemini-2.0-flash');
 
         $this->assertNull($client->analyze('system', 'user text'));
     }
@@ -45,7 +48,7 @@ class OllamaClientTest extends TestCase
             throw new \RuntimeException('connection refused');
         });
 
-        $client = new OllamaClient($httpClient, new NullLogger(), 'http://localhost:11434/v1', 'qwen3:8b');
+        $client = new GeminiClient($httpClient, new NullLogger(), 'api-key', 'gemini-2.0-flash');
 
         $this->assertNull($client->analyze('system', 'user text'));
     }

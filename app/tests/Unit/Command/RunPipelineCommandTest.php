@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Command;
+namespace App\Tests\Unit\Command;
 
 use App\DTO\JobDto;
 use PHPUnit\Framework\TestCase;
+use App\Repository\JobRepository;
 use App\Command\RunPipelineCommand;
-use App\Provider\JobProviderInterface;
 use App\Processor\JobProcessingResult;
 use App\Processor\JobProcessingStatus;
+use App\Provider\JobProviderInterface;
 use App\Processor\JobProcessorInterface;
-use App\Repository\JobRepository;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
@@ -109,7 +109,7 @@ final class RunPipelineCommandTest extends TestCase
     /** @param JobDto[] $jobs */
     private function provider(string $name, array $jobs): JobProviderInterface
     {
-        return new readonly class($name, $jobs) implements JobProviderInterface {
+        return new readonly class ($name, $jobs) implements JobProviderInterface {
             /** @param JobDto[] $jobs */
             public function __construct(private string $providerName, private array $jobs)
             {

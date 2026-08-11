@@ -72,11 +72,20 @@ cd app && symfony console app:jobs:run
    make rector         # application
    ```
 
-4. **Changelog** — ajouter tout changement visible dans la section `Unreleased`
+4. **Tests** — placer les tests isolés dans `app/tests/Unit/` et les tests utilisant
+   le kernel, une base de données ou plusieurs services dans `app/tests/Integration/`.
+
+   ```bash
+   make test-unit          # tests unitaires uniquement
+   make test-integration   # tests d'intégration uniquement
+   make test               # suite complète
+   ```
+
+5. **Changelog** — ajouter tout changement visible dans la section `Unreleased`
    de [CHANGELOG.md](CHANGELOG.md), sous une date ISO `YYYY-MM-DD`, puis dans
    la catégorie `Added`, `Changed` ou `Fixed` appropriée.
 
-5. S'assurer que le pipeline tourne sans erreur en local.
+6. S'assurer que le pipeline tourne sans erreur en local.
 
 Le hook `pre-push` lance PHPStan automatiquement. Si le hook ne se déclenche pas, lancer `make setup`.
 

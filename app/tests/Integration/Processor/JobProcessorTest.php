@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Processor;
+namespace App\Tests\Integration\Processor;
 
-use App\AI\Provider\LLMClientInterface;
 use App\DTO\JobDto;
-use App\Processor\JobProcessingStatus;
+use Doctrine\ORM\Events;
 use App\Processor\JobProcessor;
 use App\Repository\JobRepository;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Events;
 use Doctrine\ORM\Tools\SchemaTool;
+use App\Processor\JobProcessingStatus;
+use App\AI\Provider\LLMClientInterface;
+use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
@@ -129,7 +129,7 @@ final class JobProcessorTest extends KernelTestCase
 
     public function testFlushesAFullCollectionInConfiguredBatches(): void
     {
-        $listener = new class {
+        $listener = new class () {
             public int $flushes = 0;
 
             public function postFlush(): void
@@ -181,7 +181,6 @@ final class JobProcessorTest extends KernelTestCase
             location: 'Paris',
         );
     }
-
 }
 
 final class MutableLlmClient implements LLMClientInterface

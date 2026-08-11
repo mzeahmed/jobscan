@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Provider;
+namespace App\Tests\Unit\Provider;
 
 use Psr\Log\NullLogger;
-use PHPUnit\Framework\TestCase;
 use App\Provider\SearxProvider;
-use Symfony\Component\Cache\Adapter\ArrayAdapter;
+use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\HttpClient\Response\MockResponse;
 
 final class SearxProviderTest extends TestCase

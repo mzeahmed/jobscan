@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Scoring;
+namespace App\Tests\Unit\Scoring;
 
 use App\DTO\JobDto;
 use App\DTO\Seniority;

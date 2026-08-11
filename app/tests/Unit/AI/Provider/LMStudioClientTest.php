@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\AI\Provider;
+namespace App\Tests\Unit\AI\Provider;
 
 use Psr\Log\NullLogger;
 use Psr\Log\LoggerInterface;

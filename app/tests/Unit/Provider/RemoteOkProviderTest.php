@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Provider;
+namespace App\Tests\Unit\Provider;
 
 use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
@@ -27,7 +27,7 @@ final class RemoteOkProviderTest extends TestCase
             ['position' => 'Missing URL'],
         ])));
 
-        $jobs = (new RemoteOkProvider($client, new NullLogger(), 'https://remoteok.test/api'))->fetch();
+        $jobs = new RemoteOkProvider($client, new NullLogger(), 'https://remoteok.test/api')->fetch();
 
         self::assertCount(1, $jobs);
         self::assertSame('Développeur PHP', $jobs[0]->title);
@@ -45,7 +45,7 @@ final class RemoteOkProviderTest extends TestCase
             ['position' => 'Last title', 'url' => 'https://remoteok.com/jobs/42'],
         ])));
 
-        $jobs = (new RemoteOkProvider($client, new NullLogger(), 'https://remoteok.test/api'))->fetch();
+        $jobs = new RemoteOkProvider($client, new NullLogger(), 'https://remoteok.test/api')->fetch();
 
         self::assertCount(1, $jobs);
         self::assertSame('Last title', $jobs[0]->title);
@@ -55,7 +55,7 @@ final class RemoteOkProviderTest extends TestCase
     {
         $client = new MockHttpClient(new MockResponse('', ['http_code' => 500]));
 
-        $jobs = (new RemoteOkProvider($client, new NullLogger(), 'https://remoteok.test/api'))->fetch();
+        $jobs = new RemoteOkProvider($client, new NullLogger(), 'https://remoteok.test/api')->fetch();
 
         self::assertSame([], $jobs);
     }

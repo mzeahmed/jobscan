@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Notification;
+namespace App\Tests\Unit\Notification;
 
 use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;

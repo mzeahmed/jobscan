@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Processor;
+namespace App\Tests\Unit\Processor;
 
 use App\DTO\JobDto;
-use PHPUnit\Framework\TestCase;
 use App\Processor\JobIdentity;
+use PHPUnit\Framework\TestCase;
 
 final class JobIdentityTest extends TestCase
 {
@@ -32,6 +32,6 @@ final class JobIdentityTest extends TestCase
     {
         $job = new JobDto('Développeur', 'https://example.test/1', '', 'test');
 
-        self::assertNull((new JobIdentity())->fingerprint($job));
+        self::assertNull(new JobIdentity()->fingerprint($job));
     }
 }

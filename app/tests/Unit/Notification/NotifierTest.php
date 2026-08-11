@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Notification;
+namespace App\Tests\Unit\Notification;
 
 use App\DTO\JobDto;
 use App\Entity\Job;
 use Psr\Log\NullLogger;
-use PHPUnit\Framework\TestCase;
 use App\Notification\Notifier;
+use PHPUnit\Framework\TestCase;
 use App\Notification\TelegramNotifier;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
@@ -27,7 +27,7 @@ final class NotifierTest extends TestCase
         );
         $job = $this->jobWithScore(80);
 
-        $notified = (new Notifier($telegram, new NullLogger(), 60))->notify($job);
+        $notified = new Notifier($telegram, new NullLogger(), 60)->notify($job);
 
         self::assertFalse($notified);
         self::assertNull($job->getNotifiedAt());
@@ -45,7 +45,7 @@ final class NotifierTest extends TestCase
         );
         $job = $this->jobWithScore(80);
 
-        $notified = (new Notifier($telegram, new NullLogger(), 60))->notify($job);
+        $notified = new Notifier($telegram, new NullLogger(), 60)->notify($job);
 
         self::assertTrue($notified);
         self::assertNotNull($job->getNotifiedAt());

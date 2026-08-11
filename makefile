@@ -1,4 +1,4 @@
-.PHONY: help setup hosts build up down logs bash migrate run-pipeline llm-load llm-status alerts fix-perms
+.PHONY: help setup hosts build up down logs bash migrate run-pipeline llm-load llm-status alerts fix-perms test test-unit test-integration
 
 COMPOSE = docker compose -f docker-compose.yml
 COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
@@ -225,6 +225,16 @@ test: ## Lance les tests PHPUnit — Exemple : make test
 	@echo "$(YELLOW)Lancement des tests PHPUnit...$(NO_COLOR)"
 	cd app && $(PHP) bin/phpunit
 	@echo "$(GREEN)Tests PHPUnit terminés$(NO_COLOR)"
+
+test-unit: ## Lance uniquement les tests unitaires — Exemple : make test-unit
+	@echo "$(YELLOW)Lancement des tests unitaires...$(NO_COLOR)"
+	cd app && $(PHP) bin/phpunit --testsuite Unit
+	@echo "$(GREEN)Tests unitaires terminés$(NO_COLOR)"
+
+test-integration: ## Lance uniquement les tests d'intégration — Exemple : make test-integration
+	@echo "$(YELLOW)Lancement des tests d'intégration...$(NO_COLOR)"
+	cd app && $(PHP) bin/phpunit --testsuite Integration
+	@echo "$(GREEN)Tests d'intégration terminés$(NO_COLOR)"
 
 # ========================
 # PERMISSIONS

@@ -23,6 +23,7 @@ publiée est `v0.3.0` ; la prochaine sera constituée du contenu de la section
 - Cache SearXNG séparé pour chaque requête et chaque page.
 - Persistance Doctrine groupée par lots configurables.
 - Envoi des notifications Telegram après la persistance réussie de chaque lot.
+- Séparation des tests PHPUnit en suites unitaires et d'intégration exécutables indépendamment.
 
 #### Fixed
 
