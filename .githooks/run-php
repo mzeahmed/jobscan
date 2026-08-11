@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+php_bin="$(command -v php8.4 2>/dev/null || command -v php 2>/dev/null || true)"
+
+if [ -z "$php_bin" ]; then
+    echo "PHP 8.4.1 or newer is required, but no PHP executable was found." >&2
+    exit 1
+fi
+
+if ! "$php_bin" -r 'exit(version_compare(PHP_VERSION, "8.4.1", ">=") ? 0 : 1);'; then
+    echo "PHP 8.4.1 or newer is required; $php_bin reports $("$php_bin" -r 'echo PHP_VERSION;')." >&2
+    exit 1
+fi
+
+exec "$php_bin" "$@"

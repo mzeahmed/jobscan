@@ -22,7 +22,7 @@ use App\DTO\AiAnalysisDto;
  * des critères ayant contribué.
  *
  * Toute la configuration est externalisée dans `config/packages/jobscan.yaml`
- * sous la clé `app.scoring` — aucune valeur n'est codée en dur dans cette classe.
+ * sous la clé `app.profile.scoring` — aucune valeur n'est codée en dur dans cette classe.
  */
 final readonly class Scoring
 {
@@ -44,7 +44,7 @@ final readonly class Scoring
      *         seniority_bonuses: array<string, int>,
      *         budget_bonus: array{min_daily_rate: int, min_annual_salary: int, points: int},
      *     },
-     * } $scoringConfig Configuration issue de `app.scoring` dans `jobscan.yaml`
+     * } $scoringConfig Configuration issue de `app.profile.scoring` dans `jobscan.yaml`
      */
     public function __construct(
         private array $scoringConfig,
@@ -96,7 +96,7 @@ final readonly class Scoring
      *   - Flags booléens IA (remote, recent)
      *   - Mots-clés dans la description (mission, urgent, asap…)
      *   - Mots-clés négatifs (stage, alternance…)
-     *   - Bonus de séniorité (`app.scoring.compute.seniority_bonuses`)
+     *   - Bonus de séniorité (`app.profile.scoring.compute.seniority_bonuses`)
      *   - Bonus de budget si le TJM ou le salaire annuel dépasse un seuil configuré
      *
      * Le score est clampé entre 0 et 100. Le breakdown liste chaque contribution

@@ -12,6 +12,8 @@ final readonly class JobDto
         public string $description,
         public string $source,
         public ?\DateTimeImmutable $publishedAt = null,
+        public ?string $company = null,
+        public ?string $location = null,
     ) {
     }
 }

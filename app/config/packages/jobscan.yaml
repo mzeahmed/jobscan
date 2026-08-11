@@ -1,6 +1,7 @@
 jobscan:
     llm:
         provider: lmstudio # ollama | lmstudio | gemini
+#        provider: '%env(DEFAULT_LLM_PROVIDER)%'
 
         ollama:
             base_url: '%env(OLLAMA_BASE_URL)%'
@@ -15,16 +16,22 @@ jobscan:
             model: '%env(GEMINI_MODEL)%'
 
 parameters:
-    app.max_job_age_days: 30
+    # Profil métier centralisé : recherche, filtrage, scoring et seuils.
+    app.profile.filter_keywords: '%env(csv:FILTER_KEYWORDS)%'
+    app.profile.known_stack: '%env(csv:KNOWN_STACK)%'
+    app.profile.searx_queries: '%env(csv:SEARX_QUERIES)%'
+    app.profile.job_locations: '%env(csv:JOB_LOCATIONS)%'
+    app.profile.max_job_age_days: 30
+    app.profile.recent_job_days: 14
+    app.profile.ai_prescore_threshold: 10
+    app.profile.notification_threshold: 60
+    app.profile.telegram_max_attempts: 3
+    app.profile.telegram_initial_retry_delay_ms: 250
+    app.profile.searx_max_queries: 20
+    app.profile.searx_concurrency: 5
+    app.profile.searx_cache_ttl: 3600
 
-    # Listes configurables via .env (valeurs séparées par des virgules) pour
-    # permettre une adaptation rapide sans toucher au code ni à ce fichier.
-    app.filter_keywords: '%env(csv:FILTER_KEYWORDS)%'
-    app.known_stack: '%env(csv:KNOWN_STACK)%'
-    app.searx_queries: '%env(csv:SEARX_QUERIES)%'
-    app.job_locations: '%env(csv:JOB_LOCATIONS)%'
-
-    app.scoring:
+    app.profile.scoring:
         prescore:
             keywords:
                 php: 10
@@ -86,7 +93,6 @@ parameters:
           "freelance": true,
           "remote": true,
           "budget": "500€/j ou 45k€/an ou non précisé",
-          "recent": true,
           "seniority": "junior|mid|senior|unknown"
         }
 

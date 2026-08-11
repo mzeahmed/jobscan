@@ -20,8 +20,8 @@ use Psr\Cache\InvalidArgumentException;
  *   1. Filtre par mots-clés (titre + description)
  *   2. Rejet des offres sans URL
  *   3. Filtre d'ancienneté (si la date de publication est disponible)
- *   4. Déduplication par URL exacte
- *   5. Déduplication par hash de titre normalisé (cross-provider)
+ *   4. Déduplication par URL canonique
+ *   5. Déduplication par empreinte titre, entreprise et localisation
  *   6. Pré-score heuristique — les offres sous le seuil n'atteignent pas l'IA
  *   7. Analyse IA (provider compatible OpenAI) + calcul du score final
  *   8. Persistance en base de données
@@ -29,24 +29,20 @@ use Psr\Cache\InvalidArgumentException;
  */
 final readonly class JobProcessor
 {
-    /** Score minimum pour déclencher une notification Telegram. */
-    private const int NOTIFICATION_THRESHOLD = 60;
-
-    /** Pré-score heuristique minimum pour appeler l'IA. */
-    private const int AI_PRESCORE_THRESHOLD = 10;
-
     /**
-     * @param list<string> $filterKeywords Mots-clés requis dans le titre ou la description (config `app.filter_keywords`)
-     * @param int $maxJobAgeDays Âge maximum en jours d'une offre datée (config `app.max_job_age_days`)
+     * @param list<string> $filterKeywords Mots-clés requis (config `app.profile.filter_keywords`)
+     * @param int $maxJobAgeDays Âge maximum (config `app.profile.max_job_age_days`)
      */
     public function __construct(
         private JobRepository $jobRepository,
         private AIClient $AIClient,
         private Scoring $scoringService,
         private Notifier $notificationService,
+        private JobIdentity $jobIdentity,
         private LoggerInterface $logger,
         private array $filterKeywords = [],
         private int $maxJobAgeDays = 30,
+        private int $aiPrescoreThreshold = 10,
     ) {
     }
 
@@ -74,8 +70,9 @@ final readonly class JobProcessor
             return;
         }
 
-        if ($dto->publishedAt !== null) {
-            $ageDays = (int) $dto->publishedAt->diff(new \DateTimeImmutable())->days;
+        $now = new \DateTimeImmutable();
+        if ($dto->publishedAt !== null && $dto->publishedAt <= $now) {
+            $ageDays = (int) $dto->publishedAt->diff($now)->days;
 
             if ($ageDays > $this->maxJobAgeDays) {
                 $this->logger->debug('Offre trop ancienne ({days}j > {max}j), ignorée.', [
@@ -88,23 +85,23 @@ final readonly class JobProcessor
             }
         }
 
-        if ($this->jobRepository->existsByUrl($dto->url)) {
-            $this->logger->debug('Doublon ignoré (URL) : {url}', ['url' => $dto->url]);
+        $canonicalUrl = $this->jobIdentity->canonicalUrl($dto->url);
+        if ($this->jobRepository->existsByCanonicalUrl($canonicalUrl)) {
+            $this->logger->debug('Doublon ignoré (URL canonique) : {url}', ['url' => $canonicalUrl]);
 
             return;
         }
 
-        $titleHash = sha1(Job::normalizeTitle($dto->title));
-
-        if ($this->jobRepository->existsByTitleHash($titleHash)) {
-            $this->logger->debug('Doublon ignoré (titre) : {title}', ['title' => $dto->title]);
+        $fingerprint = $this->jobIdentity->fingerprint($dto);
+        if ($fingerprint !== null && $this->jobRepository->existsByFingerprint($fingerprint)) {
+            $this->logger->debug('Doublon ignoré (empreinte métier) : {title}', ['title' => $dto->title]);
 
             return;
         }
 
         $preScore = $this->scoringService->preScore($dto);
 
-        if ($preScore < self::AI_PRESCORE_THRESHOLD) {
+        if ($preScore < $this->aiPrescoreThreshold) {
             $this->logger->debug('Pré-score insuffisant ({score}), analyse IA ignorée.', [
                 'score' => $preScore,
                 'title' => $dto->title,
@@ -113,11 +110,13 @@ final readonly class JobProcessor
             return;
         }
 
-        $aiData = $this->AIClient->analyze($dto->description);
+        $aiData = $this->AIClient->analyze($dto->description, $dto->publishedAt);
         ['score' => $score, 'breakdown' => $breakdown] = $this->scoringService->compute($dto, $aiData);
 
         $job = Job::fromDTO($dto);
+        $job->setIdentity($canonicalUrl, $fingerprint);
         $job->setScore($score);
+        $job->setAnalysis($aiData, $breakdown);
 
         $this->jobRepository->save($job);
 
@@ -128,8 +127,6 @@ final readonly class JobProcessor
             'breakdown' => implode(', ', $breakdown) ?: 'aucun critère',
         ]);
 
-        if ($score >= self::NOTIFICATION_THRESHOLD) {
-            $this->notificationService->notify($job);
-        }
+        $this->notificationService->notify($job);
     }
 }

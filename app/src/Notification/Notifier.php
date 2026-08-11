@@ -17,13 +17,11 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 final readonly class Notifier
 {
-    /** Score minimum requis pour qu'une notification soit envoyée. */
-    private const int THRESHOLD = 60;
-
     public function __construct(
         private TelegramNotifier $telegram,
         private LoggerInterface $logger,
         private EntityManagerInterface $em,
+        private int $scoreThreshold = 60,
     ) {
     }
 
@@ -47,11 +45,17 @@ final readonly class Notifier
             return;
         }
 
-        if ($job->getScore() < self::THRESHOLD) {
+        if ($job->getScore() < $this->scoreThreshold) {
             return;
         }
 
-        $this->telegram->send($this->formatMessage($job));
+        if (!$this->telegram->send($this->formatMessage($job))) {
+            $this->logger->warning('Notification non marquée : envoi Telegram en échec.', [
+                'title' => $job->getTitle(),
+            ]);
+
+            return;
+        }
 
         $job->markAsNotified();
         $this->em->flush();

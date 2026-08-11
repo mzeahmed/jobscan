@@ -214,7 +214,38 @@ class AIClientTest extends TestCase
 
         $result = $client->analyze('Développeur PHP');
 
-        $this->assertSame($cached, $result);
+        $this->assertSame($cached->stack, $result->stack);
+        $this->assertSame($cached->contractType, $result->contractType);
+        $this->assertSame($cached->budget, $result->budget);
+        $this->assertFalse($result->recent);
+    }
+
+    public function testRecencyIsComputedFromPublishedDateInsteadOfAIResponse(): void
+    {
+        $this->provider->method('analyze')->willReturn(json_encode([
+            'stack' => ['php'],
+            'recent' => false,
+        ]));
+
+        $recent = $this->makeClient()->analyze('Développeur PHP', new \DateTimeImmutable('-2 days'));
+        $old = $this->makeClient()->analyze('Développeur PHP', new \DateTimeImmutable('-30 days'));
+
+        $this->assertTrue($recent->recent);
+        $this->assertFalse($old->recent);
+    }
+
+    public function testFutureAndMissingPublicationDatesAreNotRecent(): void
+    {
+        $this->provider->method('analyze')->willReturn(json_encode([
+            'stack' => ['php'],
+            'recent' => true,
+        ]));
+
+        $future = $this->makeClient()->analyze('Développeur PHP', new \DateTimeImmutable('+2 days'));
+        $missing = $this->makeClient()->analyze('Développeur PHP');
+
+        $this->assertFalse($future->recent);
+        $this->assertFalse($missing->recent);
     }
 
     // -------------------------------------------------------------------------

@@ -14,18 +14,16 @@ final class Version20260421141844 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return '';
+        return 'No-op: duplicate of Version20260421122747 kept for migration history compatibility';
     }
 
     public function up(Schema $schema): void
     {
-        // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('CREATE TABLE job (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, title VARCHAR(255) NOT NULL, url VARCHAR(2048) NOT NULL, description CLOB NOT NULL, source VARCHAR(100) NOT NULL, score INTEGER NOT NULL, created_at DATETIME NOT NULL)');
+        // Intentionally empty: the preceding migration already creates this table.
     }
 
     public function down(Schema $schema): void
     {
-        // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('DROP TABLE job');
+        // Intentionally empty: reverting this historical duplicate must preserve the table.
     }
 }

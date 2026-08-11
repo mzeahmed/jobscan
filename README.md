@@ -146,13 +146,18 @@ toute valeur contenant elle-même un espace.
 
 | Paramètre | Env var | Utilisé par | Rôle |
 |---|---|---|---|
-| `app.filter_keywords` | `FILTER_KEYWORDS` | `JobProcessor` | Écarte les offres hors scope avant tout traitement IA |
-| `app.known_stack` | `KNOWN_STACK` | `AIClient` | Détecte la stack technique en fallback heuristique |
-| `app.searx_queries` | `SEARX_QUERIES` | `SearxProvider` | Requêtes envoyées à SearXNG à chaque run |
-| `app.job_locations` | `JOB_LOCATIONS` | `SearxProvider` | Localisations combinées à chaque requête |
+| `app.profile.filter_keywords` | `FILTER_KEYWORDS` | `JobProcessor` | Écarte les offres hors scope avant tout traitement IA |
+| `app.profile.known_stack` | `KNOWN_STACK` | `AIClient` | Détecte la stack technique en fallback heuristique |
+| `app.profile.searx_queries` | `SEARX_QUERIES` | `SearxProvider` | Requêtes envoyées à SearXNG à chaque run |
+| `app.profile.job_locations` | `JOB_LOCATIONS` | `SearxProvider` | Localisations combinées aux requêtes non localisées |
 | `app.ai_system_prompt` | — (reste en YAML) | `AIClient` | Prompt système envoyé au provider IA |
 
 Pour adapter JOBSCAN à un autre profil (ex : Python / Django, ou Java / Spring), il suffit d'ajuster ces variables dans `app/.env.local`.
+
+Les pondérations, seuils, retries Telegram et limites SearXNG sont regroupés sous
+`app.profile.*` dans `config/packages/jobscan.yaml`. SearXNG met ses réponses en
+cache, limite le nombre de requêtes par exécution et n'ajoute pas une seconde
+localisation aux requêtes qui en contiennent déjà une.
 
 ---
 

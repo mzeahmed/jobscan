@@ -27,14 +27,14 @@ class JobRepository extends ServiceEntityRepository
         }
     }
 
-    public function existsByUrl(string $url): bool
+    public function existsByCanonicalUrl(string $url): bool
     {
-        return $this->count(['url' => $url]) > 0;
+        return $this->count(['canonicalUrl' => $url]) > 0;
     }
 
-    public function existsByTitleHash(string $hash): bool
+    public function existsByFingerprint(string $fingerprint): bool
     {
-        return $this->count(['titleHash' => $hash]) > 0;
+        return $this->count(['fingerprint' => $fingerprint]) > 0;
     }
 
     public function countAll(): int
