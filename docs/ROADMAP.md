@@ -74,7 +74,7 @@ Providers (RSS + SearXNG)
 
 ## Phase 3 — Robustesse & Tests
 
-- [ ] Retry avec backoff exponentiel sur les appels IA — #9
+- [x] Retry avec backoff exponentiel sur les appels IA — #9
 - [x] Circuit breaker sur LM Studio — #10
 - [x] Batch insert Doctrine (flush groupé) — #11
 - [x] Déclarations `.PHONY` dans le Makefile — #12

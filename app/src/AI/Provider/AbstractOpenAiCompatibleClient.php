@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\AI\Provider;
 
 use Psr\Log\LoggerInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -53,6 +54,7 @@ abstract class AbstractOpenAiCompatibleClient implements LLMClientInterface
                 ]);
 
             $data = $response->toArray(false);
+            $this->logRecoveryAfterRetry($response);
             if (isset($data['error'])) {
                 $error = \is_array($data['error']) ? ($data['error']['message'] ?? 'Erreur API inconnue.') : $data['error'];
                 $this->logger->warning(static::class . '::analyze() a été refusé par le provider.', [
@@ -79,6 +81,17 @@ abstract class AbstractOpenAiCompatibleClient implements LLMClientInterface
             ]);
 
             return null;
+        }
+    }
+
+    private function logRecoveryAfterRetry(ResponseInterface $response): void
+    {
+        $retryCount = $response->getInfo('retry_count');
+        if (is_int($retryCount) && $retryCount > 0) {
+            $this->logger->notice(static::class . '::analyze() a réussi après retry.', [
+                'attempt' => $retryCount + 1,
+                'retries' => $retryCount,
+            ]);
         }
     }
 }

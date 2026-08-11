@@ -16,6 +16,7 @@ publiée est `v0.3.0` ; la prochaine sera constituée du contenu de la section
 
 - Pagination configurable des résultats SearXNG avec arrêt sur une page vide.
 - Tests d'intégration de `JobProcessor` sur une base SQLite isolée.
+- Retry avec backoff exponentiel sur les erreurs transitoires des providers LLM.
 
 #### Changed
 

@@ -156,12 +156,16 @@ toute valeur contenant elle-même un espace.
 | `app.profile.searx_max_pages` | — (reste en YAML) | `SearxProvider` | Nombre maximal de pages récupérées par requête |
 | `app.profile.searx_query_delay_ms` | — (reste en YAML) | `SearxProvider` | Délai entre les lots concurrents (`0` le désactive) |
 | `app.profile.persistence_batch_size` | — (reste en YAML) | `JobProcessor` | Nombre d'offres persistées par lot Doctrine |
+| `app.profile.ai_max_retries` | — (reste en YAML) | Clients LLM | Nombre de retries après l'appel initial |
+| `app.profile.ai_initial_retry_delay_ms` | — (reste en YAML) | Clients LLM | Délai initial du backoff exponentiel |
+| `app.profile.ai_retry_multiplier` | — (reste en YAML) | Clients LLM | Multiplicateur appliqué au délai de retry |
 | `app.ai_system_prompt` | — (reste en YAML) | `AIClient` | Prompt système envoyé au provider IA |
 
 Pour adapter JOBSCAN à un autre profil (ex : Python / Django, ou Java / Spring), il suffit d'ajuster ces variables dans `app/.env.local`.
 
-Les pondérations, seuils, retries Telegram et limites SearXNG sont regroupés sous
-`app.profile.*` dans `config/packages/jobscan.yaml`. SearXNG met ses réponses en
+Les pondérations, seuils, retries LLM et Telegram ainsi que les limites SearXNG sont
+regroupés sous `app.profile.*` dans `config/packages/jobscan.yaml`. Les appels LLM
+réessaient les erreurs transitoires au maximum deux fois avant le fallback. SearXNG met ses réponses en
 cache chaque page, limite le nombre de requêtes et de pages par exécution, espace
 les lots concurrents et n'ajoute pas une seconde localisation aux requêtes qui en
 contiennent déjà une.

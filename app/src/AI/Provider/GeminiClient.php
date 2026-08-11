@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\AI\Provider;
 
 use Psr\Log\LoggerInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -54,6 +55,7 @@ final readonly class GeminiClient implements LLMClientInterface
                 ]);
 
             $data = $response->toArray(false);
+            $this->logRecoveryAfterRetry($response);
             $content = trim((string) ($data['candidates'][0]['content']['parts'][0]['text'] ?? ''));
 
             return $content !== '' ? $content : null;
@@ -63,6 +65,17 @@ final readonly class GeminiClient implements LLMClientInterface
             ]);
 
             return null;
+        }
+    }
+
+    private function logRecoveryAfterRetry(ResponseInterface $response): void
+    {
+        $retryCount = $response->getInfo('retry_count');
+        if (is_int($retryCount) && $retryCount > 0) {
+            $this->logger->notice(self::class . '::analyze() a réussi après retry.', [
+                'attempt' => $retryCount + 1,
+                'retries' => $retryCount,
+            ]);
         }
     }
 }
