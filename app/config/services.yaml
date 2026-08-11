@@ -76,6 +76,11 @@ services:
             $feedUrls: '%app.job_feed_urls%'
         tags: ['app.job_provider']
 
+    App\Provider\RemoteOkProvider:
+        arguments:
+            $apiUrl: '%env(REMOTEOK_API_URL)%'
+        tags: ['app.job_provider']
+
     App\Provider\SearxProvider:
         arguments:
             $baseUrl: '%env(SEARXNG_URL)%'

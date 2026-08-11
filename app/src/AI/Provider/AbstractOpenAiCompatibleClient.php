@@ -27,6 +27,10 @@ abstract class AbstractOpenAiCompatibleClient implements LLMClientInterface
 
     public function analyze(string $systemPrompt, string $userText): ?string
     {
+        if (str_contains(strtolower($this->model), 'qwen3')) {
+            $systemPrompt .= "\n\n/no_think";
+        }
+
         try {
             $response = $this->httpClient
                 ->request('POST', rtrim($this->apiBase, '/') . '/chat/completions', [
@@ -49,6 +53,23 @@ abstract class AbstractOpenAiCompatibleClient implements LLMClientInterface
                 ]);
 
             $data = $response->toArray(false);
+            if (isset($data['error'])) {
+                $error = \is_array($data['error']) ? ($data['error']['message'] ?? 'Erreur API inconnue.') : $data['error'];
+                $this->logger->warning(static::class . '::analyze() a été refusé par le provider.', [
+                    'error' => (string) $error,
+                ]);
+
+                return null;
+            }
+
+            if (!isset($data['choices'][0]['message']['content'])) {
+                $this->logger->warning(static::class . '::analyze() a reçu une réponse sans contenu.', [
+                    'status_code' => $response->getStatusCode(),
+                ]);
+
+                return null;
+            }
+
             $content = trim((string) ($data['choices'][0]['message']['content'] ?? ''));
 
             return $content !== '' ? $content : null;

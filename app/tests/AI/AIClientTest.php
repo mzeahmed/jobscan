@@ -54,6 +54,25 @@ class AIClientTest extends TestCase
         $this->assertSame('500€/j', $result->budget);
     }
 
+    public function testStopsCallingUnavailableProviderForTheRestOfTheRun(): void
+    {
+        $provider = $this->createMock(LLMClientInterface::class);
+        $provider->expects($this->once())->method('analyze')->willReturn(null);
+        $client = new AIClient(
+            $provider,
+            new NullLogger(),
+            $this->cache,
+            'system prompt',
+            self::KNOWN_STACK,
+        );
+
+        $first = $client->analyze('Première mission PHP');
+        $second = $client->analyze('Deuxième mission Symfony');
+
+        $this->assertContains('php', $first->stack);
+        $this->assertContains('symfony', $second->stack);
+    }
+
     public function testHeuristicFallbackDetectsCdi(): void
     {
         $this->provider->method('analyze')->willReturn(null);
@@ -138,6 +157,27 @@ class AIClientTest extends TestCase
         $result = $this->makeClient()->analyze('Mission PHP Symfony freelance remote');
 
         $this->assertInstanceOf(AiAnalysisDto::class, $result);
+    }
+
+    public function testUnparseableContentDoesNotDisableProvider(): void
+    {
+        $provider = $this->createMock(LLMClientInterface::class);
+        $provider->expects($this->exactly(2))->method('analyze')->willReturnOnConsecutiveCalls(
+            'not json',
+            '{"stack":["symfony"]}',
+        );
+        $client = new AIClient(
+            $provider,
+            new NullLogger(),
+            $this->cache,
+            'system prompt',
+            self::KNOWN_STACK,
+        );
+
+        $client->analyze('Première description');
+        $result = $client->analyze('Deuxième description');
+
+        $this->assertSame(['symfony'], $result->stack);
     }
 
     public function testNormalizesUnknownContractType(): void

@@ -86,7 +86,7 @@ final readonly class JobProcessor
         }
 
         $canonicalUrl = $this->jobIdentity->canonicalUrl($dto->url);
-        if ($this->jobRepository->existsByCanonicalUrl($canonicalUrl)) {
+        if ($this->jobRepository->existsByUrlOrCanonicalUrl($dto->url, $canonicalUrl)) {
             $this->logger->debug('Doublon ignoré (URL canonique) : {url}', ['url' => $canonicalUrl]);
 
             return;

@@ -1,4 +1,4 @@
-.PHONY: help setup hosts build up down logs bash migrate run-pipeline alerts fix-perms
+.PHONY: help setup hosts build up down logs bash migrate run-pipeline llm-load llm-status alerts fix-perms
 
 COMPOSE = docker compose -f docker-compose.yml
 COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
@@ -9,6 +9,8 @@ PHP ?= $(shell command -v php8.4 2>/dev/null || command -v php)
 COMPOSER ?= $(PHP) $(shell command -v composer)
 
 APP_CONTAINER = jobscan_app
+LMSTUDIO_MODEL_KEY ?= qwen/qwen3-8b
+LMSTUDIO_MODEL_ID ?= qwen3:8b
 
 DOMAINS = jobscan.local searxng.local
 
@@ -97,6 +99,19 @@ run-pipeline: ## Lance la pipeline JOBSCAN
 	@echo "$(YELLOW)Lancement de la pipeline JOBSCAN...$(NO_COLOR)"
 	cd app && $(PHP) bin/console app:jobs:run
 	@echo "$(GREEN)Pipeline JOBSCAN terminée$(NO_COLOR)"
+
+llm-load: ## Charge le modèle LM Studio utilisé par JOBSCAN
+	@command -v lms >/dev/null 2>&1 || (echo "$(RED)CLI LM Studio 'lms' introuvable.$(NO_COLOR)" && exit 1)
+	@if lms ps --json | grep -Fq '$(LMSTUDIO_MODEL_ID)'; then \
+		echo "$(GREEN)Modèle LM Studio déjà chargé : $(LMSTUDIO_MODEL_ID)$(NO_COLOR)"; \
+	else \
+		echo "$(YELLOW)Chargement de $(LMSTUDIO_MODEL_KEY)...$(NO_COLOR)"; \
+		lms load '$(LMSTUDIO_MODEL_KEY)' --identifier '$(LMSTUDIO_MODEL_ID)' --yes; \
+	fi
+
+llm-status: ## Affiche les modèles actuellement chargés dans LM Studio
+	@command -v lms >/dev/null 2>&1 || (echo "$(RED)CLI LM Studio 'lms' introuvable.$(NO_COLOR)" && exit 1)
+	lms ps
 
 # ========================
 # Assets

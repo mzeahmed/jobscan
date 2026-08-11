@@ -112,9 +112,12 @@ SEARXNG_URL=http://localhost:8080      # hors Docker
 #SEARXNG_URL=http://searxng:8080       # dans Docker
 
 # Flux RSS (optionnel)
-JOB_FEED_URL_1=
+# JOB_FEED_URL_1=https://www.reddit.com/r/forhire/.rss
 JOB_FEED_URL_2=
 JOB_FEED_URL_3=
+
+# RemoteOK (API JSON)
+REMOTEOK_API_URL=https://remoteok.com/api
 
 # Profil métier (voir "Mots-clés, requêtes et stack" plus bas)
 FILTER_KEYWORDS=php,symfony,wordpress,backend,fullstack,api
@@ -168,10 +171,16 @@ JOBSCAN supporte plusieurs providers, chacun implémentant `JobProviderInterface
 ### RsFeedProvider
 
 Récupère les offres depuis des **flux RSS/Atom** configurés via les variables `JOB_FEED_URL_*`.
+Reddit est désactivé par défaut, son endpoint public répondant régulièrement avec HTTP 403/429.
 
 * Source statique, passive
 * Dépend de la qualité et de la fraîcheur des flux fournis
 * Fonctionne hors ligne si les URLs sont accessibles
+
+### RemoteOkProvider
+
+Récupère les offres depuis l'API JSON officielle de RemoteOK, configurable via
+`REMOTEOK_API_URL`.
 
 ### SearxProvider
 

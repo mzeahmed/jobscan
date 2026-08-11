@@ -27,9 +27,16 @@ class JobRepository extends ServiceEntityRepository
         }
     }
 
-    public function existsByCanonicalUrl(string $url): bool
+    public function existsByUrlOrCanonicalUrl(string $url, string $canonicalUrl): bool
     {
-        return $this->count(['canonicalUrl' => $url]) > 0;
+        return (int) $this->createQueryBuilder('j')
+            ->select('COUNT(j.id)')
+            ->where('j.url = :url')
+            ->orWhere('j.canonicalUrl = :canonicalUrl')
+            ->setParameter('url', $url)
+            ->setParameter('canonicalUrl', $canonicalUrl)
+            ->getQuery()
+            ->getSingleScalarResult() > 0;
     }
 
     public function existsByFingerprint(string $fingerprint): bool

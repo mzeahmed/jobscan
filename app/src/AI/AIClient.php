@@ -30,22 +30,24 @@ use Psr\Cache\InvalidArgumentException;
  * Le prompt système est entièrement configurable via `app.ai_system_prompt` dans
  * `jobscan.yaml`, sans modifier le code.
  */
-final readonly class AIClient
+final class AIClient
 {
     /** Durée de mise en cache des réponses IA en secondes (24h). */
     private const int CACHE_TTL = 86400;
+
+    private bool $providerUnavailable = false;
 
     /**
      * @param  string  $systemPrompt  Prompt système injecté en tête de chaque requête (config `app.ai_system_prompt`)
      * @param  list<string>  $knownStack  Technologies connues pour le fallback heuristique (config `app.profile.known_stack`)
      */
     public function __construct(
-        private LLMClientInterface $provider,
-        private LoggerInterface $logger,
-        private CacheItemPoolInterface $cache,
-        private string $systemPrompt,
-        private array $knownStack = [],
-        private int $recentJobDays = 14,
+        private readonly LLMClientInterface $provider,
+        private readonly LoggerInterface $logger,
+        private readonly CacheItemPoolInterface $cache,
+        private readonly string $systemPrompt,
+        private readonly array $knownStack = [],
+        private readonly int $recentJobDays = 14,
     ) {
     }
 
@@ -70,6 +72,10 @@ final readonly class AIClient
             $this->logger->debug('AIClient: cache hit.', ['key' => $cacheKey]);
 
             return $this->withDeterministicRecency($item->get(), $publishedAt);
+        }
+
+        if ($this->providerUnavailable) {
+            return $this->withDeterministicRecency($this->heuristicFallback($text), $publishedAt);
         }
 
         $result = $this->callAI($text);
@@ -98,6 +104,7 @@ final readonly class AIClient
         $content = $this->provider->analyze($this->systemPrompt, $text);
 
         if ($content === null) {
+            $this->providerUnavailable = true;
             $this->logger->warning('AIClient: provider IA indisponible ou réponse vide, fallback heuristique.');
 
             return null;

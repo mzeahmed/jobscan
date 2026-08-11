@@ -14,6 +14,7 @@ use App\DTO\JobDto;
  * que d'implémenter cette interface — aucune modification du pipeline n'est requise.
  *
  * @see RsFeedProvider  Flux RSS et Atom
+ * @see RemoteOkProvider API JSON RemoteOK
  * @see SearxProvider   Recherche web via SearXNG
  */
 interface JobProviderInterface
