@@ -21,9 +21,9 @@ final class RunPipelineCommandTest extends TestCase
     {
         $processor = $this->createMock(JobProcessorInterface::class);
         $processor->expects($this->once())
-            ->method('process')
-            ->with($this->isInstanceOf(JobDto::class), true)
-            ->willReturn(new JobProcessingResult(JobProcessingStatus::DryRun, 75));
+            ->method('processBatch')
+            ->with($this->isArray(), true)
+            ->willReturn([new JobProcessingResult(JobProcessingStatus::DryRun, 75)]);
         $provider = $this->provider('remoteok', [new JobDto('PHP', 'https://example.test/1', 'PHP', 'test')]);
         $tester = new CommandTester($this->command([$provider], $processor));
 
@@ -36,8 +36,8 @@ final class RunPipelineCommandTest extends TestCase
     {
         $processor = $this->createMock(JobProcessorInterface::class);
         $processor->expects($this->once())
-            ->method('process')
-            ->willReturn(new JobProcessingResult(JobProcessingStatus::Filtered));
+            ->method('processBatch')
+            ->willReturn([new JobProcessingResult(JobProcessingStatus::Filtered)]);
         $remoteOk = $this->provider('remoteok', [new JobDto('PHP', 'https://example.test/1', 'PHP', 'test')]);
         $rss = $this->provider('rss', [new JobDto('PHP', 'https://example.test/2', 'PHP', 'test')]);
         $tester = new CommandTester($this->command([$remoteOk, $rss], $processor));

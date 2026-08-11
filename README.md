@@ -155,6 +155,7 @@ toute valeur contenant elle-même un espace.
 | `app.profile.job_locations` | `JOB_LOCATIONS` | `SearxProvider` | Localisations combinées aux requêtes non localisées |
 | `app.profile.searx_max_pages` | — (reste en YAML) | `SearxProvider` | Nombre maximal de pages récupérées par requête |
 | `app.profile.searx_query_delay_ms` | — (reste en YAML) | `SearxProvider` | Délai entre les lots concurrents (`0` le désactive) |
+| `app.profile.persistence_batch_size` | — (reste en YAML) | `JobProcessor` | Nombre d'offres persistées par lot Doctrine |
 | `app.ai_system_prompt` | — (reste en YAML) | `AIClient` | Prompt système envoyé au provider IA |
 
 Pour adapter JOBSCAN à un autre profil (ex : Python / Django, ou Java / Spring), il suffit d'ajuster ces variables dans `app/.env.local`.

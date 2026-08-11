@@ -55,7 +55,7 @@ Providers (RSS + SearXNG)
 - [x] Hook pre-push avec PHPStan
 - [x] Tests unitaires sur `ScoringService`
 - [x] CI GitHub Actions
-- [ ] Tests d'intégration sur `JobProcessor` — #17
+- [x] Tests d'intégration sur `JobProcessor` — #17
 
 ---
 
@@ -76,13 +76,13 @@ Providers (RSS + SearXNG)
 
 - [ ] Retry avec backoff exponentiel sur les appels IA — #9
 - [x] Circuit breaker sur LM Studio — #10
-- [ ] Batch insert Doctrine (flush groupé) — #11
+- [x] Batch insert Doctrine (flush groupé) — #11
 - [x] Déclarations `.PHONY` dans le Makefile — #12
 - [ ] Sécurisation du Dockerfile (non-root, multi-stage) — #13
 - [ ] Interface `isHealthy()` sur les providers — #14
 - [ ] Tests unitaires : `SearxProvider::isClearlyIrrelevant()` — #15
 - [x] Tests unitaires : fallback heuristique de `AIClient` — #16
-- [ ] Tests d'intégration : `JobProcessor` — #17
+- [x] Tests d'intégration : `JobProcessor` — #17
 
 ---
 

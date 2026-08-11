@@ -9,7 +9,6 @@ use App\Entity\Job;
 use Psr\Log\NullLogger;
 use PHPUnit\Framework\TestCase;
 use App\Notification\Notifier;
-use Doctrine\ORM\EntityManagerInterface;
 use App\Notification\TelegramNotifier;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
@@ -26,12 +25,11 @@ final class NotifierTest extends TestCase
             1,
             0,
         );
-        $entityManager = $this->createMock(EntityManagerInterface::class);
-        $entityManager->expects(self::never())->method('flush');
         $job = $this->jobWithScore(80);
 
-        (new Notifier($telegram, new NullLogger(), $entityManager, 60))->notify($job);
+        $notified = (new Notifier($telegram, new NullLogger(), 60))->notify($job);
 
+        self::assertFalse($notified);
         self::assertNull($job->getNotifiedAt());
     }
 
@@ -45,12 +43,11 @@ final class NotifierTest extends TestCase
             1,
             0,
         );
-        $entityManager = $this->createMock(EntityManagerInterface::class);
-        $entityManager->expects(self::once())->method('flush');
         $job = $this->jobWithScore(80);
 
-        (new Notifier($telegram, new NullLogger(), $entityManager, 60))->notify($job);
+        $notified = (new Notifier($telegram, new NullLogger(), 60))->notify($job);
 
+        self::assertTrue($notified);
         self::assertNotNull($job->getNotifiedAt());
     }
 

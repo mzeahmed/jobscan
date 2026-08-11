@@ -23,6 +23,7 @@ parameters:
     app.profile.max_job_age_days: 30
     app.profile.recent_job_days: 14
     app.profile.ai_prescore_threshold: 10
+    app.profile.persistence_batch_size: 20
     app.profile.notification_threshold: 60
     app.profile.telegram_max_attempts: 3
     app.profile.telegram_initial_retry_delay_ms: 250

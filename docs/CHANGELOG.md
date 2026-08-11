@@ -15,11 +15,14 @@ publiée est `v0.3.0` ; la prochaine sera constituée du contenu de la section
 #### Added
 
 - Pagination configurable des résultats SearXNG avec arrêt sur une page vide.
+- Tests d'intégration de `JobProcessor` sur une base SQLite isolée.
 
 #### Changed
 
 - Temporisation configurable entre les lots de requêtes SearXNG concurrents.
 - Cache SearXNG séparé pour chaque requête et chaque page.
+- Persistance Doctrine groupée par lots configurables.
+- Envoi des notifications Telegram après la persistance réussie de chaque lot.
 
 #### Fixed
 

@@ -43,6 +43,7 @@ final readonly class JobProcessor implements JobProcessorInterface
         private array $filterKeywords = [],
         private int $maxJobAgeDays = 30,
         private int $aiPrescoreThreshold = 10,
+        private int $batchSize = 20,
     ) {
     }
 
@@ -56,18 +57,85 @@ final readonly class JobProcessor implements JobProcessorInterface
      */
     public function process(JobDto $dto, bool $dryRun = false): JobProcessingResult
     {
+        return $this->processBatch([$dto], $dryRun)[0];
+    }
+
+    /**
+     * @param iterable<JobDto> $jobs
+     * @return list<JobProcessingResult>
+     */
+    public function processBatch(iterable $jobs, bool $dryRun = false): array
+    {
+        $jobDtos = is_array($jobs) ? array_values($jobs) : array_values(iterator_to_array($jobs));
+        $results = [];
+        $pending = [];
+        $pendingCanonicalUrls = [];
+        $pendingFingerprints = [];
+        $aborted = false;
+
+        foreach ($jobDtos as $index => $dto) {
+            try {
+                $prepared = $this->prepare($dto, $dryRun, $pendingCanonicalUrls, $pendingFingerprints);
+                $results[$index] = $prepared['result'];
+
+                if ($prepared['job'] !== null) {
+                    $pending[] = [
+                        'index' => $index,
+                        'job' => $prepared['job'],
+                        'used_fallback' => $prepared['result']->usedFallback,
+                    ];
+                }
+            } catch (\Throwable $e) {
+                $results[$index] = JobProcessingResult::failed($e->getMessage());
+                $this->logger->warning('Échec du traitement de "{title}" : {error}', [
+                    'title' => $dto->title,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            if (count($pending) >= max(1, $this->batchSize)
+                && !$this->flushPending($pending, $results, $pendingCanonicalUrls, $pendingFingerprints)
+            ) {
+                $aborted = true;
+                for ($remaining = $index + 1, $count = count($jobDtos); $remaining < $count; ++$remaining) {
+                    $results[$remaining] = JobProcessingResult::failed('Traitement interrompu après un échec de persistance.');
+                }
+                break;
+            }
+        }
+
+        if (!$dryRun && !$aborted && $pending !== []) {
+            $this->flushPending($pending, $results, $pendingCanonicalUrls, $pendingFingerprints);
+        }
+
+        ksort($results);
+
+        return array_values($results);
+    }
+
+    /**
+     * @param array<string, true> $pendingCanonicalUrls
+     * @param array<string, true> $pendingFingerprints
+     * @return array{result: JobProcessingResult, job: ?Job}
+     */
+    private function prepare(
+        JobDto $dto,
+        bool $dryRun,
+        array &$pendingCanonicalUrls,
+        array &$pendingFingerprints,
+    ): array {
         $title = strtolower($dto->title);
         $desc = strtolower($dto->description);
         $matches = array_any($this->filterKeywords, fn ($keyword) => str_contains($title, (string) $keyword) || str_contains($desc, (string) $keyword));
 
         if (!$matches) {
-            return new JobProcessingResult(JobProcessingStatus::Filtered);
+            return ['result' => new JobProcessingResult(JobProcessingStatus::Filtered), 'job' => null];
         }
 
         if ($dto->url === '') {
             $this->logger->debug('Offre ignorée : URL vide.', ['title' => $dto->title]);
 
-            return new JobProcessingResult(JobProcessingStatus::Filtered);
+            return ['result' => new JobProcessingResult(JobProcessingStatus::Filtered), 'job' => null];
         }
 
         $now = new \DateTimeImmutable();
@@ -81,22 +149,26 @@ final readonly class JobProcessor implements JobProcessorInterface
                     'title' => $dto->title,
                 ]);
 
-                return new JobProcessingResult(JobProcessingStatus::TooOld);
+                return ['result' => new JobProcessingResult(JobProcessingStatus::TooOld), 'job' => null];
             }
         }
 
         $canonicalUrl = $this->jobIdentity->canonicalUrl($dto->url);
-        if ($this->jobRepository->existsByUrlOrCanonicalUrl($dto->url, $canonicalUrl)) {
+        if (isset($pendingCanonicalUrls[$canonicalUrl])
+            || $this->jobRepository->existsByUrlOrCanonicalUrl($dto->url, $canonicalUrl)
+        ) {
             $this->logger->debug('Doublon ignoré (URL canonique) : {url}', ['url' => $canonicalUrl]);
 
-            return new JobProcessingResult(JobProcessingStatus::Duplicate);
+            return ['result' => new JobProcessingResult(JobProcessingStatus::Duplicate), 'job' => null];
         }
 
         $fingerprint = $this->jobIdentity->fingerprint($dto);
-        if ($fingerprint !== null && $this->jobRepository->existsByFingerprint($fingerprint)) {
+        if ($fingerprint !== null
+            && (isset($pendingFingerprints[$fingerprint]) || $this->jobRepository->existsByFingerprint($fingerprint))
+        ) {
             $this->logger->debug('Doublon ignoré (empreinte métier) : {title}', ['title' => $dto->title]);
 
-            return new JobProcessingResult(JobProcessingStatus::Duplicate);
+            return ['result' => new JobProcessingResult(JobProcessingStatus::Duplicate), 'job' => null];
         }
 
         $preScore = $this->scoringService->preScore($dto);
@@ -107,7 +179,7 @@ final readonly class JobProcessor implements JobProcessorInterface
                 'title' => $dto->title,
             ]);
 
-            return new JobProcessingResult(JobProcessingStatus::LowPrescore);
+            return ['result' => new JobProcessingResult(JobProcessingStatus::LowPrescore), 'job' => null];
         }
 
         $aiData = $this->AIClient->analyze($dto->description, $dto->publishedAt);
@@ -118,30 +190,107 @@ final readonly class JobProcessor implements JobProcessorInterface
         $job->setScore($score);
         $job->setAnalysis($aiData, $breakdown);
 
-        if ($dryRun) {
-            return new JobProcessingResult(
-                JobProcessingStatus::DryRun,
-                $score,
-                $this->AIClient->lastAnalysisUsedFallback(),
-            );
+        $pendingCanonicalUrls[$canonicalUrl] = true;
+        if ($fingerprint !== null) {
+            $pendingFingerprints[$fingerprint] = true;
         }
 
-        $this->jobRepository->save($job);
+        if ($dryRun) {
+            return [
+                'result' => new JobProcessingResult(
+                    JobProcessingStatus::DryRun,
+                    $score,
+                    $this->AIClient->lastAnalysisUsedFallback(),
+                ),
+                'job' => null,
+            ];
+        }
 
-        $this->logger->info('Job sauvegardé : {title} (score: {score}, source: {source}) — {breakdown}', [
-            'title' => $dto->title,
-            'score' => $score,
-            'source' => $dto->source,
-            'breakdown' => implode(', ', $breakdown) ?: 'aucun critère',
-        ]);
+        $this->jobRepository->save($job, false);
 
-        $this->notificationService->notify($job);
+        return [
+            'result' => new JobProcessingResult(
+                JobProcessingStatus::Saved,
+                $score,
+                $this->AIClient->lastAnalysisUsedFallback(),
+            ),
+            'job' => $job,
+        ];
+    }
 
-        return new JobProcessingResult(
-            JobProcessingStatus::Saved,
-            $score,
-            $this->AIClient->lastAnalysisUsedFallback(),
-            $job->getNotifiedAt() !== null,
-        );
+    /**
+     * @param list<array{index: int, job: Job, used_fallback: bool}> $pending
+     * @param array<int, JobProcessingResult> $results
+     * @param array<string, true> $pendingCanonicalUrls
+     * @param array<string, true> $pendingFingerprints
+     */
+    private function flushPending(
+        array &$pending,
+        array &$results,
+        array &$pendingCanonicalUrls,
+        array &$pendingFingerprints,
+    ): bool {
+        try {
+            $this->jobRepository->flush();
+        } catch (\Throwable $e) {
+            foreach ($pending as $entry) {
+                $results[$entry['index']] = JobProcessingResult::failed($e->getMessage());
+            }
+
+            $this->logger->error('Échec de la persistance d’un lot d’offres.', [
+                'batch_size' => count($pending),
+                'error' => $e->getMessage(),
+            ]);
+            $this->resetPending($pending, $pendingCanonicalUrls, $pendingFingerprints);
+
+            return false;
+        }
+
+        $hasNotifications = false;
+        foreach ($pending as $entry) {
+            $job = $entry['job'];
+            $notified = $this->notificationService->notify($job);
+            $hasNotifications = $hasNotifications || $notified;
+            $results[$entry['index']] = new JobProcessingResult(
+                JobProcessingStatus::Saved,
+                $job->getScore(),
+                $entry['used_fallback'],
+                $notified,
+            );
+
+            $this->logger->info('Job sauvegardé : {title} (score: {score}, source: {source}) — {breakdown}', [
+                'title' => $job->getTitle(),
+                'score' => $job->getScore(),
+                'source' => $job->getSource(),
+                'breakdown' => implode(', ', $job->getScoreBreakdown()) ?: 'aucun critère',
+            ]);
+        }
+
+        if ($hasNotifications) {
+            try {
+                $this->jobRepository->flush();
+            } catch (\Throwable $e) {
+                $this->logger->error('Les statuts de notification n’ont pas pu être persistés.', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $this->resetPending($pending, $pendingCanonicalUrls, $pendingFingerprints);
+
+        return true;
+    }
+
+    /**
+     * @param list<array{index: int, job: Job, used_fallback: bool}> $pending
+     * @param array<string, true> $pendingCanonicalUrls
+     * @param array<string, true> $pendingFingerprints
+     */
+    private function resetPending(array &$pending, array &$pendingCanonicalUrls, array &$pendingFingerprints): void
+    {
+        $this->jobRepository->clear();
+        $pending = [];
+        $pendingCanonicalUrls = [];
+        $pendingFingerprints = [];
     }
 }
