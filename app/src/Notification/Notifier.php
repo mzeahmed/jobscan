@@ -66,18 +66,21 @@ final readonly class Notifier
     }
 
     /**
-     * Formate le message Telegram en Markdown à partir des données de l'offre.
+     * Formate le message Telegram en HTML en échappant toutes les données externes.
      */
     private function formatMessage(Job $job): string
     {
+        $title = htmlspecialchars((string) $job->getTitle(), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+        $url = htmlspecialchars((string) $job->getUrl(), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+
         return sprintf(
-            "*Nouvelle opportunité détectée*\n\n" .
-            "*Titre* : %s\n" .
-            "*Score* : %d/100\n\n" .
-            '%s',
-            $job->getTitle(),
+            "<b>Nouvelle opportunité détectée</b>\n\n" .
+            "<b>Titre</b> : %s\n" .
+            "<b>Score</b> : %d/100\n\n" .
+            '<a href="%s">Voir l’offre</a>',
+            $title,
             $job->getScore(),
-            $job->getUrl()
+            $url,
         );
     }
 }
