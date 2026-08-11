@@ -91,6 +91,8 @@ services:
             $maxQueries: '%app.profile.searx_max_queries%'
             $concurrency: '%app.profile.searx_concurrency%'
             $cacheTtl: '%app.profile.searx_cache_ttl%'
+            $maxPages: '%app.profile.searx_max_pages%'
+            $queryDelayMs: '%app.profile.searx_query_delay_ms%'
         tags: [ 'app.job_provider' ]
 
     App\Processor\JobProcessor:

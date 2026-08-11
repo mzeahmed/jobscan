@@ -63,9 +63,9 @@ Providers (RSS + SearXNG)
 
 - [x] Filtrer les offres trop anciennes — #1
 - [x] Déduplication avancée cross-provider — #2
-- [ ] Source RSS basée sur le domaine du flux — #3
-- [ ] Pagination SearXNG — #4
-- [ ] Délai configurable entre les requêtes SearXNG — #5
+- [x] Source RSS basée sur le domaine du flux — #3
+- [x] Pagination SearXNG — #4
+- [x] Délai configurable entre les requêtes SearXNG — #5
 - [x] Modèle LM Studio configurable via `jobscan.yaml` — #6
 - [x] Normalisation typée de la sortie IA — #7
 - [x] Bonus de scoring par séniorité et budget — #8

@@ -18,9 +18,9 @@ labels: bug
 
 ## Étapes pour reproduire
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 ## Contexte
 

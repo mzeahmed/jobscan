@@ -4,11 +4,26 @@ Les changements notables de JOBSCAN sont documentés dans ce fichier à partir d
 11 août 2026.
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet
-utilise le [versionnage sémantique](https://semver.org/lang/fr/). La prochaine release
-prévue est `v0.3.0` ; son contenu sera issu de la section `Unreleased` lors de la
-création du tag.
+utilise le [versionnage sémantique](https://semver.org/lang/fr/). La dernière release
+publiée est `v0.3.0` ; la prochaine sera constituée du contenu de la section
+`Unreleased` lors de la création de son tag.
 
 ## [Unreleased]
+
+### 2026-08-11
+
+#### Added
+
+- Pagination configurable des résultats SearXNG avec arrêt sur une page vide.
+
+#### Changed
+
+- Temporisation configurable entre les lots de requêtes SearXNG concurrents.
+- Cache SearXNG séparé pour chaque requête et chaque page.
+
+#### Fixed
+
+- Identification des offres RSS à partir du domaine de leur flux d'origine.
 
 ## [0.3.0] - 2026-08-11
 

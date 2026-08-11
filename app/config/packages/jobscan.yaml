@@ -29,6 +29,10 @@ parameters:
     app.profile.searx_max_queries: 20
     app.profile.searx_concurrency: 5
     app.profile.searx_cache_ttl: 3600
+    # Nombre maximal de pages récupérées pour chaque requête SearXNG.
+    app.profile.searx_max_pages: 2
+    # Pause entre deux lots concurrents ; 0 désactive la temporisation.
+    app.profile.searx_query_delay_ms: 500
 
     app.profile.scoring:
         prescore:

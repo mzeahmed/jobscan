@@ -153,14 +153,17 @@ toute valeur contenant elle-même un espace.
 | `app.profile.known_stack` | `KNOWN_STACK` | `AIClient` | Détecte la stack technique en fallback heuristique |
 | `app.profile.searx_queries` | `SEARX_QUERIES` | `SearxProvider` | Requêtes envoyées à SearXNG à chaque run |
 | `app.profile.job_locations` | `JOB_LOCATIONS` | `SearxProvider` | Localisations combinées aux requêtes non localisées |
+| `app.profile.searx_max_pages` | — (reste en YAML) | `SearxProvider` | Nombre maximal de pages récupérées par requête |
+| `app.profile.searx_query_delay_ms` | — (reste en YAML) | `SearxProvider` | Délai entre les lots concurrents (`0` le désactive) |
 | `app.ai_system_prompt` | — (reste en YAML) | `AIClient` | Prompt système envoyé au provider IA |
 
 Pour adapter JOBSCAN à un autre profil (ex : Python / Django, ou Java / Spring), il suffit d'ajuster ces variables dans `app/.env.local`.
 
 Les pondérations, seuils, retries Telegram et limites SearXNG sont regroupés sous
 `app.profile.*` dans `config/packages/jobscan.yaml`. SearXNG met ses réponses en
-cache, limite le nombre de requêtes par exécution et n'ajoute pas une seconde
-localisation aux requêtes qui en contiennent déjà une.
+cache chaque page, limite le nombre de requêtes et de pages par exécution, espace
+les lots concurrents et n'ajoute pas une seconde localisation aux requêtes qui en
+contiennent déjà une.
 
 ---
 
@@ -173,7 +176,7 @@ JOBSCAN supporte plusieurs providers, chacun implémentant `JobProviderInterface
 Récupère les offres depuis des **flux RSS/Atom** configurés via les variables `JOB_FEED_URL_*`.
 Reddit est désactivé par défaut, son endpoint public répondant régulièrement avec HTTP 403/429.
 
-* Source statique, passive
+* Source identifiée automatiquement depuis le domaine du flux
 * Dépend de la qualité et de la fraîcheur des flux fournis
 * Fonctionne hors ligne si les URLs sont accessibles
 
