@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Job;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 
 /**
@@ -50,6 +51,20 @@ class JobRepository extends ServiceEntityRepository
             ->select('COUNT(j.id)')
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    public function truncate(): int
+    {
+        $connection = $this->getEntityManager()->getConnection();
+
+        return $connection->transactional(static function ($connection): int {
+            $deleted = $connection->executeStatement('DELETE FROM job');
+            if ($connection->getDatabasePlatform() instanceof SQLitePlatform) {
+                $connection->executeStatement("DELETE FROM sqlite_sequence WHERE name = 'job'");
+            }
+
+            return $deleted;
+        });
     }
 
     public function countToday(): int

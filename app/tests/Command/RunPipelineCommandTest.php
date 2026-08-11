@@ -11,6 +11,7 @@ use App\Provider\JobProviderInterface;
 use App\Processor\JobProcessingResult;
 use App\Processor\JobProcessingStatus;
 use App\Processor\JobProcessorInterface;
+use App\Repository\JobRepository;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
@@ -24,7 +25,7 @@ final class RunPipelineCommandTest extends TestCase
             ->with($this->isInstanceOf(JobDto::class), true)
             ->willReturn(new JobProcessingResult(JobProcessingStatus::DryRun, 75));
         $provider = $this->provider('remoteok', [new JobDto('PHP', 'https://example.test/1', 'PHP', 'test')]);
-        $tester = new CommandTester(new RunPipelineCommand([$provider], $processor));
+        $tester = new CommandTester($this->command([$provider], $processor));
 
         self::assertSame(Command::SUCCESS, $tester->execute(['--dry-run' => true]));
         self::assertStringContainsString('Mode dry-run', $tester->getDisplay());
@@ -39,7 +40,7 @@ final class RunPipelineCommandTest extends TestCase
             ->willReturn(new JobProcessingResult(JobProcessingStatus::Filtered));
         $remoteOk = $this->provider('remoteok', [new JobDto('PHP', 'https://example.test/1', 'PHP', 'test')]);
         $rss = $this->provider('rss', [new JobDto('PHP', 'https://example.test/2', 'PHP', 'test')]);
-        $tester = new CommandTester(new RunPipelineCommand([$remoteOk, $rss], $processor));
+        $tester = new CommandTester($this->command([$remoteOk, $rss], $processor));
 
         self::assertSame(Command::SUCCESS, $tester->execute(['--provider' => ['rss']]));
         self::assertStringNotContainsString('remoteok', strtolower($tester->getDisplay()));
@@ -48,10 +49,61 @@ final class RunPipelineCommandTest extends TestCase
     public function testRejectsUnknownProvider(): void
     {
         $processor = $this->createStub(JobProcessorInterface::class);
-        $tester = new CommandTester(new RunPipelineCommand([$this->provider('rss', [])], $processor));
+        $repository = $this->createMock(JobRepository::class);
+        $repository->expects($this->never())->method('truncate');
+        $tester = new CommandTester($this->command([$this->provider('rss', [])], $processor, $repository));
 
         self::assertSame(Command::INVALID, $tester->execute(['--provider' => ['unknown']]));
         self::assertStringContainsString('Provider(s) inconnu(s)', $tester->getDisplay());
+    }
+
+    public function testResetTruncatesBeforeFetching(): void
+    {
+        $processor = $this->createStub(JobProcessorInterface::class);
+        $repository = $this->createMock(JobRepository::class);
+        $repository->expects($this->once())->method('truncate')->willReturn(12);
+        $tester = new CommandTester($this->command([$this->provider('rss', [])], $processor, $repository));
+
+        self::assertSame(Command::SUCCESS, $tester->execute(['--reset' => true]));
+        self::assertStringContainsString('12 offre(s) supprimée(s)', $tester->getDisplay());
+    }
+
+    public function testRejectsResetWithDryRun(): void
+    {
+        $processor = $this->createStub(JobProcessorInterface::class);
+        $repository = $this->createMock(JobRepository::class);
+        $repository->expects($this->never())->method('truncate');
+        $tester = new CommandTester($this->command([], $processor, $repository));
+
+        self::assertSame(Command::INVALID, $tester->execute(['--reset' => true, '--dry-run' => true]));
+    }
+
+    public function testRejectsResetInProduction(): void
+    {
+        $processor = $this->createStub(JobProcessorInterface::class);
+        $repository = $this->createMock(JobRepository::class);
+        $repository->expects($this->never())->method('truncate');
+        $tester = new CommandTester($this->command([], $processor, $repository, 'prod'));
+
+        self::assertSame(Command::FAILURE, $tester->execute(['--reset' => true]));
+        self::assertStringContainsString('production', $tester->getDisplay());
+    }
+
+    /**
+     * @param iterable<JobProviderInterface> $providers
+     */
+    private function command(
+        iterable $providers,
+        JobProcessorInterface $processor,
+        ?JobRepository $repository = null,
+        string $environment = 'test',
+    ): RunPipelineCommand {
+        return new RunPipelineCommand(
+            $providers,
+            $processor,
+            $repository ?? $this->createStub(JobRepository::class),
+            $environment,
+        );
     }
 
     /** @param JobDto[] $jobs */

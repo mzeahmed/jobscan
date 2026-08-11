@@ -11,6 +11,8 @@ COMPOSER ?= $(PHP) $(shell command -v composer)
 APP_CONTAINER = jobscan_app
 LMSTUDIO_MODEL_KEY ?= qwen/qwen3-8b
 LMSTUDIO_MODEL_ID ?= qwen3:8b
+RESET ?= 0
+PIPELINE_ARGS ?=
 
 DOMAINS = jobscan.local searxng.local
 
@@ -20,11 +22,11 @@ YELLOW=\033[0;33m
 BLUE=\033[0;34m
 NO_COLOR=\033[0m
 
-setup: ## Configure le dépôt (git hooks, etc.)
+setup: ## Configure le dépôt (git hooks, etc.) — Exemple : make setup
 	git config core.hooksPath .githooks
 	@echo "$(GREEN)Git hooks configurés → .githooks$(NO_COLOR)"
 
-hosts: ## Ajoute les domaines locaux dans /etc/hosts (nécessite sudo)
+hosts: ## Ajoute les domaines locaux dans /etc/hosts (nécessite sudo) — Exemple : make hosts
 	@echo "$(YELLOW)Mise à jour de /etc/hosts...$(NO_COLOR)"
 	@for domain in $(DOMAINS); do \
 		if grep -qE "^127\.0\.0\.1[[:space:]]+$$domain$$" /etc/hosts; then \
@@ -35,7 +37,7 @@ hosts: ## Ajoute les domaines locaux dans /etc/hosts (nécessite sudo)
 		fi; \
 	done
 
-help: ## Affiche la liste des commandes disponibles
+help: ## Affiche la liste des commandes disponibles — Exemple : make help
 	@echo ""
 	@echo "Usage: make [target]"
 	@echo "--------------------------------------------"
@@ -43,12 +45,12 @@ help: ## Affiche la liste des commandes disponibles
 		| awk 'BEGIN {FS = ":.*?## "}; {printf " %-28s %s\n", $$1, $$2}'
 	@echo ""
 
-build: ## Build les conteneurs
+build: ## Build les conteneurs — Exemple : make build
 	@echo "$(YELLOW)Construction des conteneurs...$(NO_COLOR)"
 	$(COMPOSE) build
 	@echo "$(GREEN)Conteneurs construits$(NO_COLOR)"
 
-up: build ## Démarre les conteneurs
+up: build ## Démarre les conteneurs — Exemple : make up
 	@echo "$(YELLOW)Démarrage des conteneurs...$(NO_COLOR)"
 	$(COMPOSE) up -d
 	@echo "$(GREEN)Conteneurs démarrés$(NO_COLOR)"
@@ -56,7 +58,7 @@ up: build ## Démarre les conteneurs
 	@echo "$(BLUE)Application: https://jobscan.local:8443/job$(NO_COLOR)"
 	@echo "$(BLUE)SearXNG: https://searxng.local:8443$(NO_COLOR)"
 
-up-fast: ## Démarre sans rebuild
+up-fast: ## Démarre sans rebuild — Exemple : make up-fast
 	@echo "$(YELLOW)Démarrage sans rebuild des conteneurs...$(NO_COLOR)"
 	$(COMPOSE) up -d
 	@echo "$(GREEN)Conteneurs démarrés$(NO_COLOR)"
@@ -64,22 +66,22 @@ up-fast: ## Démarre sans rebuild
 	@echo "$(BLUE)Application: https://jobscan.local:8443/job$(NO_COLOR)"
 	@echo "$(BLUE)SearXNG: https://searxng.local:8443$(NO_COLOR)"
 
-down: ## Stop les conteneurs
+down: ## Stop les conteneurs — Exemple : make down
 	@echo "$(YELLOW)Arrêt des conteneurs...$(NO_COLOR)"
 	$(COMPOSE) down
 	@echo "$(GREEN)Conteneurs arrêtés$(NO_COLOR)"
 
-restart: down up ## Redémarre les conteneurs
+restart: down up ## Redémarre les conteneurs — Exemple : make restart
 
-logs: ## Logs des conteneurs
+logs: ## Logs des conteneurs — Exemple : make logs
 	@echo "$(YELLOW)Affichage des logs...$(NO_COLOR)"
 	$(COMPOSE) logs -f
 
-ps: ## Liste les conteneurs
+ps: ## Liste les conteneurs — Exemple : make ps
 	@echo "$(YELLOW)Listing des conteneurs...$(NO_COLOR)"
 	$(COMPOSE) ps
 
-bash: ## Accède au container app
+bash: ## Accède au container app — Exemple : make bash
 	@echo "$(YELLOW)Accès au container app...$(NO_COLOR)"
 	docker exec -it $(APP_CONTAINER) bash
 
@@ -87,20 +89,20 @@ bash: ## Accède au container app
 # SYMFONY
 # ========================
 
-console: ## Lance une commande Symfony
+console: ## Affiche les commandes Symfony — Exemple : make console
 	cd app && symfony console $(filter-out $@,$(MAKECMDGOALS))
 
-migrate: ## Lance les migrations
+migrate: ## Lance les migrations — Exemple : make migrate
 	@echo "$(YELLOW)Lancement des migrations...$(NO_COLOR)"
 	cd app && symfony console doctrine:migrations:migrate --no-interaction
 	@echo "$(GREEN)Migrations terminées$(NO_COLOR)"
 
-run-pipeline: ## Lance la pipeline JOBSCAN
+run-pipeline: ## Lance la pipeline JOBSCAN — Exemple : make run-pipeline RESET=1
 	@echo "$(YELLOW)Lancement de la pipeline JOBSCAN...$(NO_COLOR)"
-	cd app && $(PHP) bin/console app:jobs:run
+	cd app && $(PHP) bin/console app:jobs:run $(if $(filter 1 true yes,$(RESET)),--reset,) $(PIPELINE_ARGS)
 	@echo "$(GREEN)Pipeline JOBSCAN terminée$(NO_COLOR)"
 
-llm-load: ## Charge le modèle LM Studio utilisé par JOBSCAN
+llm-load: ## Charge le modèle LM Studio utilisé par JOBSCAN — Exemple : make llm-load
 	@command -v lms >/dev/null 2>&1 || (echo "$(RED)CLI LM Studio 'lms' introuvable.$(NO_COLOR)" && exit 1)
 	@if lms ps --json | grep -Fq '$(LMSTUDIO_MODEL_ID)'; then \
 		echo "$(GREEN)Modèle LM Studio déjà chargé : $(LMSTUDIO_MODEL_ID)$(NO_COLOR)"; \
@@ -109,18 +111,18 @@ llm-load: ## Charge le modèle LM Studio utilisé par JOBSCAN
 		lms load '$(LMSTUDIO_MODEL_KEY)' --identifier '$(LMSTUDIO_MODEL_ID)' --yes; \
 	fi
 
-llm-status: ## Affiche les modèles actuellement chargés dans LM Studio
+llm-status: ## Affiche les modèles actuellement chargés dans LM Studio — Exemple : make llm-status
 	@command -v lms >/dev/null 2>&1 || (echo "$(RED)CLI LM Studio 'lms' introuvable.$(NO_COLOR)" && exit 1)
 	lms ps
 
 # ========================
 # Assets
 # ========================
-w: ## Lance le watcher TypeScript
+w: ## Lance le watcher TypeScript — Exemple : make w
 	@echo "$(YELLOW)Lancement du watcher TypeScript...$(NO_COLOR)"
 	cd app && $(PHP) bin/console typescript:build --watch
 
-b: ## Build les assets TypeScript
+b: ## Build les assets TypeScript — Exemple : make b
 	@echo "$(YELLOW)Build des assets TypeScript...$(NO_COLOR)"
 	cd app && $(PHP) bin/console typescript:build
 	cd app && $(PHP) bin/console asset-map:compile
@@ -130,40 +132,40 @@ b: ## Build les assets TypeScript
 # LOGS / UTILES
 # ========================
 
-alerts: ## Affiche les alertes JOBSCAN
+alerts: ## Affiche les alertes JOBSCAN — Exemple : make alerts
 	@echo "$(YELLOW)Affichage des alertes JOBSCAN...$(NO_COLOR)"
 	tail -f app/var/alerts.log
 
-pipeline-logs: ## Logs du cron (si configuré)
+pipeline-logs: ## Logs du cron (si configuré) — Exemple : make pipeline-logs
 	@echo "$(YELLOW)Affichage des logs du pipeline...$(NO_COLOR)"
 	tail -f /var/log/jobscan.log
 
-cs: ## Lancement de php-cs-fixer en mode test
+cs: ## Lancement de php-cs-fixer en mode test — Exemple : make cs
 	@echo "$(YELLOW)Lancement de php-cs-fixer...$(NO_COLOR)"
 	cd app && $(COMPOSER) run lint
 	@echo "$(GREEN)php-cs-fixer terminé$(NO_COLOR)"
 
-csf: ## Lancement de php-cs-fixer avec correction
+csf: ## Lancement de php-cs-fixer avec correction — Exemple : make csf
 	@echo "$(YELLOW)Lancement de php-cs-fixer avec correction$(NO_COLOR)"
 	cd app && $(COMPOSER) run lint:fix
 	@echo "$(GREEN)php-cs-fixer terminé$(NO_COLOR)"
 
-stan: ## Lancement de PHPStan
+stan: ## Lancement de PHPStan — Exemple : make stan
 	@echo "$(YELLOW)Lancement de PHPStan...$(NO_COLOR)"
 	cd app && $(PHP) ./vendor/bin/phpstan analyse -c phpstan.neon
 	@echo "$(GREEN)PHPStan terminé$(NO_COLOR)"
 
-rector: ## Appliquer les transformations de Rector
+rector: ## Applique les transformations de Rector — Exemple : make rector
 	@echo "$(YELLOW)Application des transformations de Rector...$(NO_COLOR)"
 	cd app && $(PHP) ./vendor/bin/rector process
 	@echo "$(GREEN)Transformations de Rector appliquées$(NO_COLOR)"
 
-rector-check: ## Vérifie les transformations de Rector sans les appliquer
+rector-check: ## Vérifie Rector sans appliquer les changements — Exemple : make rector-check
 	@echo "$(YELLOW)Vérification des transformations de Rector...$(NO_COLOR)"
 	cd app && $(PHP) ./vendor/bin/rector process --dry-run
 	@echo "$(GREEN)Vérification des transformations de Rector terminée$(NO_COLOR)"
 
-hard: ## Reinitialisation du dépôt (attention, toutes les modifications non commit seront perdues)
+hard: ## Réinitialise le dépôt (destructif : changements perdus) — Exemple : make hard
 	@echo "$(RED)⚠️  Cette action va supprimer toutes les modifications non commitées.$(NO_COLOR)"
 	@printf "Confirmer ? [y/N] " && read ans && [ "$$ans" = "y" ] || (echo "Annulé." && exit 1)
 	@echo "$(YELLOW)Réinitialisation du dépôt...$(NO_COLOR)"
@@ -171,7 +173,7 @@ hard: ## Reinitialisation du dépôt (attention, toutes les modifications non co
 	git clean -fd
 	@echo "$(GREEN)Dépôt réinitialisé.$(NO_COLOR)"
 
-clean: ## Supprimer toutes les branches locales et distantes sauf main
+clean: ## Supprime toutes les branches sauf main (destructif) — Exemple : make clean
 	@echo "$(YELLOW)Branches locales à supprimer :$(NO_COLOR)"
 	@git branch | grep -vE '^\*|main' || echo "  (aucune)"
 	@echo "$(YELLOW)Branches distantes à supprimer :$(NO_COLOR)"
@@ -197,29 +199,29 @@ clean: ## Supprimer toutes les branches locales et distantes sauf main
 # BRANCH accepts BRANCH=, branch= B= or b= (defaults to main)
 BRANCH := $(or $(BRANCH),$(branch),$(B),$(b),main)
 
-upstream-add: ## make upstream-add URL=git@github.com:owner/repo.git
+upstream-add: ## Ajoute le dépôt upstream — Exemple : make upstream-add URL=git@github.com:owner/repo.git
 	@test -n "$(URL)" || (echo "Usage: make upstream-add URL=git@github.com:owner/repo.git" && exit 1)
 	git remote add upstream $(URL)
 	@echo "$(GREEN)✓ Upstream remote added$(RESET)"
 
-sync-upstream: ## make sync-upstream BRANCH=main (aliases: B, b — default: main)
+sync-upstream: ## Fusionne upstream dans la branche — Exemple : make sync-upstream BRANCH=main
 	git fetch upstream
 	git merge upstream/$(BRANCH)
 	@echo "$(GREEN)✓ Branch synced with upstream/$(BRANCH)$(RESET)"
 
-sync-upstream-rebase: ## make sync-upstream-rebase BRANCH=main (aliases: B, b — default: main)
+sync-upstream-rebase: ## Rebase sur upstream — Exemple : make sync-upstream-rebase BRANCH=main
 	git fetch upstream
 	git rebase upstream/$(BRANCH)
 	@echo "$(GREEN)✓ Branch rebased onto upstream/$(BRANCH)$(RESET)"
 
-push-fork: ## make push-fork BRANCH=main (aliases: B, b — default: main)
+push-fork: ## Pousse la branche vers origin — Exemple : make push-fork BRANCH=main
 	git push origin $(BRANCH)
 	@echo "$(GREEN)✓ Pushed to origin/$(BRANCH)$(RESET)"
 
 # ========================
 # TESTES
 # ========================
-test: ## Lancement des tests PHPUnit
+test: ## Lance les tests PHPUnit — Exemple : make test
 	@echo "$(YELLOW)Lancement des tests PHPUnit...$(NO_COLOR)"
 	cd app && $(PHP) bin/phpunit
 	@echo "$(GREEN)Tests PHPUnit terminés$(NO_COLOR)"
@@ -228,5 +230,5 @@ test: ## Lancement des tests PHPUnit
 # PERMISSIONS
 # ========================
 
-fix-perms: ## Corrige les permissions SQLite/cache (utile après make up, php-fpm tourne en www-data)
+fix-perms: ## Corrige les permissions SQLite/cache — Exemple : make fix-perms
 	sudo chmod -R 777 app/var

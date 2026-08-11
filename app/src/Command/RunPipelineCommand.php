@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Repository\JobRepository;
 use App\Processor\JobProcessingResult;
 use App\Processor\JobProcessingStatus;
 use App\Provider\JobProviderInterface;
@@ -27,6 +28,8 @@ final class RunPipelineCommand extends Command
     public function __construct(
         private readonly iterable $providers,
         private readonly JobProcessorInterface $processor,
+        private readonly JobRepository $jobRepository,
+        private readonly string $environment,
     ) {
         parent::__construct();
     }
@@ -35,6 +38,7 @@ final class RunPipelineCommand extends Command
     {
         $this
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Analyse les offres sans persistance ni notification.')
+            ->addOption('reset', null, InputOption::VALUE_NONE, 'Vide la table des offres avant le pipeline (hors production).')
             ->addOption('provider', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Provider à exécuter (remoteok, rss, searxng).');
     }
 
@@ -46,6 +50,7 @@ final class RunPipelineCommand extends Command
         $io->title('JOBSCAN — Pipeline offres freelance/CDI PHP/Symfony/WordPress');
 
         $dryRun = (bool) $input->getOption('dry-run');
+        $reset = (bool) $input->getOption('reset');
         /** @var list<string> $selectedProviders */
         $selectedProviders = array_map('strtolower', (array) $input->getOption('provider'));
         $providers = iterator_to_array($this->providers);
@@ -59,6 +64,23 @@ final class RunPipelineCommand extends Command
             ));
 
             return Command::INVALID;
+        }
+
+        if ($reset && $dryRun) {
+            $io->error('Les options --reset et --dry-run ne peuvent pas être utilisées ensemble.');
+
+            return Command::INVALID;
+        }
+
+        if ($reset && $this->environment === 'prod') {
+            $io->error("L'option --reset est interdite en environnement de production.");
+
+            return Command::FAILURE;
+        }
+
+        if ($reset) {
+            $deleted = $this->jobRepository->truncate();
+            $io->warning(sprintf('Base de développement réinitialisée : %d offre(s) supprimée(s).', $deleted));
         }
 
         if ($dryRun) {

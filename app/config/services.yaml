@@ -28,6 +28,7 @@ services:
     App\Command\RunPipelineCommand:
         arguments:
             $providers: !tagged_iterator app.job_provider
+            $environment: '%kernel.environment%'
 
     App\Notification\TelegramNotifier:
         arguments:

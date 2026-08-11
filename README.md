@@ -360,6 +360,16 @@ php bin/console app:jobs:run --provider=remoteok --provider=searxng
 php bin/console app:jobs:stats
 ```
 
+Pour vider uniquement les offres avant un test complet, sans toucher aux migrations :
+
+```bash
+make run-pipeline RESET=1
+make run-pipeline RESET=1 PIPELINE_ARGS="--provider=remoteok"
+```
+
+Le reset est réservé aux environnements `dev` et `test`, et ne peut pas être combiné
+avec `--dry-run`.
+
 ### Suivre les alertes en temps réel
 
 ```bash
