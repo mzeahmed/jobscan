@@ -56,7 +56,7 @@ final readonly class SearxProvider implements JobProviderInterface
     {
         $jobs = [];
 
-        foreach ($this->searchMany($this->buildQueries()) as $query => $results) {
+        foreach ($this->searchMany($this->buildQueries()) as $results) {
             foreach ($results as $result) {
                 $title = trim((string) ($result['title'] ?? ''));
                 $url = trim((string) ($result['url'] ?? ''));

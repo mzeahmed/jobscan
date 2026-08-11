@@ -52,7 +52,7 @@ final class RunPipelineCommand extends Command
         $dryRun = (bool) $input->getOption('dry-run');
         $reset = (bool) $input->getOption('reset');
         /** @var list<string> $selectedProviders */
-        $selectedProviders = array_map('strtolower', (array) $input->getOption('provider'));
+        $selectedProviders = array_map(strtolower(...), (array) $input->getOption('provider'));
         $providers = iterator_to_array($this->providers);
         $availableProviders = array_map(static fn (JobProviderInterface $provider): string => $provider->name(), $providers);
         $unknownProviders = array_diff($selectedProviders, $availableProviders);
