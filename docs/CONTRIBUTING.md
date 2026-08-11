@@ -72,7 +72,11 @@ cd app && symfony console app:jobs:run
    make rector         # application
    ```
 
-4. S'assurer que le pipeline tourne sans erreur en local.
+4. **Changelog** — ajouter tout changement visible dans la section `Unreleased`
+   de [CHANGELOG.md](CHANGELOG.md), sous une date ISO `YYYY-MM-DD`, puis dans
+   la catégorie `Added`, `Changed` ou `Fixed` appropriée.
+
+5. S'assurer que le pipeline tourne sans erreur en local.
 
 Le hook `pre-push` lance PHPStan automatiquement. Si le hook ne se déclenche pas, lancer `make setup`.
 

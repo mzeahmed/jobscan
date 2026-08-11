@@ -565,7 +565,11 @@ sqlite3 app/var/jobscan.db "SELECT id, title, score, source FROM job ORDER BY sc
 
 ## Contribuer
 
-Les contributions sont les bienvenues. Consultez [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) pour le guide complet, [docs/ROADMAP.md](docs/ROADMAP.md) pour les chantiers ouverts, et [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) en cas de problème avec la stack Docker ou l'exécution locale.
+Les contributions sont les bienvenues. Consultez [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+pour le guide complet, [docs/ROADMAP.md](docs/ROADMAP.md) pour les chantiers ouverts,
+[docs/CHANGELOG.md](docs/CHANGELOG.md) pour les évolutions et
+[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) en cas de problème avec la stack
+Docker ou l'exécution locale.
 
 **En bref :**
 
