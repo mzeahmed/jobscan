@@ -10,6 +10,8 @@ création du tag.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-11
+
 ### 2026-08-11
 
 #### Added
