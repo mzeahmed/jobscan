@@ -22,6 +22,8 @@ YELLOW=\033[0;33m
 BLUE=\033[0;34m
 NO_COLOR=\033[0m
 
+SCRIPTS_DIR=./app/tools/scripts
+
 setup: ## Configure le dépôt (git hooks, etc.) — Exemple : make setup
 	git config core.hooksPath .githooks
 	@echo "$(GREEN)Git hooks configurés → .githooks$(NO_COLOR)"
@@ -235,6 +237,10 @@ test-integration: ## Lance uniquement les tests d'intégration — Exemple : mak
 	@echo "$(YELLOW)Lancement des tests d'intégration...$(NO_COLOR)"
 	cd app && $(PHP) bin/phpunit --testsuite Integration
 	@echo "$(GREEN)Tests d'intégration terminés$(NO_COLOR)"
+
+commit: ## Commit rapide (make commit m="message" b=branche)
+	@echo "$(YELLOW)Ajout des modifications et commit (${m}) ...$(NO_COLOR)"
+	@$(SCRIPTS_DIR)/commit.sh "$(m)" $(b)
 
 # ========================
 # PERMISSIONS
