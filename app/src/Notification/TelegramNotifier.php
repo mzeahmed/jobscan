@@ -10,7 +10,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * Envoie des messages texte sur un canal Telegram via l'API Bot.
  *
- * Les messages sont envoyés en Markdown. Les erreurs réseau ou API sont
+ * Les messages sont envoyés en HTML. Les erreurs réseau ou API sont
  * absorbées et journalisées — elles ne propagent jamais d'exception vers
  * l'appelant afin de ne pas interrompre le pipeline.
  */
@@ -40,7 +40,12 @@ final readonly class TelegramNotifier
      */
     public function send(string $message): bool
     {
+        $attempts = 0;
+
         for ($attempt = 1; $attempt <= $this->maxAttempts; $attempt++) {
+            $attempts = $attempt;
+            $retryDelayMs = $this->initialRetryDelayMs * (2 ** ($attempt - 1));
+
             try {
                 $response = $this->httpClient->request('POST', sprintf(
                     '%s/bot%s/sendMessage',
@@ -50,7 +55,7 @@ final readonly class TelegramNotifier
                     'json' => [
                         'chat_id' => $this->chatId,
                         'text' => $message,
-                        'parse_mode' => 'Markdown',
+                        'parse_mode' => 'HTML',
                     ],
                     'timeout' => 15,
                 ]);
@@ -66,6 +71,15 @@ final readonly class TelegramNotifier
                     'status_code' => $statusCode,
                     'description' => $data['description'] ?? null,
                 ]);
+
+                if (!$this->isRetryableStatus($statusCode)) {
+                    break;
+                }
+
+                $retryAfter = $data['parameters']['retry_after'] ?? null;
+                if (is_numeric($retryAfter)) {
+                    $retryDelayMs = max(0, (int) $retryAfter * 1000);
+                }
             } catch (\Throwable $e) {
                 $this->logger->warning('Erreur Telegram.', [
                     'attempt' => $attempt,
@@ -73,15 +87,20 @@ final readonly class TelegramNotifier
                 ]);
             }
 
-            if ($attempt < $this->maxAttempts && $this->initialRetryDelayMs > 0) {
-                usleep($this->initialRetryDelayMs * (2 ** ($attempt - 1)) * 1000);
+            if ($attempt < $this->maxAttempts && $retryDelayMs > 0) {
+                usleep($retryDelayMs * 1000);
             }
         }
 
         $this->logger->error('Notification Telegram abandonnée après plusieurs tentatives.', [
-            'attempts' => $this->maxAttempts,
+            'attempts' => $attempts,
         ]);
 
         return false;
+    }
+
+    private function isRetryableStatus(int $statusCode): bool
+    {
+        return $statusCode === 429 || $statusCode >= 500;
     }
 }

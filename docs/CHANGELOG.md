@@ -5,10 +5,23 @@ Les changements notables de JOBSCAN sont documentés dans ce fichier à partir d
 
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/) et le projet
 utilise le [versionnage sémantique](https://semver.org/lang/fr/). La dernière release
-publiée est `v0.3.0` ; la prochaine sera constituée du contenu de la section
+publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 `Unreleased` lors de la création de son tag.
 
 ## [Unreleased]
+
+### 2026-08-11
+
+#### Changed
+
+- Messages Telegram envoyés en HTML avec échappement des données provenant des offres.
+
+#### Fixed
+
+- Arrêt immédiat des retries Telegram sur les erreurs HTTP définitives.
+- Prise en compte de `retry_after` lors d'une limitation de débit Telegram.
+
+## [0.4.0] - 2026-08-11
 
 ### 2026-08-11
 
