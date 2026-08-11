@@ -41,18 +41,37 @@ services:
         arguments:
             $scoreThreshold: '%app.profile.notification_threshold%'
 
+    llm.retry_strategy:
+        class: Symfony\Component\HttpClient\Retry\GenericRetryStrategy
+        arguments:
+            $statusCodes: [0, 429, 500, 502, 503, 504]
+            $delayMs: '%app.profile.ai_initial_retry_delay_ms%'
+            $multiplier: '%app.profile.ai_retry_multiplier%'
+            $jitter: 0.0
+
+    llm.retryable_http_client:
+        class: Symfony\Component\HttpClient\RetryableHttpClient
+        arguments:
+            $client: '@http_client'
+            $strategy: '@llm.retry_strategy'
+            $maxRetries: '%app.profile.ai_max_retries%'
+            $logger: '@logger'
+
     App\AI\Provider\OllamaClient:
         arguments:
+            $httpClient: '@llm.retryable_http_client'
             $apiBase: '%jobscan.llm.ollama.base_url%'
             $model: '%jobscan.llm.ollama.model%'
 
     App\AI\Provider\LMStudioClient:
         arguments:
+            $httpClient: '@llm.retryable_http_client'
             $apiBase: '%jobscan.llm.lmstudio.base_url%'
             $model: '%jobscan.llm.lmstudio.model%'
 
     App\AI\Provider\GeminiClient:
         arguments:
+            $httpClient: '@llm.retryable_http_client'
             $apiKey: '%jobscan.llm.gemini.api_key%'
             $model: '%jobscan.llm.gemini.model%'
 
@@ -91,6 +110,8 @@ services:
             $maxQueries: '%app.profile.searx_max_queries%'
             $concurrency: '%app.profile.searx_concurrency%'
             $cacheTtl: '%app.profile.searx_cache_ttl%'
+            $maxPages: '%app.profile.searx_max_pages%'
+            $queryDelayMs: '%app.profile.searx_query_delay_ms%'
         tags: [ 'app.job_provider' ]
 
     App\Processor\JobProcessor:
@@ -98,6 +119,7 @@ services:
             $filterKeywords: '%app.profile.filter_keywords%'
             $maxJobAgeDays: '%app.profile.max_job_age_days%'
             $aiPrescoreThreshold: '%app.profile.ai_prescore_threshold%'
+            $batchSize: '%app.profile.persistence_batch_size%'
 
     App\Scoring\Scoring:
         arguments:

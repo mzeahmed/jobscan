@@ -33,6 +33,7 @@ final readonly class SearxProvider implements JobProviderInterface
      * @param string $baseUrl URL de base de l'instance SearXNG (env `SEARXNG_URL`)
      * @param list<string> $searchQueries Requêtes de base (config `app.profile.searx_queries`)
      * @param list<string> $locations Localisations (config `app.profile.job_locations`)
+     * @param null|\Closure(int): void $sleeper Attente injectable pour les tests (durée en millisecondes)
      */
     public function __construct(
         private HttpClientInterface $httpClient,
@@ -44,6 +45,9 @@ final readonly class SearxProvider implements JobProviderInterface
         private int $maxQueries = 20,
         private int $concurrency = 5,
         private int $cacheTtl = 3600,
+        private int $maxPages = 2,
+        private int $queryDelayMs = 500,
+        private ?\Closure $sleeper = null,
     ) {
     }
 
@@ -94,79 +98,145 @@ final readonly class SearxProvider implements JobProviderInterface
     }
 
     /**
-     * Exécute les requêtes par lots et retourne un résultat vide pour chaque
-     * requête en échec, sans interrompre les autres recherches.
+     * Exécute les pages par lots concurrents. Une requête quitte la pagination
+     * dès qu'une page est vide ou en échec, sans interrompre les autres.
      *
      * @param list<string> $queries
      * @return array<string, array<int, array<string, mixed>>>
      */
     private function searchMany(array $queries): array
     {
-        $allResults = [];
+        $allResults = array_fill_keys($queries, []);
+        $activeQueries = $queries;
+        $hasDispatchedBatch = false;
 
-        foreach (array_chunk($queries, max(1, $this->concurrency)) as $chunk) {
-            /** @var array<string, array{response: ResponseInterface, cache_key: string}> $pending */
-            $pending = [];
+        for ($page = 1; $page <= max(1, $this->maxPages) && $activeQueries !== []; ++$page) {
+            $nextPageQueries = [];
 
-            foreach ($chunk as $query) {
-                $cacheKey = 'searx_' . hash('sha256', $this->baseUrl . '|' . $query);
-                try {
-                    $item = $this->cache->getItem($cacheKey);
-                    if ($item->isHit() && is_array($item->get())) {
-                        $allResults[$query] = $item->get();
+            foreach (array_chunk($activeQueries, max(1, $this->concurrency)) as $chunk) {
+                $pageResults = $this->searchPageChunk($chunk, $page, $hasDispatchedBatch);
+
+                foreach ($chunk as $query) {
+                    $results = $pageResults[$query] ?? [];
+                    if ($results === []) {
                         continue;
                     }
-                } catch (\Throwable $e) {
-                    $this->logger->warning('Cache SearXNG indisponible.', ['error' => $e->getMessage()]);
-                }
 
-                try {
-                    $pending[$query] = [
-                        'response' => $this->httpClient->request('GET', rtrim($this->baseUrl, '/') . '/search', [
-                            'query' => [
-                                'q' => $query,
-                                'format' => 'json',
-                                'language' => 'fr-FR',
-                                'safesearch' => 0,
-                                'time_range' => 'month',
-                            ],
-                            'headers' => [
-                                'Accept' => 'application/json',
-                                'User-Agent' => 'JOBSCAN/1.0',
-                            ],
-                            'timeout' => 20,
-                        ]),
-                        'cache_key' => $cacheKey,
-                    ];
-                } catch (\Throwable $e) {
-                    $allResults[$query] = [];
-                    $this->logger->warning('SearxProvider search failed.', [
-                        'query' => $query,
-                        'error' => $e->getMessage(),
-                    ]);
+                    $allResults[$query] = array_merge($allResults[$query], $results);
+                    $nextPageQueries[] = $query;
                 }
             }
 
-            foreach ($pending as $query => $request) {
-                try {
-                    $data = $request['response']->toArray(false);
-                    $results = isset($data['results']) && is_array($data['results']) ? $data['results'] : [];
-                    $allResults[$query] = $results;
-
-                    $item = $this->cache->getItem($request['cache_key']);
-                    $item->set($results)->expiresAfter($this->cacheTtl);
-                    $this->cache->save($item);
-                } catch (\Throwable $e) {
-                    $allResults[$query] = [];
-                    $this->logger->warning('SearxProvider search failed.', [
-                        'query' => $query,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
+            $activeQueries = $nextPageQueries;
         }
 
         return $allResults;
+    }
+
+    /**
+     * @param list<string> $queries
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function searchPageChunk(array $queries, int $page, bool &$hasDispatchedBatch): array
+    {
+        $pageResults = [];
+        $cacheMisses = [];
+
+        foreach ($queries as $query) {
+            $cacheKey = 'searx_' . hash('sha256', $this->baseUrl . '|' . $query . '|' . $page);
+
+            try {
+                $item = $this->cache->getItem($cacheKey);
+                if ($item->isHit() && is_array($item->get())) {
+                    $pageResults[$query] = $item->get();
+                    continue;
+                }
+            } catch (\Throwable $e) {
+                $this->logger->warning('Cache SearXNG indisponible.', ['error' => $e->getMessage()]);
+            }
+
+            $cacheMisses[$query] = $cacheKey;
+        }
+
+        if ($cacheMisses === []) {
+            return $pageResults;
+        }
+
+        if ($hasDispatchedBatch) {
+            $this->waitBetweenBatches();
+        }
+
+        $hasDispatchedBatch = true;
+
+        /** @var array<string, array{response: ResponseInterface, cache_key: string}> $pending */
+        $pending = [];
+
+        foreach ($cacheMisses as $query => $cacheKey) {
+            try {
+                $pending[$query] = [
+                    'response' => $this->httpClient->request('GET', rtrim($this->baseUrl, '/') . '/search', [
+                        'query' => [
+                            'q' => $query,
+                            'format' => 'json',
+                            'language' => 'fr-FR',
+                            'safesearch' => 0,
+                            'time_range' => 'month',
+                            'pageno' => $page,
+                        ],
+                        'headers' => [
+                            'Accept' => 'application/json',
+                            'User-Agent' => 'JOBSCAN/1.0',
+                        ],
+                        'timeout' => 20,
+                    ]),
+                    'cache_key' => $cacheKey,
+                ];
+            } catch (\Throwable $e) {
+                $pageResults[$query] = [];
+                $this->logSearchFailure($query, $page, $e);
+            }
+        }
+
+        foreach ($pending as $query => $request) {
+            try {
+                $data = $request['response']->toArray(false);
+                $results = isset($data['results']) && is_array($data['results']) ? $data['results'] : [];
+                $pageResults[$query] = $results;
+
+                $item = $this->cache->getItem($request['cache_key']);
+                $item->set($results)->expiresAfter($this->cacheTtl);
+                $this->cache->save($item);
+            } catch (\Throwable $e) {
+                $pageResults[$query] = [];
+                $this->logSearchFailure($query, $page, $e);
+            }
+        }
+
+        return $pageResults;
+    }
+
+    private function waitBetweenBatches(): void
+    {
+        if ($this->queryDelayMs <= 0) {
+            return;
+        }
+
+        if ($this->sleeper !== null) {
+            ($this->sleeper)($this->queryDelayMs);
+
+            return;
+        }
+
+        usleep($this->queryDelayMs * 1000);
+    }
+
+    private function logSearchFailure(string $query, int $page, \Throwable $error): void
+    {
+        $this->logger->warning('SearxProvider search failed.', [
+            'query' => $query,
+            'page' => $page,
+            'error' => $error->getMessage(),
+        ]);
     }
 
     /**

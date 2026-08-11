@@ -55,7 +55,7 @@ Providers (RSS + SearXNG)
 - [x] Hook pre-push avec PHPStan
 - [x] Tests unitaires sur `ScoringService`
 - [x] CI GitHub Actions
-- [ ] Tests d'intégration sur `JobProcessor` — #17
+- [x] Tests d'intégration sur `JobProcessor` — #17
 
 ---
 
@@ -63,9 +63,9 @@ Providers (RSS + SearXNG)
 
 - [x] Filtrer les offres trop anciennes — #1
 - [x] Déduplication avancée cross-provider — #2
-- [ ] Source RSS basée sur le domaine du flux — #3
-- [ ] Pagination SearXNG — #4
-- [ ] Délai configurable entre les requêtes SearXNG — #5
+- [x] Source RSS basée sur le domaine du flux — #3
+- [x] Pagination SearXNG — #4
+- [x] Délai configurable entre les requêtes SearXNG — #5
 - [x] Modèle LM Studio configurable via `jobscan.yaml` — #6
 - [x] Normalisation typée de la sortie IA — #7
 - [x] Bonus de scoring par séniorité et budget — #8
@@ -74,15 +74,15 @@ Providers (RSS + SearXNG)
 
 ## Phase 3 — Robustesse & Tests
 
-- [ ] Retry avec backoff exponentiel sur les appels IA — #9
+- [x] Retry avec backoff exponentiel sur les appels IA — #9
 - [x] Circuit breaker sur LM Studio — #10
-- [ ] Batch insert Doctrine (flush groupé) — #11
+- [x] Batch insert Doctrine (flush groupé) — #11
 - [x] Déclarations `.PHONY` dans le Makefile — #12
 - [ ] Sécurisation du Dockerfile (non-root, multi-stage) — #13
 - [ ] Interface `isHealthy()` sur les providers — #14
 - [ ] Tests unitaires : `SearxProvider::isClearlyIrrelevant()` — #15
 - [x] Tests unitaires : fallback heuristique de `AIClient` — #16
-- [ ] Tests d'intégration : `JobProcessor` — #17
+- [x] Tests d'intégration : `JobProcessor` — #17
 
 ---
 

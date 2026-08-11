@@ -6,7 +6,6 @@ namespace App\Notification;
 
 use App\Entity\Job;
 use Psr\Log\LoggerInterface;
-use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Gère l'envoi des notifications pour les offres d'emploi jugées pertinentes.
@@ -20,7 +19,6 @@ final readonly class Notifier
     public function __construct(
         private TelegramNotifier $telegram,
         private LoggerInterface $logger,
-        private EntityManagerInterface $em,
         private int $scoreThreshold = 60,
     ) {
     }
@@ -34,7 +32,7 @@ final readonly class Notifier
      *
      * En cas de succès, marque l'offre comme notifiée et persiste le changement.
      */
-    public function notify(Job $job): void
+    public function notify(Job $job): bool
     {
         if ($job->getNotifiedAt() !== null) {
             $this->logger->debug('Notification ignorée : déjà envoyée.', [
@@ -42,11 +40,11 @@ final readonly class Notifier
                 'notified_at' => $job->getNotifiedAt()->format('Y-m-d H:i:s'),
             ]);
 
-            return;
+            return false;
         }
 
         if ($job->getScore() < $this->scoreThreshold) {
-            return;
+            return false;
         }
 
         if (!$this->telegram->send($this->formatMessage($job))) {
@@ -54,16 +52,17 @@ final readonly class Notifier
                 'title' => $job->getTitle(),
             ]);
 
-            return;
+            return false;
         }
 
         $job->markAsNotified();
-        $this->em->flush();
 
         $this->logger->info('Notification envoyée', [
             'title' => $job->getTitle(),
             'score' => $job->getScore(),
         ]);
+
+        return true;
     }
 
     /**

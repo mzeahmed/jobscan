@@ -23,12 +23,21 @@ parameters:
     app.profile.max_job_age_days: 30
     app.profile.recent_job_days: 14
     app.profile.ai_prescore_threshold: 10
+    # Deux retries après l'appel initial, soit trois appels LLM au maximum.
+    app.profile.ai_max_retries: 2
+    app.profile.ai_initial_retry_delay_ms: 1000
+    app.profile.ai_retry_multiplier: 2.0
+    app.profile.persistence_batch_size: 20
     app.profile.notification_threshold: 60
     app.profile.telegram_max_attempts: 3
     app.profile.telegram_initial_retry_delay_ms: 250
     app.profile.searx_max_queries: 20
     app.profile.searx_concurrency: 5
     app.profile.searx_cache_ttl: 3600
+    # Nombre maximal de pages récupérées pour chaque requête SearXNG.
+    app.profile.searx_max_pages: 2
+    # Pause entre deux lots concurrents ; 0 désactive la temporisation.
+    app.profile.searx_query_delay_ms: 500
 
     app.profile.scoring:
         prescore:

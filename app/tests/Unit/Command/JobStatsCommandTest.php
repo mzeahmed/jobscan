@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\Command;
+namespace App\Tests\Unit\Command;
 
 use PHPUnit\Framework\TestCase;
 use App\Command\JobStatsCommand;

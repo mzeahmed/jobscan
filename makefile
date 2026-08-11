@@ -1,4 +1,4 @@
-.PHONY: help setup hosts build up down logs bash migrate run-pipeline llm-load llm-status alerts fix-perms
+.PHONY: help setup hosts build up down logs bash migrate run-pipeline llm-load llm-status alerts fix-perms test test-unit test-integration
 
 COMPOSE = docker compose -f docker-compose.yml
 COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
@@ -21,6 +21,8 @@ GREEN=\033[0;32m
 YELLOW=\033[0;33m
 BLUE=\033[0;34m
 NO_COLOR=\033[0m
+
+SCRIPTS_DIR=./app/tools/scripts
 
 setup: ## Configure le dépôt (git hooks, etc.) — Exemple : make setup
 	git config core.hooksPath .githooks
@@ -225,6 +227,20 @@ test: ## Lance les tests PHPUnit — Exemple : make test
 	@echo "$(YELLOW)Lancement des tests PHPUnit...$(NO_COLOR)"
 	cd app && $(PHP) bin/phpunit
 	@echo "$(GREEN)Tests PHPUnit terminés$(NO_COLOR)"
+
+test-unit: ## Lance uniquement les tests unitaires — Exemple : make test-unit
+	@echo "$(YELLOW)Lancement des tests unitaires...$(NO_COLOR)"
+	cd app && $(PHP) bin/phpunit --testsuite Unit
+	@echo "$(GREEN)Tests unitaires terminés$(NO_COLOR)"
+
+test-integration: ## Lance uniquement les tests d'intégration — Exemple : make test-integration
+	@echo "$(YELLOW)Lancement des tests d'intégration...$(NO_COLOR)"
+	cd app && $(PHP) bin/phpunit --testsuite Integration
+	@echo "$(GREEN)Tests d'intégration terminés$(NO_COLOR)"
+
+commit: ## Commit rapide (make commit m="message" b=branche)
+	@echo "$(YELLOW)Ajout des modifications et commit (${m}) ...$(NO_COLOR)"
+	@$(SCRIPTS_DIR)/commit.sh "$(m)" $(b)
 
 # ========================
 # PERMISSIONS

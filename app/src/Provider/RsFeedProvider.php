@@ -116,12 +116,12 @@ final readonly class RsFeedProvider implements JobProviderInterface
 
         // RSS 2.0
         if (isset($feed->channel->item)) {
-            return $this->rss20($feed->channel->item);
+            return $this->rss20($feed->channel->item, $this->sourceFromFeedUrl($feedUrl));
         }
 
         // Atom
         if (isset($feed->entry)) {
-            $jobs = $this->atom($feed->entry);
+            $jobs = $this->atom($feed->entry, $this->sourceFromFeedUrl($feedUrl));
         }
 
         return $jobs;
@@ -137,7 +137,7 @@ final readonly class RsFeedProvider implements JobProviderInterface
      *
      * @return JobDto[]
      */
-    private function rss20(array | \SimpleXMLElement $items): array
+    private function rss20(array | \SimpleXMLElement $items, string $source): array
     {
         $jobs = [];
 
@@ -154,7 +154,7 @@ final readonly class RsFeedProvider implements JobProviderInterface
                 title: $title,
                 url: $url,
                 description: $description,
-                source: 'feed',
+                source: $source,
                 publishedAt: $this->parsePubDate((string) ($item->pubDate ?? '')),
             );
         }
@@ -173,7 +173,7 @@ final readonly class RsFeedProvider implements JobProviderInterface
      *
      * @return JobDto[]
      */
-    private function atom(array | \SimpleXMLElement $entries): array
+    private function atom(array | \SimpleXMLElement $entries, string $source): array
     {
         $jobs = [];
 
@@ -202,11 +202,28 @@ final readonly class RsFeedProvider implements JobProviderInterface
                 title: $title,
                 url: $url,
                 description: $description,
-                source: 'feed',
+                source: $source,
                 publishedAt: $this->parsePubDate($rawDate),
             );
         }
 
         return $jobs;
+    }
+
+    /**
+     * Produit un libellé court et stable à partir du domaine du flux.
+     */
+    private function sourceFromFeedUrl(string $feedUrl): string
+    {
+        $host = parse_url($feedUrl, PHP_URL_HOST);
+
+        if (!is_string($host) || $host === '') {
+            return 'feed';
+        }
+
+        $host = preg_replace('/^www\./i', '', $host);
+        $source = explode('.', (string) $host)[0];
+
+        return $source !== '' ? strtolower($source) : 'feed';
     }
 }

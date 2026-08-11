@@ -28,6 +28,16 @@ class JobRepository extends ServiceEntityRepository
         }
     }
 
+    public function flush(): void
+    {
+        $this->getEntityManager()->flush();
+    }
+
+    public function clear(): void
+    {
+        $this->getEntityManager()->clear();
+    }
+
     public function existsByUrlOrCanonicalUrl(string $url, string $canonicalUrl): bool
     {
         return (int) $this->createQueryBuilder('j')

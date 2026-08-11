@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Tests\AI;
+namespace App\Tests\Unit\AI;
 
+use App\AI\AIClient;
 use App\DTO\Seniority;
 use Psr\Log\NullLogger;
-use App\AI\AIClient;
 use App\DTO\ContractType;
 use App\DTO\AiAnalysisDto;
 use PHPUnit\Framework\TestCase;

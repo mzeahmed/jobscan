@@ -105,12 +105,19 @@ final class RunPipelineCommand extends Command
             $io->writeln(sprintf('  → <info>%d</info> offre(s) récupérée(s)', \count($jobs)));
             $fetched += \count($jobs);
 
-            foreach ($jobs as $dto) {
-                try {
-                    $result = $this->processor->process($dto, $dryRun);
-                } catch (\Throwable $e) {
-                    $result = JobProcessingResult::failed($e->getMessage());
-                    $io->warning(sprintf('Échec du traitement de "%s" : %s', $dto->title, $e->getMessage()));
+            try {
+                $results = $this->processor->processBatch($jobs, $dryRun);
+            } catch (\Throwable $e) {
+                $results = array_fill(0, count($jobs), JobProcessingResult::failed($e->getMessage()));
+            }
+
+            foreach ($results as $index => $result) {
+                if ($result->status === JobProcessingStatus::Failed) {
+                    $io->warning(sprintf(
+                        'Échec du traitement de "%s" : %s',
+                        $jobs[$index]->title ?? 'offre inconnue',
+                        $result->error ?? 'erreur inconnue',
+                    ));
                 }
 
                 ++$counts[$result->status->value];
