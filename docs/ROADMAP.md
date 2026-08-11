@@ -75,13 +75,13 @@ Providers (RSS + SearXNG)
 ## Phase 3 — Robustesse & Tests
 
 - [ ] Retry avec backoff exponentiel sur les appels IA — #9
-- [ ] Circuit breaker sur LM Studio — #10
+- [x] Circuit breaker sur LM Studio — #10
 - [ ] Batch insert Doctrine (flush groupé) — #11
-- [ ] Déclarations `.PHONY` dans le Makefile — #12
+- [x] Déclarations `.PHONY` dans le Makefile — #12
 - [ ] Sécurisation du Dockerfile (non-root, multi-stage) — #13
 - [ ] Interface `isHealthy()` sur les providers — #14
 - [ ] Tests unitaires : `SearxProvider::isClearlyIrrelevant()` — #15
-- [ ] Tests unitaires : fallback heuristique de `AIClient` — #16
+- [x] Tests unitaires : fallback heuristique de `AIClient` — #16
 - [ ] Tests d'intégration : `JobProcessor` — #17
 
 ---
@@ -89,13 +89,13 @@ Providers (RSS + SearXNG)
 ## Phase 4 — Productivité développeur
 
 - [ ] Commande `app:jobs:purge` — #19
-- [ ] Commande `app:jobs:stats` — #20
-- [ ] Mode `--dry-run` sur le pipeline — #21
-- [ ] Flag `--provider` pour filtrer les sources — #22
-- [ ] Résumé de fin de run — #23
+- [x] Commande `app:jobs:stats` — #20
+- [x] Mode `--dry-run` sur le pipeline — #21
+- [x] Flag `--provider` pour filtrer les sources — #22
+- [x] Résumé de fin de run — #23
 - [ ] Notifications Telegram enrichies — #24
-- [ ] Seuil de notification configurable — #25
-- [ ] Poids du scoring configurables via YAML — #26
+- [x] Seuil de notification configurable — #25
+- [x] Poids du scoring configurables via YAML — #26
 - [ ] Export CSV / JSON — #27
 - [ ] Vue HTML paginée pour consulter et filtrer les offres — #34
 

@@ -20,8 +20,13 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  */
 final readonly class RsFeedProvider implements JobProviderInterface
 {
+    public function name(): string
+    {
+        return 'rss';
+    }
+
     /**
-     * @param  string[]  $feedUrls  URLs des flux à interroger (config `app.job_feed_urls`)
+     * @param list<string|null> $feedUrls URLs optionnelles des flux à interroger (config `app.job_feed_urls`)
      */
     public function __construct(
         private HttpClientInterface $httpClient,
@@ -40,7 +45,7 @@ final readonly class RsFeedProvider implements JobProviderInterface
         $results = [];
 
         foreach ($this->feedUrls as $feedUrl) {
-            if ($feedUrl === '') {
+            if (!\is_string($feedUrl) || trim($feedUrl) === '') {
                 continue;
             }
 

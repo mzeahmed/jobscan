@@ -28,11 +28,18 @@ services:
     App\Command\RunPipelineCommand:
         arguments:
             $providers: !tagged_iterator app.job_provider
+            $environment: '%kernel.environment%'
 
     App\Notification\TelegramNotifier:
         arguments:
             $botToken: '%telegram.bot_token%'
             $chatId: '%telegram.chat_id%'
+            $maxAttempts: '%app.profile.telegram_max_attempts%'
+            $initialRetryDelayMs: '%app.profile.telegram_initial_retry_delay_ms%'
+
+    App\Notification\Notifier:
+        arguments:
+            $scoreThreshold: '%app.profile.notification_threshold%'
 
     App\AI\Provider\OllamaClient:
         arguments:
@@ -62,25 +69,36 @@ services:
             $provider: '@llm.client'
             $cache: '@cache.app'
             $systemPrompt: '%app.ai_system_prompt%'
-            $knownStack: '%app.known_stack%'
+            $knownStack: '%app.profile.known_stack%'
+            $recentJobDays: '%app.profile.recent_job_days%'
 
     App\Provider\RsFeedProvider:
         arguments:
             $feedUrls: '%app.job_feed_urls%'
         tags: ['app.job_provider']
 
+    App\Provider\RemoteOkProvider:
+        arguments:
+            $apiUrl: '%env(REMOTEOK_API_URL)%'
+        tags: ['app.job_provider']
+
     App\Provider\SearxProvider:
         arguments:
             $baseUrl: '%env(SEARXNG_URL)%'
-            $searchQueries: '%app.searx_queries%'
-            $locations: '%app.job_locations%'
+            $cache: '@cache.app'
+            $searchQueries: '%app.profile.searx_queries%'
+            $locations: '%app.profile.job_locations%'
+            $maxQueries: '%app.profile.searx_max_queries%'
+            $concurrency: '%app.profile.searx_concurrency%'
+            $cacheTtl: '%app.profile.searx_cache_ttl%'
         tags: [ 'app.job_provider' ]
 
     App\Processor\JobProcessor:
         arguments:
-            $filterKeywords: '%app.filter_keywords%'
-            $maxJobAgeDays: '%app.max_job_age_days%'
+            $filterKeywords: '%app.profile.filter_keywords%'
+            $maxJobAgeDays: '%app.profile.max_job_age_days%'
+            $aiPrescoreThreshold: '%app.profile.ai_prescore_threshold%'
 
     App\Scoring\Scoring:
         arguments:
-            $scoringConfig: '%app.scoring%'
+            $scoringConfig: '%app.profile.scoring%'

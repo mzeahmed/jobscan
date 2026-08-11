@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Job;
 use Doctrine\Persistence\ManagerRegistry;
+use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 
 /**
@@ -27,14 +28,21 @@ class JobRepository extends ServiceEntityRepository
         }
     }
 
-    public function existsByUrl(string $url): bool
+    public function existsByUrlOrCanonicalUrl(string $url, string $canonicalUrl): bool
     {
-        return $this->count(['url' => $url]) > 0;
+        return (int) $this->createQueryBuilder('j')
+            ->select('COUNT(j.id)')
+            ->where('j.url = :url')
+            ->orWhere('j.canonicalUrl = :canonicalUrl')
+            ->setParameter('url', $url)
+            ->setParameter('canonicalUrl', $canonicalUrl)
+            ->getQuery()
+            ->getSingleScalarResult() > 0;
     }
 
-    public function existsByTitleHash(string $hash): bool
+    public function existsByFingerprint(string $fingerprint): bool
     {
-        return $this->count(['titleHash' => $hash]) > 0;
+        return $this->count(['fingerprint' => $fingerprint]) > 0;
     }
 
     public function countAll(): int
@@ -43,6 +51,20 @@ class JobRepository extends ServiceEntityRepository
             ->select('COUNT(j.id)')
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    public function truncate(): int
+    {
+        $connection = $this->getEntityManager()->getConnection();
+
+        return $connection->transactional(static function ($connection): int {
+            $deleted = $connection->executeStatement('DELETE FROM job');
+            if ($connection->getDatabasePlatform() instanceof SQLitePlatform) {
+                $connection->executeStatement("DELETE FROM sqlite_sequence WHERE name = 'job'");
+            }
+
+            return $deleted;
+        });
     }
 
     public function countToday(): int
@@ -58,6 +80,55 @@ class JobRepository extends ServiceEntityRepository
             ->setParameter('end', $end)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    public function countNotified(): int
+    {
+        return (int) $this->createQueryBuilder('j')
+            ->select('COUNT(j.id)')
+            ->where('j.notifiedAt IS NOT NULL')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function averageScore(): float
+    {
+        return (float) $this->createQueryBuilder('j')
+            ->select('COALESCE(AVG(j.score), 0)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** @return array<string, int> */
+    public function countBySource(): array
+    {
+        /** @var list<array{source: string, total: int|string}> $rows */
+        $rows = $this->createQueryBuilder('j')
+            ->select('j.source AS source, COUNT(j.id) AS total')
+            ->groupBy('j.source')
+            ->orderBy('total', 'DESC')
+            ->getQuery()
+            ->getArrayResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[$row['source']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
+
+    public function countByScoreRange(?int $minimum, ?int $maximum): int
+    {
+        $query = $this->createQueryBuilder('j')->select('COUNT(j.id)');
+        if ($minimum !== null) {
+            $query->andWhere('j.score >= :minimum')->setParameter('minimum', $minimum);
+        }
+        if ($maximum !== null) {
+            $query->andWhere('j.score <= :maximum')->setParameter('maximum', $maximum);
+        }
+
+        return (int) $query->getQuery()->getSingleScalarResult();
     }
 
     /**

@@ -8,7 +8,7 @@
 
 Agrégateur d'opportunités tech (freelance ou CDI) orienté PHP / Symfony / WordPress, avec scoring IA local.
 
-JOBSCAN récupère des offres depuis des providers configurés (flux RSS et recherche web dynamique), filtre les opportunités pertinentes, les analyse avec un **moteur LLM au choix** (Ollama par défaut, LM Studio ou Gemini — configurable via `jobscan.llm.provider` dans `config/packages/jobscan.yaml`), leur attribue un score de pertinence, puis déclenche une alerte pour les meilleures opportunités.
+JOBSCAN récupère des offres depuis des providers configurés (flux RSS et recherche web dynamique), filtre les opportunités pertinentes, les analyse avec un **moteur LLM au choix** (Ollama, LM Studio ou Gemini — configurable via `DEFAULT_LLM_PROVIDER`), leur attribue un score de pertinence, puis déclenche une alerte pour les meilleures opportunités.
 
 Fonctionne **100% gratuitement** : en local avec Ollama, ou avec un moteur IA cloud
 (Gemini, et plus tard Claude/OpenAI) en profitant de leurs offres gratuites — aucune
@@ -24,7 +24,7 @@ Providers (RSS + SearXNG) → JobProcessor → AIClient (Ollama ou Gemini) → S
 
 1. **Providers** : récupèrent les offres depuis des flux RSS et/ou la recherche web via SearXNG
 2. **Processor** : filtre les doublons et les offres hors scope
-3. **Analyse IA** : `AIClient` délègue l'appel au moteur sélectionné par `jobscan.llm.provider` (Ollama/LM Studio en local, ou Gemini) et extrait des données structurées
+3. **Analyse IA** : `AIClient` délègue l'appel au moteur sélectionné par `DEFAULT_LLM_PROVIDER` (Ollama/LM Studio en local, ou Gemini) et extrait des données structurées
 4. **Scoring** : attribution d'un score /100 selon la stack, le remote, le type de contrat, l'urgence, etc.
 5. **Persistance** : sauvegarde en base SQLite
 6. **Notification** : envoi d'une alerte Telegram pour les meilleures opportunités
@@ -85,7 +85,10 @@ make migrate
 ### Variables d'environnement — `app/.env.local`
 
 ```dotenv
-# Provider LLM — Ollama (défaut recommandé)
+# Provider LLM actif
+DEFAULT_LLM_PROVIDER=lmstudio
+
+# Ollama (recommandé)
 OLLAMA_BASE_URL=http://localhost:11434/v1
 OLLAMA_MODEL=llama3.1:8b
 
@@ -109,9 +112,12 @@ SEARXNG_URL=http://localhost:8080      # hors Docker
 #SEARXNG_URL=http://searxng:8080       # dans Docker
 
 # Flux RSS (optionnel)
-JOB_FEED_URL_1=
+# JOB_FEED_URL_1=https://www.reddit.com/r/forhire/.rss
 JOB_FEED_URL_2=
 JOB_FEED_URL_3=
+
+# RemoteOK (API JSON)
+REMOTEOK_API_URL=https://remoteok.com/api
 
 # Profil métier (voir "Mots-clés, requêtes et stack" plus bas)
 FILTER_KEYWORDS=php,symfony,wordpress,backend,fullstack,api
@@ -120,11 +126,8 @@ SEARX_QUERIES="php symfony remote job,php symfony freelance remote"
 JOB_LOCATIONS="Paris,Remote"
 ```
 
-> Le moteur LLM actif (`ollama`, `lmstudio` ou `gemini`) ne se choisit **pas** via `.env` :
-> c'est la clé `jobscan.llm.provider` dans `config/packages/jobscan.yaml`. Les variables
-> d'environnement ci-dessus n'alimentent que `base_url`/`model`/`api_key` de chaque
-> provider — le reste de l'application ne sait jamais lequel est actif (voir
-> [Moteur d'analyse IA](#moteur-danalyse-ia)).
+> Le moteur LLM actif se choisit avec `DEFAULT_LLM_PROVIDER` (`ollama`, `lmstudio`
+> ou `gemini`). Placez une surcharge propre à votre machine dans `.env.local`.
 
 ### Mots-clés, requêtes et stack — `app/.env`
 
@@ -146,13 +149,18 @@ toute valeur contenant elle-même un espace.
 
 | Paramètre | Env var | Utilisé par | Rôle |
 |---|---|---|---|
-| `app.filter_keywords` | `FILTER_KEYWORDS` | `JobProcessor` | Écarte les offres hors scope avant tout traitement IA |
-| `app.known_stack` | `KNOWN_STACK` | `AIClient` | Détecte la stack technique en fallback heuristique |
-| `app.searx_queries` | `SEARX_QUERIES` | `SearxProvider` | Requêtes envoyées à SearXNG à chaque run |
-| `app.job_locations` | `JOB_LOCATIONS` | `SearxProvider` | Localisations combinées à chaque requête |
+| `app.profile.filter_keywords` | `FILTER_KEYWORDS` | `JobProcessor` | Écarte les offres hors scope avant tout traitement IA |
+| `app.profile.known_stack` | `KNOWN_STACK` | `AIClient` | Détecte la stack technique en fallback heuristique |
+| `app.profile.searx_queries` | `SEARX_QUERIES` | `SearxProvider` | Requêtes envoyées à SearXNG à chaque run |
+| `app.profile.job_locations` | `JOB_LOCATIONS` | `SearxProvider` | Localisations combinées aux requêtes non localisées |
 | `app.ai_system_prompt` | — (reste en YAML) | `AIClient` | Prompt système envoyé au provider IA |
 
 Pour adapter JOBSCAN à un autre profil (ex : Python / Django, ou Java / Spring), il suffit d'ajuster ces variables dans `app/.env.local`.
+
+Les pondérations, seuils, retries Telegram et limites SearXNG sont regroupés sous
+`app.profile.*` dans `config/packages/jobscan.yaml`. SearXNG met ses réponses en
+cache, limite le nombre de requêtes par exécution et n'ajoute pas une seconde
+localisation aux requêtes qui en contiennent déjà une.
 
 ---
 
@@ -163,10 +171,16 @@ JOBSCAN supporte plusieurs providers, chacun implémentant `JobProviderInterface
 ### RsFeedProvider
 
 Récupère les offres depuis des **flux RSS/Atom** configurés via les variables `JOB_FEED_URL_*`.
+Reddit est désactivé par défaut, son endpoint public répondant régulièrement avec HTTP 403/429.
 
 * Source statique, passive
 * Dépend de la qualité et de la fraîcheur des flux fournis
 * Fonctionne hors ligne si les URLs sont accessibles
+
+### RemoteOkProvider
+
+Récupère les offres depuis l'API JSON officielle de RemoteOK, configurable via
+`REMOTEOK_API_URL`.
 
 ### SearxProvider
 
@@ -229,8 +243,8 @@ Une réponse JSON contenant un tableau `results` confirme que SearXNG est opéra
 
 ## Moteur d'analyse IA
 
-JOBSCAN analyse les offres via un moteur LLM choisi par `jobscan.llm.provider`
-(`config/packages/jobscan.yaml`) : `ollama` (défaut, provider local compatible OpenAI),
+JOBSCAN analyse les offres via un moteur LLM choisi par `DEFAULT_LLM_PROVIDER` :
+`ollama` (provider local compatible OpenAI),
 `lmstudio` (legacy, même famille qu'Ollama) ou `gemini` (API Google, cloud).
 
 Le reste de l'application ne dépend que de `LLMClientInterface::analyze()` — jamais
@@ -270,19 +284,17 @@ Le champ `id` retourné correspond à la valeur à utiliser dans `OLLAMA_MODEL`.
 #### Configuration `.env.local`
 
 ```dotenv
+DEFAULT_LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434/v1
 OLLAMA_MODEL=llama3.1:8b
 ```
-
-`jobscan.llm.provider` doit valoir `ollama` dans `config/packages/jobscan.yaml`
-(valeur par défaut).
 
 ---
 
 ### LM Studio (legacy — conservé pour compatibilité, non recommandé)
 
-LM Studio reste fonctionnel mais n'est plus le provider par défaut. Il peut être utilisé
-en remplacement d'Ollama sans aucune modification du code.
+LM Studio reste fonctionnel et peut être utilisé en remplacement d'Ollama sans aucune
+modification du code.
 
 #### Installer et démarrer LM Studio
 
@@ -305,11 +317,10 @@ curl http://localhost:1234/v1/models
 #### Configuration `.env.local`
 
 ```dotenv
+DEFAULT_LLM_PROVIDER=lmstudio
 LMSTUDIO_BASE_URL=http://localhost:1234/v1
 LMSTUDIO_MODEL=local-model
 ```
-
-Puis passer `jobscan.llm.provider: lmstudio` dans `config/packages/jobscan.yaml`.
 
 ---
 
@@ -324,11 +335,10 @@ Créer une clé sur [Google AI Studio](https://aistudio.google.com/api-keys).
 #### Configuration `.env.local`
 
 ```dotenv
+DEFAULT_LLM_PROVIDER=gemini
 GEMINI_API_KEY=votre-clé
 GEMINI_MODEL=gemini-2.0-flash
 ```
-
-Puis passer `jobscan.llm.provider: gemini` dans `config/packages/jobscan.yaml`.
 
 ---
 
@@ -341,6 +351,24 @@ make run-pipeline
 # ou
 cd app && php bin/console app:jobs:run
 ```
+
+Pour simuler un run sans écriture ni notification, ou limiter les sources :
+
+```bash
+php bin/console app:jobs:run --dry-run
+php bin/console app:jobs:run --provider=remoteok --provider=searxng
+php bin/console app:jobs:stats
+```
+
+Pour vider uniquement les offres avant un test complet, sans toucher aux migrations :
+
+```bash
+make run-pipeline RESET=1
+make run-pipeline RESET=1 PIPELINE_ARGS="--provider=remoteok"
+```
+
+Le reset est réservé aux environnements `dev` et `test`, et ne peut pas être combiné
+avec `--dry-run`.
 
 ### Suivre les alertes en temps réel
 
@@ -537,7 +565,11 @@ sqlite3 app/var/jobscan.db "SELECT id, title, score, source FROM job ORDER BY sc
 
 ## Contribuer
 
-Les contributions sont les bienvenues. Consultez [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) pour le guide complet, [docs/ROADMAP.md](docs/ROADMAP.md) pour les chantiers ouverts, et [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) en cas de problème avec la stack Docker ou l'exécution locale.
+Les contributions sont les bienvenues. Consultez [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)
+pour le guide complet, [docs/ROADMAP.md](docs/ROADMAP.md) pour les chantiers ouverts,
+[docs/CHANGELOG.md](docs/CHANGELOG.md) pour les évolutions et
+[docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) en cas de problème avec la stack
+Docker ou l'exécution locale.
 
 **En bref :**
 

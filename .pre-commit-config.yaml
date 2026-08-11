@@ -43,21 +43,23 @@ repos:
       - id: php-cs-fixer
         name: PHP CS Fixer (code style PHP)
         language: system
-        entry: bash -c 'cd app && ./vendor/bin/php-cs-fixer fix --dry-run --diff'
+        entry: bash -c 'cd app && ../.githooks/run-php vendor/bin/php-cs-fixer fix --dry-run --diff'
         types: [php]
         pass_filenames: false
 
       - id: phpstan
         name: PHPStan (analyse statique)
         language: system
-        entry: bash -c 'cd app && ./vendor/bin/phpstan analyse -c phpstan.neon --no-progress'
+        entry: bash -c 'cd app && ../.githooks/run-php vendor/bin/phpstan analyse -c phpstan.neon --no-progress'
         types: [php]
         pass_filenames: false
 
       - id: assets-build
         name: Build assets (TypeScript + AssetMapper)
         language: system
-        entry: bash -c 'cd app && php bin/console typescript:build && php bin/console asset-map:compile'
+        entry: >-
+          bash -c 'cd app && ../.githooks/run-php bin/console typescript:build
+          && ../.githooks/run-php bin/console asset-map:compile'
         files: ^app/assets/.*\.(ts|css|js)$
         pass_filenames: false
         stages: [pre-push]
@@ -65,7 +67,7 @@ repos:
       - id: phpunit
         name: PHPUnit (tests)
         language: system
-        entry: bash -c 'cd app && php bin/phpunit --no-coverage'
+        entry: bash -c 'cd app && ../.githooks/run-php bin/phpunit --no-coverage'
         types: [php]
         pass_filenames: false
         stages: [pre-push]

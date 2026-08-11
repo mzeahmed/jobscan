@@ -54,6 +54,25 @@ class AIClientTest extends TestCase
         $this->assertSame('500€/j', $result->budget);
     }
 
+    public function testStopsCallingUnavailableProviderForTheRestOfTheRun(): void
+    {
+        $provider = $this->createMock(LLMClientInterface::class);
+        $provider->expects($this->once())->method('analyze')->willReturn(null);
+        $client = new AIClient(
+            $provider,
+            new NullLogger(),
+            $this->cache,
+            'system prompt',
+            self::KNOWN_STACK,
+        );
+
+        $first = $client->analyze('Première mission PHP');
+        $second = $client->analyze('Deuxième mission Symfony');
+
+        $this->assertContains('php', $first->stack);
+        $this->assertContains('symfony', $second->stack);
+    }
+
     public function testHeuristicFallbackDetectsCdi(): void
     {
         $this->provider->method('analyze')->willReturn(null);
@@ -140,6 +159,27 @@ class AIClientTest extends TestCase
         $this->assertInstanceOf(AiAnalysisDto::class, $result);
     }
 
+    public function testUnparseableContentDoesNotDisableProvider(): void
+    {
+        $provider = $this->createMock(LLMClientInterface::class);
+        $provider->expects($this->exactly(2))->method('analyze')->willReturnOnConsecutiveCalls(
+            'not json',
+            '{"stack":["symfony"]}',
+        );
+        $client = new AIClient(
+            $provider,
+            new NullLogger(),
+            $this->cache,
+            'system prompt',
+            self::KNOWN_STACK,
+        );
+
+        $client->analyze('Première description');
+        $result = $client->analyze('Deuxième description');
+
+        $this->assertSame(['symfony'], $result->stack);
+    }
+
     public function testNormalizesUnknownContractType(): void
     {
         $json = json_encode([
@@ -214,7 +254,38 @@ class AIClientTest extends TestCase
 
         $result = $client->analyze('Développeur PHP');
 
-        $this->assertSame($cached, $result);
+        $this->assertSame($cached->stack, $result->stack);
+        $this->assertSame($cached->contractType, $result->contractType);
+        $this->assertSame($cached->budget, $result->budget);
+        $this->assertFalse($result->recent);
+    }
+
+    public function testRecencyIsComputedFromPublishedDateInsteadOfAIResponse(): void
+    {
+        $this->provider->method('analyze')->willReturn(json_encode([
+            'stack' => ['php'],
+            'recent' => false,
+        ]));
+
+        $recent = $this->makeClient()->analyze('Développeur PHP', new \DateTimeImmutable('-2 days'));
+        $old = $this->makeClient()->analyze('Développeur PHP', new \DateTimeImmutable('-30 days'));
+
+        $this->assertTrue($recent->recent);
+        $this->assertFalse($old->recent);
+    }
+
+    public function testFutureAndMissingPublicationDatesAreNotRecent(): void
+    {
+        $this->provider->method('analyze')->willReturn(json_encode([
+            'stack' => ['php'],
+            'recent' => true,
+        ]));
+
+        $future = $this->makeClient()->analyze('Développeur PHP', new \DateTimeImmutable('+2 days'));
+        $missing = $this->makeClient()->analyze('Développeur PHP');
+
+        $this->assertFalse($future->recent);
+        $this->assertFalse($missing->recent);
     }
 
     // -------------------------------------------------------------------------

@@ -6,13 +6,16 @@ namespace App\Provider;
 
 use App\DTO\JobDto;
 use Psr\Log\LoggerInterface;
+use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Agrège les offres d'emploi via l'API JSON de SearXNG.
  *
- * Les requêtes sont construites en combinant chaque entrée de `app.searx_queries`
- * avec chaque localisation de `app.job_locations`. Le filtre `time_range=month`
+ * Les requêtes non localisées combinent `app.profile.searx_queries` et
+ * `app.profile.job_locations`, dans la limite du quota configuré. Les réponses
+ * sont mises en cache et exécutées par lots concurrents. Le filtre `time_range=month`
  * est envoyé nativement à SearXNG pour limiter les résultats aux offres récentes.
  *
  * Les résultats sont dédupliqués par URL avant d'être retournés. Les résultats
@@ -21,17 +24,26 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  */
 final readonly class SearxProvider implements JobProviderInterface
 {
+    public function name(): string
+    {
+        return 'searxng';
+    }
+
     /**
      * @param string $baseUrl URL de base de l'instance SearXNG (env `SEARXNG_URL`)
-     * @param list<string> $searchQueries Requêtes de base (config `app.searx_queries`)
-     * @param list<string> $locations Localisations à combiner avec chaque requête (config `app.job_locations`)
+     * @param list<string> $searchQueries Requêtes de base (config `app.profile.searx_queries`)
+     * @param list<string> $locations Localisations (config `app.profile.job_locations`)
      */
     public function __construct(
         private HttpClientInterface $httpClient,
         private LoggerInterface $logger,
         private string $baseUrl,
+        private CacheItemPoolInterface $cache,
         private array $searchQueries = [],
         private array $locations = [],
+        private int $maxQueries = 20,
+        private int $concurrency = 5,
+        private int $cacheTtl = 3600,
     ) {
     }
 
@@ -44,8 +56,8 @@ final readonly class SearxProvider implements JobProviderInterface
     {
         $jobs = [];
 
-        foreach ($this->buildQueries() as $query) {
-            foreach ($this->search($query) as $result) {
+        foreach ($this->searchMany($this->buildQueries()) as $results) {
+            foreach ($results as $result) {
                 $title = trim((string) ($result['title'] ?? ''));
                 $url = trim((string) ($result['url'] ?? ''));
                 $description = trim((string) ($result['content'] ?? ''));
@@ -63,6 +75,8 @@ final readonly class SearxProvider implements JobProviderInterface
                 }
 
                 $publishedAt = $this->extractPublishedDate($result);
+                $company = $this->optionalString($result['company'] ?? $result['author'] ?? null);
+                $location = $this->optionalString($result['location'] ?? null);
 
                 $jobs[$url] = new JobDto(
                     title: $this->cleanText($title),
@@ -70,6 +84,8 @@ final readonly class SearxProvider implements JobProviderInterface
                     description: $this->cleanText($description),
                     source: 'searxng',
                     publishedAt: $publishedAt,
+                    company: $company,
+                    location: $location,
                 );
             }
         }
@@ -78,46 +94,79 @@ final readonly class SearxProvider implements JobProviderInterface
     }
 
     /**
-     * Exécute une requête sur l'API SearXNG et retourne les résultats bruts.
+     * Exécute les requêtes par lots et retourne un résultat vide pour chaque
+     * requête en échec, sans interrompre les autres recherches.
      *
-     * Retourne un tableau vide en cas d'erreur réseau ou de réponse invalide,
-     * sans propager d'exception.
-     *
-     * @return array<int, array<string, mixed>>
+     * @param list<string> $queries
+     * @return array<string, array<int, array<string, mixed>>>
      */
-    private function search(string $query): array
+    private function searchMany(array $queries): array
     {
-        try {
-            $response = $this->httpClient->request('GET', rtrim($this->baseUrl, '/') . '/search', [
-                'query' => [
-                    'q' => $query,
-                    'format' => 'json',
-                    'language' => 'fr-FR',
-                    'safesearch' => 0,
-                    'time_range' => 'month',
-                ],
-                'headers' => [
-                    'Accept' => 'application/json',
-                    'User-Agent' => 'JOBSCAN/1.0',
-                ],
-                'timeout' => 20,
-            ]);
+        $allResults = [];
 
-            $data = $response->toArray(false);
+        foreach (array_chunk($queries, max(1, $this->concurrency)) as $chunk) {
+            /** @var array<string, array{response: ResponseInterface, cache_key: string}> $pending */
+            $pending = [];
 
-            if (!isset($data['results']) || !is_array($data['results'])) {
-                return [];
+            foreach ($chunk as $query) {
+                $cacheKey = 'searx_' . hash('sha256', $this->baseUrl . '|' . $query);
+                try {
+                    $item = $this->cache->getItem($cacheKey);
+                    if ($item->isHit() && is_array($item->get())) {
+                        $allResults[$query] = $item->get();
+                        continue;
+                    }
+                } catch (\Throwable $e) {
+                    $this->logger->warning('Cache SearXNG indisponible.', ['error' => $e->getMessage()]);
+                }
+
+                try {
+                    $pending[$query] = [
+                        'response' => $this->httpClient->request('GET', rtrim($this->baseUrl, '/') . '/search', [
+                            'query' => [
+                                'q' => $query,
+                                'format' => 'json',
+                                'language' => 'fr-FR',
+                                'safesearch' => 0,
+                                'time_range' => 'month',
+                            ],
+                            'headers' => [
+                                'Accept' => 'application/json',
+                                'User-Agent' => 'JOBSCAN/1.0',
+                            ],
+                            'timeout' => 20,
+                        ]),
+                        'cache_key' => $cacheKey,
+                    ];
+                } catch (\Throwable $e) {
+                    $allResults[$query] = [];
+                    $this->logger->warning('SearxProvider search failed.', [
+                        'query' => $query,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
-            return $data['results'];
-        } catch (\Throwable $e) {
-            $this->logger->warning('SearxProvider search failed.', [
-                'query' => $query,
-                'error' => $e->getMessage(),
-            ]);
+            foreach ($pending as $query => $request) {
+                try {
+                    $data = $request['response']->toArray(false);
+                    $results = isset($data['results']) && is_array($data['results']) ? $data['results'] : [];
+                    $allResults[$query] = $results;
 
-            return [];
+                    $item = $this->cache->getItem($request['cache_key']);
+                    $item->set($results)->expiresAfter($this->cacheTtl);
+                    $this->cache->save($item);
+                } catch (\Throwable $e) {
+                    $allResults[$query] = [];
+                    $this->logger->warning('SearxProvider search failed.', [
+                        'query' => $query,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
         }
+
+        return $allResults;
     }
 
     /**
@@ -298,6 +347,17 @@ final readonly class SearxProvider implements JobProviderInterface
         return trim((string) $text);
     }
 
+    private function optionalString(mixed $value): ?string
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $value = $this->cleanText($value);
+
+        return $value === '' ? null : $value;
+    }
+
     /**
      * Construit le produit cartésien requêtes × localisations.
      *
@@ -311,11 +371,26 @@ final readonly class SearxProvider implements JobProviderInterface
         $queries = [];
 
         foreach ($this->searchQueries as $baseQuery) {
+            $baseQuery = trim($baseQuery);
+            if ($baseQuery === '') {
+                continue;
+            }
+
+            $alreadyLocalized = array_any(
+                $this->locations,
+                static fn (string $location): bool => $location !== '' && str_contains(mb_strtolower($baseQuery), mb_strtolower($location))
+            );
+
+            if ($alreadyLocalized || $this->locations === []) {
+                $queries[] = $baseQuery;
+                continue;
+            }
+
             foreach ($this->locations as $location) {
                 $queries[] = trim($baseQuery . ' ' . $location);
             }
         }
 
-        return array_values(array_unique($queries));
+        return array_slice(array_values(array_unique($queries)), 0, max(0, $this->maxQueries));
     }
 }

@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\DTO\JobDto;
+use App\DTO\Seniority;
+use App\DTO\ContractType;
+use App\DTO\AiAnalysisDto;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\JobRepository;
@@ -14,7 +17,8 @@ use App\Repository\JobRepository;
 #[ORM\Index(name: 'idx_job_source', columns: ['source'])]
 #[ORM\Index(name: 'idx_job_created_at', columns: ['created_at'])]
 #[ORM\UniqueConstraint(name: 'uniq_job_url', columns: ['url'])]
-#[ORM\UniqueConstraint(name: 'uniq_job_title_hash', columns: ['title_hash'])]
+#[ORM\UniqueConstraint(name: 'uniq_job_canonical_url', columns: ['canonical_url'])]
+#[ORM\UniqueConstraint(name: 'uniq_job_fingerprint', columns: ['fingerprint'])]
 class Job
 {
     #[ORM\Id]
@@ -39,6 +43,47 @@ class Job
 
     #[ORM\Column(length: 40, nullable: true)]
     private ?string $titleHash = null;
+
+    #[ORM\Column(length: 2048, nullable: true)]
+    private ?string $canonicalUrl = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $fingerprint = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $company = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $location = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $publishedAt = null;
+
+    /** @var list<string> */
+    #[ORM\Column(type: Types::JSON)]
+    private array $stack = [];
+
+    #[ORM\Column(length: 20)]
+    private string $contractType = 'unknown';
+
+    #[ORM\Column]
+    private bool $freelance = false;
+
+    #[ORM\Column]
+    private bool $remote = false;
+
+    #[ORM\Column(length: 100)]
+    private string $budget = 'non précisé';
+
+    #[ORM\Column]
+    private bool $recent = false;
+
+    #[ORM\Column(length: 20)]
+    private string $seniority = 'unknown';
+
+    /** @var list<string> */
+    #[ORM\Column(type: Types::JSON)]
+    private array $scoreBreakdown = [];
 
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
@@ -69,6 +114,9 @@ class Job
         $job->description = $dto->description;
         $job->source = $dto->source;
         $job->titleHash = sha1(self::normalizeTitle($dto->title));
+        $job->company = $dto->company;
+        $job->location = $dto->location;
+        $job->publishedAt = $dto->publishedAt;
 
         return $job;
     }
@@ -163,5 +211,91 @@ class Job
     public function getTitleHash(): ?string
     {
         return $this->titleHash;
+    }
+
+    public function setIdentity(string $canonicalUrl, ?string $fingerprint): void
+    {
+        $this->canonicalUrl = $canonicalUrl;
+        $this->fingerprint = $fingerprint;
+    }
+
+    /** @param list<string> $breakdown */
+    public function setAnalysis(AiAnalysisDto $analysis, array $breakdown): void
+    {
+        $this->stack = $analysis->stack;
+        $this->contractType = $analysis->contractType->value;
+        $this->freelance = $analysis->freelance;
+        $this->remote = $analysis->remote;
+        $this->budget = $analysis->budget;
+        $this->recent = $analysis->recent;
+        $this->seniority = $analysis->seniority->value;
+        $this->scoreBreakdown = $breakdown;
+    }
+
+    public function getCanonicalUrl(): ?string
+    {
+        return $this->canonicalUrl;
+    }
+
+    public function getFingerprint(): ?string
+    {
+        return $this->fingerprint;
+    }
+
+    public function getCompany(): ?string
+    {
+        return $this->company;
+    }
+
+    public function getLocation(): ?string
+    {
+        return $this->location;
+    }
+
+    public function getPublishedAt(): ?\DateTimeImmutable
+    {
+        return $this->publishedAt;
+    }
+
+    /** @return list<string> */
+    public function getStack(): array
+    {
+        return $this->stack;
+    }
+
+    public function getContractType(): ContractType
+    {
+        return ContractType::from($this->contractType);
+    }
+
+    public function isFreelance(): bool
+    {
+        return $this->freelance;
+    }
+
+    public function isRemote(): bool
+    {
+        return $this->remote;
+    }
+
+    public function getBudget(): string
+    {
+        return $this->budget;
+    }
+
+    public function isRecent(): bool
+    {
+        return $this->recent;
+    }
+
+    public function getSeniority(): Seniority
+    {
+        return Seniority::from($this->seniority);
+    }
+
+    /** @return list<string> */
+    public function getScoreBreakdown(): array
+    {
+        return $this->scoreBreakdown;
     }
 }

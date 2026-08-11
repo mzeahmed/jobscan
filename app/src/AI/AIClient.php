@@ -15,7 +15,7 @@ use Psr\Cache\InvalidArgumentException;
 /**
  * Analyse le texte d'une offre d'emploi via un moteur LLM pluggable
  * (`LLMClientInterface` — Ollama, LM Studio ou Gemini, sélectionné par
- * `jobscan.llm.provider` dans `jobscan.yaml`, voir `LLMClientFactory`).
+ * `DEFAULT_LLM_PROVIDER`, voir `LLMClientFactory`).
  *
  * Extrait les données structurées suivantes : stack technique, type de contrat,
  * indicateurs remote/freelance/recent, budget et séniorité.
@@ -30,21 +30,25 @@ use Psr\Cache\InvalidArgumentException;
  * Le prompt système est entièrement configurable via `app.ai_system_prompt` dans
  * `jobscan.yaml`, sans modifier le code.
  */
-final readonly class AIClient
+final class AIClient
 {
     /** Durée de mise en cache des réponses IA en secondes (24h). */
     private const int CACHE_TTL = 86400;
 
+    private bool $providerUnavailable = false;
+    private bool $lastAnalysisUsedFallback = false;
+
     /**
      * @param  string  $systemPrompt  Prompt système injecté en tête de chaque requête (config `app.ai_system_prompt`)
-     * @param  list<string>  $knownStack  Technologies connues pour le fallback heuristique (config `app.known_stack`)
+     * @param  list<string>  $knownStack  Technologies connues pour le fallback heuristique (config `app.profile.known_stack`)
      */
     public function __construct(
-        private LLMClientInterface $provider,
-        private LoggerInterface $logger,
-        private CacheItemPoolInterface $cache,
-        private string $systemPrompt,
-        private array $knownStack = [],
+        private readonly LLMClientInterface $provider,
+        private readonly LoggerInterface $logger,
+        private readonly CacheItemPoolInterface $cache,
+        private readonly string $systemPrompt,
+        private readonly array $knownStack = [],
+        private readonly int $recentJobDays = 14,
     ) {
     }
 
@@ -57,8 +61,9 @@ final readonly class AIClient
      *
      * @throws InvalidArgumentException
      */
-    public function analyze(string $text): AiAnalysisDto
+    public function analyze(string $text, ?\DateTimeImmutable $publishedAt = null): AiAnalysisDto
     {
+        $this->lastAnalysisUsedFallback = false;
         $text = $this->cleanText($text);
         $text = mb_substr($text, 0, 3000);
 
@@ -68,7 +73,12 @@ final readonly class AIClient
         if ($item->isHit()) {
             $this->logger->debug('AIClient: cache hit.', ['key' => $cacheKey]);
 
-            return $item->get();
+            return $this->withDeterministicRecency($item->get(), $publishedAt);
+        }
+
+        if ($this->providerUnavailable) {
+            $this->lastAnalysisUsedFallback = true;
+            return $this->withDeterministicRecency($this->heuristicFallback($text), $publishedAt);
         }
 
         $result = $this->callAI($text);
@@ -77,10 +87,17 @@ final readonly class AIClient
             $item->set($result)->expiresAfter(self::CACHE_TTL);
             $this->cache->save($item);
 
-            return $result;
+            return $this->withDeterministicRecency($result, $publishedAt);
         }
 
-        return $this->heuristicFallback($text);
+        $this->lastAnalysisUsedFallback = true;
+
+        return $this->withDeterministicRecency($this->heuristicFallback($text), $publishedAt);
+    }
+
+    public function lastAnalysisUsedFallback(): bool
+    {
+        return $this->lastAnalysisUsedFallback;
     }
 
     /**
@@ -97,6 +114,7 @@ final readonly class AIClient
         $content = $this->provider->analyze($this->systemPrompt, $text);
 
         if ($content === null) {
+            $this->providerUnavailable = true;
             $this->logger->warning('AIClient: provider IA indisponible ou réponse vide, fallback heuristique.');
 
             return null;
@@ -159,7 +177,7 @@ final readonly class AIClient
             freelance: (bool) ($data['freelance'] ?? false),
             remote: (bool) ($data['remote'] ?? false),
             budget: (string) ($data['budget'] ?? 'non précisé'),
-            recent: (bool) ($data['recent'] ?? true),
+            recent: false,
             seniority: $seniority,
         );
     }
@@ -170,11 +188,11 @@ final readonly class AIClient
      * Reproduit une extraction partielle basée sur des correspondances de chaînes :
      *   - Type de contrat : détection de `freelance`, `mission`, `tjm`, `cdi`
      *   - Séniorité : détection de `senior`, `confirmé`, `junior`, `débutant`, `mid`
-     *   - Stack : intersection du texte avec `app.known_stack`
+     *   - Stack : intersection du texte avec `app.profile.known_stack`
      *   - Budget : extraction regex (TJM `€/j`, fourchette `80-110k`, montant `50k`)
      *   - Remote : détection de `remote`, `télétravail`
      *
-     * Le champ `recent` vaut toujours `true` — sans IA, l'information n'est pas déductible.
+     * Le champ `recent` est ensuite calculé depuis la date de publication, indépendamment du LLM.
      */
     private function heuristicFallback(string $text): AiAnalysisDto
     {
@@ -203,13 +221,13 @@ final readonly class AIClient
                         || str_contains($lower, 'télétravail')
                         || str_contains($lower, 'teletravail'),
             budget: $this->extractBudget($lower),
-            recent: true,
+            recent: false,
             seniority: $seniority,
         );
     }
 
     /**
-     * Extrait les technologies présentes dans le texte par intersection avec `app.known_stack`.
+     * Extrait les technologies présentes dans le texte par intersection avec `app.profile.known_stack`.
      *
      * @return list<string>
      */
@@ -258,5 +276,22 @@ final readonly class AIClient
         $text = preg_replace('/\s+/', ' ', $text);
 
         return trim((string) $text);
+    }
+
+    private function withDeterministicRecency(AiAnalysisDto $analysis, ?\DateTimeImmutable $publishedAt): AiAnalysisDto
+    {
+        $recent = $publishedAt !== null
+            && $publishedAt <= new \DateTimeImmutable()
+            && $publishedAt >= new \DateTimeImmutable(sprintf('-%d days', $this->recentJobDays));
+
+        return new AiAnalysisDto(
+            stack: $analysis->stack,
+            contractType: $analysis->contractType,
+            freelance: $analysis->freelance,
+            remote: $analysis->remote,
+            budget: $analysis->budget,
+            recent: $recent,
+            seniority: $analysis->seniority,
+        );
     }
 }
