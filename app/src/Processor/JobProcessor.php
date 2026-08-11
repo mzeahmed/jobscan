@@ -27,7 +27,7 @@ use Psr\Cache\InvalidArgumentException;
  *   8. Persistance en base de données
  *   9. Notification Telegram si le score dépasse le seuil de notification
  */
-final readonly class JobProcessor
+final readonly class JobProcessor implements JobProcessorInterface
 {
     /**
      * @param list<string> $filterKeywords Mots-clés requis (config `app.profile.filter_keywords`)
@@ -54,20 +54,20 @@ final readonly class JobProcessor
      *
      * @throws InvalidArgumentException si le cache IA est inaccessible
      */
-    public function process(JobDto $dto): void
+    public function process(JobDto $dto, bool $dryRun = false): JobProcessingResult
     {
         $title = strtolower($dto->title);
         $desc = strtolower($dto->description);
         $matches = array_any($this->filterKeywords, fn ($keyword) => str_contains($title, (string) $keyword) || str_contains($desc, (string) $keyword));
 
         if (!$matches) {
-            return;
+            return new JobProcessingResult(JobProcessingStatus::Filtered);
         }
 
         if ($dto->url === '') {
             $this->logger->debug('Offre ignorée : URL vide.', ['title' => $dto->title]);
 
-            return;
+            return new JobProcessingResult(JobProcessingStatus::Filtered);
         }
 
         $now = new \DateTimeImmutable();
@@ -81,7 +81,7 @@ final readonly class JobProcessor
                     'title' => $dto->title,
                 ]);
 
-                return;
+                return new JobProcessingResult(JobProcessingStatus::TooOld);
             }
         }
 
@@ -89,14 +89,14 @@ final readonly class JobProcessor
         if ($this->jobRepository->existsByUrlOrCanonicalUrl($dto->url, $canonicalUrl)) {
             $this->logger->debug('Doublon ignoré (URL canonique) : {url}', ['url' => $canonicalUrl]);
 
-            return;
+            return new JobProcessingResult(JobProcessingStatus::Duplicate);
         }
 
         $fingerprint = $this->jobIdentity->fingerprint($dto);
         if ($fingerprint !== null && $this->jobRepository->existsByFingerprint($fingerprint)) {
             $this->logger->debug('Doublon ignoré (empreinte métier) : {title}', ['title' => $dto->title]);
 
-            return;
+            return new JobProcessingResult(JobProcessingStatus::Duplicate);
         }
 
         $preScore = $this->scoringService->preScore($dto);
@@ -107,7 +107,7 @@ final readonly class JobProcessor
                 'title' => $dto->title,
             ]);
 
-            return;
+            return new JobProcessingResult(JobProcessingStatus::LowPrescore);
         }
 
         $aiData = $this->AIClient->analyze($dto->description, $dto->publishedAt);
@@ -117,6 +117,14 @@ final readonly class JobProcessor
         $job->setIdentity($canonicalUrl, $fingerprint);
         $job->setScore($score);
         $job->setAnalysis($aiData, $breakdown);
+
+        if ($dryRun) {
+            return new JobProcessingResult(
+                JobProcessingStatus::DryRun,
+                $score,
+                $this->AIClient->lastAnalysisUsedFallback(),
+            );
+        }
 
         $this->jobRepository->save($job);
 
@@ -128,5 +136,12 @@ final readonly class JobProcessor
         ]);
 
         $this->notificationService->notify($job);
+
+        return new JobProcessingResult(
+            JobProcessingStatus::Saved,
+            $score,
+            $this->AIClient->lastAnalysisUsedFallback(),
+            $job->getNotifiedAt() !== null,
+        );
     }
 }

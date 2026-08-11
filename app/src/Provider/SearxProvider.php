@@ -24,6 +24,11 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  */
 final readonly class SearxProvider implements JobProviderInterface
 {
+    public function name(): string
+    {
+        return 'searxng';
+    }
+
     /**
      * @param string $baseUrl URL de base de l'instance SearXNG (env `SEARXNG_URL`)
      * @param list<string> $searchQueries Requêtes de base (config `app.profile.searx_queries`)

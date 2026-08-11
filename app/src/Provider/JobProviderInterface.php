@@ -19,6 +19,8 @@ use App\DTO\JobDto;
  */
 interface JobProviderInterface
 {
+    public function name(): string;
+
     /**
      * Récupère les offres d'emploi depuis la source.
      *

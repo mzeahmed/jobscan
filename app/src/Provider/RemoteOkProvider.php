@@ -10,6 +10,11 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final readonly class RemoteOkProvider implements JobProviderInterface
 {
+    public function name(): string
+    {
+        return 'remoteok';
+    }
+
     public function __construct(
         private HttpClientInterface $httpClient,
         private LoggerInterface $logger,

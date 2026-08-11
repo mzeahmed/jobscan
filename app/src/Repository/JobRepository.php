@@ -67,6 +67,55 @@ class JobRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    public function countNotified(): int
+    {
+        return (int) $this->createQueryBuilder('j')
+            ->select('COUNT(j.id)')
+            ->where('j.notifiedAt IS NOT NULL')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function averageScore(): float
+    {
+        return (float) $this->createQueryBuilder('j')
+            ->select('COALESCE(AVG(j.score), 0)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** @return array<string, int> */
+    public function countBySource(): array
+    {
+        /** @var list<array{source: string, total: int|string}> $rows */
+        $rows = $this->createQueryBuilder('j')
+            ->select('j.source AS source, COUNT(j.id) AS total')
+            ->groupBy('j.source')
+            ->orderBy('total', 'DESC')
+            ->getQuery()
+            ->getArrayResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[$row['source']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
+
+    public function countByScoreRange(?int $minimum, ?int $maximum): int
+    {
+        $query = $this->createQueryBuilder('j')->select('COUNT(j.id)');
+        if ($minimum !== null) {
+            $query->andWhere('j.score >= :minimum')->setParameter('minimum', $minimum);
+        }
+        if ($maximum !== null) {
+            $query->andWhere('j.score <= :maximum')->setParameter('maximum', $maximum);
+        }
+
+        return (int) $query->getQuery()->getSingleScalarResult();
+    }
+
     /**
      * @return Job[]
      */

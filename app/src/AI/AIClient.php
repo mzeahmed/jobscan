@@ -36,6 +36,7 @@ final class AIClient
     private const int CACHE_TTL = 86400;
 
     private bool $providerUnavailable = false;
+    private bool $lastAnalysisUsedFallback = false;
 
     /**
      * @param  string  $systemPrompt  Prompt système injecté en tête de chaque requête (config `app.ai_system_prompt`)
@@ -62,6 +63,7 @@ final class AIClient
      */
     public function analyze(string $text, ?\DateTimeImmutable $publishedAt = null): AiAnalysisDto
     {
+        $this->lastAnalysisUsedFallback = false;
         $text = $this->cleanText($text);
         $text = mb_substr($text, 0, 3000);
 
@@ -75,6 +77,7 @@ final class AIClient
         }
 
         if ($this->providerUnavailable) {
+            $this->lastAnalysisUsedFallback = true;
             return $this->withDeterministicRecency($this->heuristicFallback($text), $publishedAt);
         }
 
@@ -87,7 +90,14 @@ final class AIClient
             return $this->withDeterministicRecency($result, $publishedAt);
         }
 
+        $this->lastAnalysisUsedFallback = true;
+
         return $this->withDeterministicRecency($this->heuristicFallback($text), $publishedAt);
+    }
+
+    public function lastAnalysisUsedFallback(): bool
+    {
+        return $this->lastAnalysisUsedFallback;
     }
 
     /**

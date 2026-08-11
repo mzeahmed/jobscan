@@ -352,6 +352,14 @@ make run-pipeline
 cd app && php bin/console app:jobs:run
 ```
 
+Pour simuler un run sans écriture ni notification, ou limiter les sources :
+
+```bash
+php bin/console app:jobs:run --dry-run
+php bin/console app:jobs:run --provider=remoteok --provider=searxng
+php bin/console app:jobs:stats
+```
+
 ### Suivre les alertes en temps réel
 
 ```bash
