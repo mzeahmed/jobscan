@@ -1,7 +1,6 @@
 jobscan:
     llm:
-        provider: lmstudio # ollama | lmstudio | gemini
-#        provider: '%env(DEFAULT_LLM_PROVIDER)%'
+        provider: '%env(DEFAULT_LLM_PROVIDER)%' # ollama | lmstudio | gemini
 
         ollama:
             base_url: '%env(OLLAMA_BASE_URL)%'

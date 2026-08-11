@@ -15,7 +15,7 @@ use Psr\Cache\InvalidArgumentException;
 /**
  * Analyse le texte d'une offre d'emploi via un moteur LLM pluggable
  * (`LLMClientInterface` — Ollama, LM Studio ou Gemini, sélectionné par
- * `jobscan.llm.provider` dans `jobscan.yaml`, voir `LLMClientFactory`).
+ * `DEFAULT_LLM_PROVIDER`, voir `LLMClientFactory`).
  *
  * Extrait les données structurées suivantes : stack technique, type de contrat,
  * indicateurs remote/freelance/recent, budget et séniorité.

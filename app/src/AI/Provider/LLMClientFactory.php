@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\AI\Provider;
 
 /**
- * Sélectionne le moteur LLM actif selon `jobscan.llm.provider` (config).
+ * Sélectionne le moteur LLM actif selon `DEFAULT_LLM_PROVIDER` (environnement).
  *
  * Ajouter un nouveau provider (Claude, OpenAI, ...) : créer une classe implémentant
  * `LLMClientInterface`, la déclarer dans `config/services.yaml`, l'injecter ici et
@@ -14,7 +14,7 @@ namespace App\AI\Provider;
 final readonly class LLMClientFactory
 {
     /**
-     * @param  string  $providerName  Moteur LLM à utiliser (config `jobscan.llm.provider` — `ollama`, `lmstudio` ou `gemini`)
+     * @param  string  $providerName  Moteur LLM à utiliser (`DEFAULT_LLM_PROVIDER` — `ollama`, `lmstudio` ou `gemini`)
      */
     public function __construct(
         private OllamaClient $ollamaClient,

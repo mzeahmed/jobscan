@@ -25,8 +25,9 @@ final class Configuration implements ConfigurationInterface
                 ->arrayNode('llm')
                     ->addDefaultsIfNotSet()
                     ->children()
-                        ->enumNode('provider')
-                            ->values(['ollama', 'lmstudio', 'gemini'])
+                        // La valeur peut être un placeholder %env(...)%; la validation
+                        // des providers supportés est assurée par LLMClientFactory.
+                        ->scalarNode('provider')
                             ->defaultValue('ollama')
                             ->info('Moteur LLM actif utilisé par LLMClientFactory.')
                         ->end()

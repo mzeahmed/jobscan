@@ -8,7 +8,7 @@
 
 Agrégateur d'opportunités tech (freelance ou CDI) orienté PHP / Symfony / WordPress, avec scoring IA local.
 
-JOBSCAN récupère des offres depuis des providers configurés (flux RSS et recherche web dynamique), filtre les opportunités pertinentes, les analyse avec un **moteur LLM au choix** (Ollama par défaut, LM Studio ou Gemini — configurable via `jobscan.llm.provider` dans `config/packages/jobscan.yaml`), leur attribue un score de pertinence, puis déclenche une alerte pour les meilleures opportunités.
+JOBSCAN récupère des offres depuis des providers configurés (flux RSS et recherche web dynamique), filtre les opportunités pertinentes, les analyse avec un **moteur LLM au choix** (Ollama, LM Studio ou Gemini — configurable via `DEFAULT_LLM_PROVIDER`), leur attribue un score de pertinence, puis déclenche une alerte pour les meilleures opportunités.
 
 Fonctionne **100% gratuitement** : en local avec Ollama, ou avec un moteur IA cloud
 (Gemini, et plus tard Claude/OpenAI) en profitant de leurs offres gratuites — aucune
@@ -24,7 +24,7 @@ Providers (RSS + SearXNG) → JobProcessor → AIClient (Ollama ou Gemini) → S
 
 1. **Providers** : récupèrent les offres depuis des flux RSS et/ou la recherche web via SearXNG
 2. **Processor** : filtre les doublons et les offres hors scope
-3. **Analyse IA** : `AIClient` délègue l'appel au moteur sélectionné par `jobscan.llm.provider` (Ollama/LM Studio en local, ou Gemini) et extrait des données structurées
+3. **Analyse IA** : `AIClient` délègue l'appel au moteur sélectionné par `DEFAULT_LLM_PROVIDER` (Ollama/LM Studio en local, ou Gemini) et extrait des données structurées
 4. **Scoring** : attribution d'un score /100 selon la stack, le remote, le type de contrat, l'urgence, etc.
 5. **Persistance** : sauvegarde en base SQLite
 6. **Notification** : envoi d'une alerte Telegram pour les meilleures opportunités
@@ -85,7 +85,10 @@ make migrate
 ### Variables d'environnement — `app/.env.local`
 
 ```dotenv
-# Provider LLM — Ollama (défaut recommandé)
+# Provider LLM actif
+DEFAULT_LLM_PROVIDER=lmstudio
+
+# Ollama (recommandé)
 OLLAMA_BASE_URL=http://localhost:11434/v1
 OLLAMA_MODEL=llama3.1:8b
 
@@ -120,11 +123,8 @@ SEARX_QUERIES="php symfony remote job,php symfony freelance remote"
 JOB_LOCATIONS="Paris,Remote"
 ```
 
-> Le moteur LLM actif (`ollama`, `lmstudio` ou `gemini`) ne se choisit **pas** via `.env` :
-> c'est la clé `jobscan.llm.provider` dans `config/packages/jobscan.yaml`. Les variables
-> d'environnement ci-dessus n'alimentent que `base_url`/`model`/`api_key` de chaque
-> provider — le reste de l'application ne sait jamais lequel est actif (voir
-> [Moteur d'analyse IA](#moteur-danalyse-ia)).
+> Le moteur LLM actif se choisit avec `DEFAULT_LLM_PROVIDER` (`ollama`, `lmstudio`
+> ou `gemini`). Placez une surcharge propre à votre machine dans `.env.local`.
 
 ### Mots-clés, requêtes et stack — `app/.env`
 
@@ -234,8 +234,8 @@ Une réponse JSON contenant un tableau `results` confirme que SearXNG est opéra
 
 ## Moteur d'analyse IA
 
-JOBSCAN analyse les offres via un moteur LLM choisi par `jobscan.llm.provider`
-(`config/packages/jobscan.yaml`) : `ollama` (défaut, provider local compatible OpenAI),
+JOBSCAN analyse les offres via un moteur LLM choisi par `DEFAULT_LLM_PROVIDER` :
+`ollama` (provider local compatible OpenAI),
 `lmstudio` (legacy, même famille qu'Ollama) ou `gemini` (API Google, cloud).
 
 Le reste de l'application ne dépend que de `LLMClientInterface::analyze()` — jamais
@@ -275,19 +275,17 @@ Le champ `id` retourné correspond à la valeur à utiliser dans `OLLAMA_MODEL`.
 #### Configuration `.env.local`
 
 ```dotenv
+DEFAULT_LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434/v1
 OLLAMA_MODEL=llama3.1:8b
 ```
-
-`jobscan.llm.provider` doit valoir `ollama` dans `config/packages/jobscan.yaml`
-(valeur par défaut).
 
 ---
 
 ### LM Studio (legacy — conservé pour compatibilité, non recommandé)
 
-LM Studio reste fonctionnel mais n'est plus le provider par défaut. Il peut être utilisé
-en remplacement d'Ollama sans aucune modification du code.
+LM Studio reste fonctionnel et peut être utilisé en remplacement d'Ollama sans aucune
+modification du code.
 
 #### Installer et démarrer LM Studio
 
@@ -310,11 +308,10 @@ curl http://localhost:1234/v1/models
 #### Configuration `.env.local`
 
 ```dotenv
+DEFAULT_LLM_PROVIDER=lmstudio
 LMSTUDIO_BASE_URL=http://localhost:1234/v1
 LMSTUDIO_MODEL=local-model
 ```
-
-Puis passer `jobscan.llm.provider: lmstudio` dans `config/packages/jobscan.yaml`.
 
 ---
 
@@ -329,11 +326,10 @@ Créer une clé sur [Google AI Studio](https://aistudio.google.com/api-keys).
 #### Configuration `.env.local`
 
 ```dotenv
+DEFAULT_LLM_PROVIDER=gemini
 GEMINI_API_KEY=votre-clé
 GEMINI_MODEL=gemini-2.0-flash
 ```
-
-Puis passer `jobscan.llm.provider: gemini` dans `config/packages/jobscan.yaml`.
 
 ---
 

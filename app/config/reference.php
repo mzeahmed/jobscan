@@ -1098,7 +1098,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  * }
  * @psalm-type JobscanConfig = array{
  *     llm?: array{
- *         provider?: "ollama"|"lmstudio"|"gemini"|Param, // Moteur LLM actif utilisé par LLMClientFactory. // Default: "ollama"
+ *         provider?: scalar|Param|null, // Moteur LLM actif utilisé par LLMClientFactory. // Default: "ollama"
  *         ollama?: array{
  *             base_url?: scalar|Param|null, // Default: "http://localhost:11434/v1"
  *             model?: scalar|Param|null, // Default: "qwen3:8b"
