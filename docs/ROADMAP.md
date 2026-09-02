@@ -79,8 +79,8 @@ Providers (RSS + SearXNG)
 - [x] Batch insert Doctrine (flush groupé) — #11
 - [x] Déclarations `.PHONY` dans le Makefile — #12
 - [ ] Sécurisation du Dockerfile (non-root, multi-stage) — #13
-- [ ] Interface `isHealthy()` sur les providers — #14
-- [ ] Tests unitaires : `SearxProvider::isClearlyIrrelevant()` — #15
+- [x] Interface `isHealthy()` sur les providers — #14
+- [x] Tests unitaires : `SearxProvider::isClearlyIrrelevant()` — #15
 - [x] Tests unitaires : fallback heuristique de `AIClient` — #16
 - [x] Tests d'intégration : `JobProcessor` — #17
 
@@ -132,7 +132,6 @@ Tâches bien délimitées, idéales pour une première PR :
 - #5 — Délai configurable entre les requêtes SearXNG
 - #11 — Batch insert Doctrine
 - #12 — Déclarations `.PHONY` dans le Makefile
-- #15 — Tests unitaires `SearxProvider::isClearlyIrrelevant()`
 - #19 — Commande `app:jobs:purge`
 - #21 — Mode `--dry-run`
 - #23 — Résumé de fin de run

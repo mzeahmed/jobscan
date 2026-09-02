@@ -22,6 +22,25 @@ final readonly class RemoteOkProvider implements JobProviderInterface
     ) {
     }
 
+    public function isHealthy(): bool
+    {
+        try {
+            $status = $this->httpClient->request('GET', $this->apiUrl, [
+                'headers' => ['User-Agent' => 'JOBSCAN/1.0'],
+                'timeout' => 5,
+            ])->getStatusCode();
+
+            return $status < 400;
+        } catch (\Throwable $e) {
+            $this->logger->warning('RemoteOkProvider health check failed.', [
+                'api_url' => $this->apiUrl,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     /** @return JobDto[] */
     public function fetch(): array
     {

@@ -190,4 +190,31 @@ final class SearxProviderTest extends TestCase
 
         self::assertSame([500], $delays);
     }
+
+    public function testIsHealthyProbesTheSearchEndpointOnce(): void
+    {
+        $requests = 0;
+        $httpClient = new MockHttpClient(static function (string $method, string $url) use (&$requests): MockResponse {
+            ++$requests;
+            self::assertStringContainsString('/search', $url);
+
+            return new MockResponse(json_encode(['results' => []]));
+        });
+
+        $provider = new SearxProvider($httpClient, new NullLogger(), 'https://searx.test', new ArrayAdapter());
+
+        self::assertTrue($provider->isHealthy());
+        self::assertSame(1, $requests);
+    }
+
+    public function testIsNotHealthyOnTransportError(): void
+    {
+        $httpClient = new MockHttpClient(static function (): MockResponse {
+            throw new \RuntimeException('connection refused');
+        });
+
+        $provider = new SearxProvider($httpClient, new NullLogger(), 'https://searx.test', new ArrayAdapter());
+
+        self::assertFalse($provider->isHealthy());
+    }
 }

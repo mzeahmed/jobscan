@@ -10,6 +10,22 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-09-02
+
+#### Added
+
+- `JobProviderInterface::isHealthy()` : sonde légère de disponibilité, appelée au
+  démarrage de `app:jobs:run`. Un provider injoignable est ignoré (warning) sans
+  annuler le run ; option `--skip-health-check` pour contourner.
+- Filtre de bruit SearXNG extrait dans `SearxNoiseFilter`, avec listes
+  `app.profile.searx_blocked_patterns` / `app.profile.searx_job_signals`
+  configurables dans `jobscan.yaml` et couvertes par des tests unitaires.
+
+#### Changed
+
+- Liste des signaux emploi SearXNG élargie (engineer, ingénieur, poste,
+  opportunité, contractor, lead, architect…) pour réduire les faux négatifs.
+
 ### 2026-08-11
 
 #### Changed

@@ -59,4 +59,13 @@ final class RemoteOkProviderTest extends TestCase
 
         self::assertSame([], $jobs);
     }
+
+    public function testIsHealthyReflectsTheProbeResponse(): void
+    {
+        $ok = new RemoteOkProvider(new MockHttpClient(new MockResponse('[]')), new NullLogger(), 'https://remoteok.test/api');
+        $ko = new RemoteOkProvider(new MockHttpClient(new MockResponse('', ['http_code' => 503])), new NullLogger(), 'https://remoteok.test/api');
+
+        self::assertTrue($ok->isHealthy());
+        self::assertFalse($ko->isHealthy());
+    }
 }

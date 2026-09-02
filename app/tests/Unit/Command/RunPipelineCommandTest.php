@@ -46,6 +46,33 @@ final class RunPipelineCommandTest extends TestCase
         self::assertStringNotContainsString('remoteok', strtolower($tester->getDisplay()));
     }
 
+    public function testSkipsUnhealthyProvidersButKeepsRunning(): void
+    {
+        $processor = $this->createMock(JobProcessorInterface::class);
+        $processor->expects($this->once())
+            ->method('processBatch')
+            ->willReturn([new JobProcessingResult(JobProcessingStatus::Saved, 70)]);
+        $healthy = $this->provider('rss', [new JobDto('PHP', 'https://example.test/1', 'PHP', 'test')]);
+        $down = $this->provider('searxng', [new JobDto('PHP', 'https://example.test/2', 'PHP', 'test')], healthy: false);
+        $tester = new CommandTester($this->command([$down, $healthy], $processor));
+
+        self::assertSame(Command::SUCCESS, $tester->execute([]));
+        self::assertStringContainsString('Provider "searxng" indisponible', $tester->getDisplay());
+    }
+
+    public function testSkipHealthCheckOptionBypassesTheProbe(): void
+    {
+        $processor = $this->createMock(JobProcessorInterface::class);
+        $processor->expects($this->once())
+            ->method('processBatch')
+            ->willReturn([new JobProcessingResult(JobProcessingStatus::Saved, 70)]);
+        $down = $this->provider('searxng', [new JobDto('PHP', 'https://example.test/2', 'PHP', 'test')], healthy: false);
+        $tester = new CommandTester($this->command([$down], $processor));
+
+        self::assertSame(Command::SUCCESS, $tester->execute(['--skip-health-check' => true]));
+        self::assertStringNotContainsString('indisponible', $tester->getDisplay());
+    }
+
     public function testRejectsUnknownProvider(): void
     {
         $processor = $this->createStub(JobProcessorInterface::class);
@@ -107,17 +134,22 @@ final class RunPipelineCommandTest extends TestCase
     }
 
     /** @param JobDto[] $jobs */
-    private function provider(string $name, array $jobs): JobProviderInterface
+    private function provider(string $name, array $jobs, bool $healthy = true): JobProviderInterface
     {
-        return new readonly class ($name, $jobs) implements JobProviderInterface {
+        return new readonly class ($name, $jobs, $healthy) implements JobProviderInterface {
             /** @param JobDto[] $jobs */
-            public function __construct(private string $providerName, private array $jobs)
+            public function __construct(private string $providerName, private array $jobs, private bool $healthy)
             {
             }
 
             public function name(): string
             {
                 return $this->providerName;
+            }
+
+            public function isHealthy(): bool
+            {
+                return $this->healthy;
             }
 
             public function fetch(): array

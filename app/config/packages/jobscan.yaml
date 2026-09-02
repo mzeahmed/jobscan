@@ -39,6 +39,55 @@ parameters:
     # Pause entre deux lots concurrents ; 0 désactive la temporisation.
     app.profile.searx_query_delay_ms: 500
 
+    # Filtre de bruit sur les résultats de recherche web (SearxNoiseFilter).
+    # Un résultat est écarté s'il contient un pattern bloquant, OU s'il ne contient
+    # aucun signal emploi.
+    app.profile.searx_blocked_patterns:
+        - tutorial
+        - cours
+        - formation
+        - manual
+        - documentation
+        - wikipedia
+        - youtube.com
+        - openclassrooms.com
+        - w3schools.com
+        - geeksforgeeks.org
+        - php.net
+        - github.com/php
+    app.profile.searx_job_signals:
+        - job
+        - jobs
+        - emploi
+        - emplois
+        - recrute
+        - recrutement
+        - hiring
+        - remote
+        - freelance
+        - mission
+        - cdi
+        - cdd
+        - developer
+        - développeur
+        - developpeur
+        - engineer
+        - ingénieur
+        - ingenieur
+        - poste
+        - opportunité
+        - opportunite
+        - contractor
+        - contract
+        - lead
+        - architect
+        - architecte
+        - backend
+        - back-end
+        - full stack
+        - fullstack
+        - full-stack
+
     app.profile.scoring:
         prescore:
             keywords:

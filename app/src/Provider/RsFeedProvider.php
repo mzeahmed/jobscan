@@ -36,6 +36,42 @@ final readonly class RsFeedProvider implements JobProviderInterface
     }
 
     /**
+     * Sain dès qu'au moins un flux configuré répond, ou si aucun flux n'est configuré
+     * (le provider est alors un no-op légitime).
+     */
+    public function isHealthy(): bool
+    {
+        $urls = array_values(array_filter(
+            $this->feedUrls,
+            static fn (?string $url): bool => is_string($url) && trim($url) !== '',
+        ));
+
+        if ($urls === []) {
+            return true;
+        }
+
+        foreach ($urls as $url) {
+            try {
+                $status = $this->httpClient->request('GET', $url, [
+                    'headers' => ['User-Agent' => 'JOBSCAN/1.0'],
+                    'timeout' => 5,
+                ])->getStatusCode();
+
+                if ($status < 400) {
+                    return true;
+                }
+            } catch (\Throwable $e) {
+                $this->logger->warning('FeedProvider health check failed.', [
+                    'feed_url' => $url,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Récupère et agrège toutes les offres depuis les flux configurés.
      *
      * @return JobDto[]

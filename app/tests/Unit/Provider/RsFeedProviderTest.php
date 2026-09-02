@@ -80,4 +80,33 @@ final class RsFeedProviderTest extends TestCase
 
         self::assertSame('feed', $provider->fetch()[0]->source);
     }
+
+    public function testIsHealthyWhenNoFeedIsConfigured(): void
+    {
+        $provider = new RsFeedProvider(new MockHttpClient(), new NullLogger(), [null, '']);
+
+        self::assertTrue($provider->isHealthy());
+    }
+
+    public function testIsHealthyWhenAtLeastOneFeedResponds(): void
+    {
+        $client = new MockHttpClient([
+            new MockResponse('', ['http_code' => 500]),
+            new MockResponse('<rss version="2.0"><channel/></rss>'),
+        ]);
+        $provider = new RsFeedProvider($client, new NullLogger(), ['https://a.example/rss', 'https://b.example/rss']);
+
+        self::assertTrue($provider->isHealthy());
+    }
+
+    public function testIsNotHealthyWhenEveryFeedFails(): void
+    {
+        $client = new MockHttpClient([
+            new MockResponse('', ['http_code' => 500]),
+            new MockResponse('', ['http_code' => 404]),
+        ]);
+        $provider = new RsFeedProvider($client, new NullLogger(), ['https://a.example/rss', 'https://b.example/rss']);
+
+        self::assertFalse($provider->isHealthy());
+    }
 }
