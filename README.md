@@ -368,6 +368,21 @@ php bin/console app:jobs:run --provider=remoteok --provider=searxng
 php bin/console app:jobs:stats
 ```
 
+### Maintenance et export des offres
+
+```bash
+# Prévisualiser puis supprimer les offres ingérées il y a plus de 30 jours
+php bin/console app:jobs:purge --older-than=30d --dry-run
+php bin/console app:jobs:purge --older-than=4w
+
+# Exporter les offres scorées (stdout par défaut)
+php bin/console app:jobs:export --format=csv --min-score=60
+php bin/console app:jobs:export --format=json --output=var/export.json
+```
+
+`--older-than` accepte `Nd` (jours) ou `Nw` (semaines). `app:jobs:export` produit
+les colonnes `id,title,score,source,contract,remote,url,created_at`.
+
 Pour vider uniquement les offres avant un test complet, sans toucher aux migrations :
 
 ```bash

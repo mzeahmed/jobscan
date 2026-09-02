@@ -88,7 +88,7 @@ Providers (RSS + SearXNG)
 
 ## Phase 4 — Productivité développeur
 
-- [ ] Commande `app:jobs:purge` — #19
+- [x] Commande `app:jobs:purge` — #19
 - [x] Commande `app:jobs:stats` — #20
 - [x] Mode `--dry-run` sur le pipeline — #21
 - [x] Flag `--provider` pour filtrer les sources — #22
@@ -96,7 +96,7 @@ Providers (RSS + SearXNG)
 - [ ] Notifications Telegram enrichies — #24
 - [x] Seuil de notification configurable — #25
 - [x] Poids du scoring configurables via YAML — #26
-- [ ] Export CSV / JSON — #27
+- [x] Export CSV / JSON — #27
 - [ ] Vue HTML paginée pour consulter et filtrer les offres — #34
 
 ---
@@ -133,12 +133,10 @@ Tâches bien délimitées, idéales pour une première PR :
 - #11 — Batch insert Doctrine
 - #12 — Déclarations `.PHONY` dans le Makefile
 - #15 — Tests unitaires `SearxProvider::isClearlyIrrelevant()`
-- #19 — Commande `app:jobs:purge`
 - #21 — Mode `--dry-run`
 - #23 — Résumé de fin de run
 - #24 — Notifications Telegram enrichies
 - #25 — Seuil de notification configurable
-- #27 — Export CSV / JSON
 - #28 — Prompt IA configurable FR/EN
 
 ---

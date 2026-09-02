@@ -10,6 +10,15 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-09-02
+
+#### Added
+
+- Commande `app:jobs:purge` : supprime les offres ingérées au-delà d'un seuil
+  (`--older-than=30d` / `4w`), avec un mode `--dry-run`.
+- Commande `app:jobs:export` : export CSV ou JSON des offres scorées, vers stdout
+  ou un fichier (`--format`, `--min-score`, `--output`).
+
 ### 2026-08-11
 
 #### Changed
