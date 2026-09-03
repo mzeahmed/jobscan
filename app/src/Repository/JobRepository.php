@@ -156,6 +156,53 @@ class JobRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Compte les offres ingérées (`createdAt`) strictement avant la date donnée.
+     */
+    public function countCreatedBefore(\DateTimeImmutable $before): int
+    {
+        return (int) $this->createQueryBuilder('j')
+            ->select('COUNT(j.id)')
+            ->where('j.createdAt < :before')
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Supprime les offres ingérées (`createdAt`) strictement avant la date donnée.
+     *
+     * @return int Nombre d'offres supprimées
+     */
+    public function deleteCreatedBefore(\DateTimeImmutable $before): int
+    {
+        return (int) $this->createQueryBuilder('j')
+            ->delete()
+            ->where('j.createdAt < :before')
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->execute();
+    }
+
+    /**
+     * Retourne les offres destinées à l'export, triées par score décroissant
+     * puis par date d'ingestion décroissante.
+     *
+     * @return Job[]
+     */
+    public function findForExport(?int $minScore = null): array
+    {
+        $query = $this->createQueryBuilder('j')
+            ->orderBy('j.score', 'DESC')
+            ->addOrderBy('j.createdAt', 'DESC');
+
+        if ($minScore !== null) {
+            $query->where('j.score >= :minScore')->setParameter('minScore', $minScore);
+        }
+
+        return $query->getQuery()->getResult();
+    }
+
     //    /**
     //     * @return Job[] Returns an array of Job objects
     //     */

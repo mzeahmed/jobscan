@@ -96,7 +96,7 @@ Providers (RSS + SearXNG)
 - [ ] Notifications Telegram enrichies — #24
 - [x] Seuil de notification configurable — #25
 - [x] Poids du scoring configurables via YAML — #26
-- [ ] Export CSV / JSON — #27
+- [x] Export CSV / JSON — #27
 - [ ] Vue HTML paginée pour consulter et filtrer les offres — #34
 
 ---

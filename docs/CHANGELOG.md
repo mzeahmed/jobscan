@@ -21,6 +21,11 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
   `app.profile.searx_blocked_patterns` / `app.profile.searx_job_signals`
   configurables dans `jobscan.yaml` et couvertes par des tests unitaires.
 
+- Commande `app:jobs:purge` : supprime les offres ingérées au-delà d'un seuil
+  (`--older-than=30d` / `4w`), avec un mode `--dry-run`.
+- Commande `app:jobs:export` : export CSV ou JSON des offres scorées, vers stdout
+  ou un fichier (`--format`, `--min-score`, `--output`).
+
 #### Changed
 
 - Liste des signaux emploi SearXNG élargie (engineer, ingénieur, poste,
