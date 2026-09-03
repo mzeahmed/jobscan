@@ -22,6 +22,15 @@ interface JobProviderInterface
     public function name(): string;
 
     /**
+     * Indique si la source est joignable, via une sonde légère (pas un fetch complet).
+     *
+     * Utilisée par `RunPipelineCommand` au démarrage pour ignorer les providers
+     * indisponibles sans annuler le run. Ne doit jamais propager d'exception :
+     * toute erreur réseau se traduit par `false`.
+     */
+    public function isHealthy(): bool;
+
+    /**
      * Récupère les offres d'emploi depuis la source.
      *
      * Les erreurs réseau ou de parsing doivent être absorbées en interne :

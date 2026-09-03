@@ -101,6 +101,11 @@ services:
             $apiUrl: '%env(REMOTEOK_API_URL)%'
         tags: ['app.job_provider']
 
+    App\Provider\SearxNoiseFilter:
+        arguments:
+            $blockedPatterns: '%app.profile.searx_blocked_patterns%'
+            $jobSignals: '%app.profile.searx_job_signals%'
+
     App\Provider\SearxProvider:
         arguments:
             $baseUrl: '%env(SEARXNG_URL)%'
@@ -112,6 +117,7 @@ services:
             $cacheTtl: '%app.profile.searx_cache_ttl%'
             $maxPages: '%app.profile.searx_max_pages%'
             $queryDelayMs: '%app.profile.searx_query_delay_ms%'
+            $noiseFilter: '@App\Provider\SearxNoiseFilter'
         tags: [ 'app.job_provider' ]
 
     App\Processor\JobProcessor:

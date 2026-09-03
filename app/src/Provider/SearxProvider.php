@@ -19,8 +19,8 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * est envoyé nativement à SearXNG pour limiter les résultats aux offres récentes.
  *
  * Les résultats sont dédupliqués par URL avant d'être retournés. Les résultats
- * manifestement hors-sujet (tutoriels, documentation, etc.) sont écartés via
- * une liste de patterns bloquants avant d'atteindre le pipeline.
+ * manifestement hors-sujet (tutoriels, documentation, etc.) sont écartés par
+ * {@see SearxNoiseFilter} avant d'atteindre le pipeline.
  */
 final readonly class SearxProvider implements JobProviderInterface
 {
@@ -30,10 +30,38 @@ final readonly class SearxProvider implements JobProviderInterface
     }
 
     /**
+     * Vérifie que l'instance SearXNG répond, via une requête minimale.
+     *
+     * Ne déclenche pas un fetch complet : une seule requête de sonde avec un
+     * timeout court. Toute exception ou réponse ≥ 400 marque le provider comme
+     * indisponible.
+     */
+    public function isHealthy(): bool
+    {
+        try {
+            $status = $this->httpClient->request('GET', rtrim($this->baseUrl, '/') . '/search', [
+                'query' => ['q' => 'ping', 'format' => 'json'],
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'User-Agent' => 'JOBSCAN/1.0',
+                ],
+                'timeout' => 5,
+            ])->getStatusCode();
+
+            return $status < 400;
+        } catch (\Throwable $e) {
+            $this->logger->warning('SearxProvider health check failed.', ['error' => $e->getMessage()]);
+
+            return false;
+        }
+    }
+
+    /**
      * @param string $baseUrl URL de base de l'instance SearXNG (env `SEARXNG_URL`)
      * @param list<string> $searchQueries Requêtes de base (config `app.profile.searx_queries`)
      * @param list<string> $locations Localisations (config `app.profile.job_locations`)
      * @param null|\Closure(int): void $sleeper Attente injectable pour les tests (durée en millisecondes)
+     * @param null|SearxNoiseFilter $noiseFilter Filtre de bruit (config `app.profile.searx_*`) ; repli sur les défauts si null
      */
     public function __construct(
         private HttpClientInterface $httpClient,
@@ -48,6 +76,7 @@ final readonly class SearxProvider implements JobProviderInterface
         private int $maxPages = 2,
         private int $queryDelayMs = 500,
         private ?\Closure $sleeper = null,
+        private ?SearxNoiseFilter $noiseFilter = null,
     ) {
     }
 
@@ -59,6 +88,7 @@ final readonly class SearxProvider implements JobProviderInterface
     public function fetch(): array
     {
         $jobs = [];
+        $noiseFilter = $this->noiseFilter ?? new SearxNoiseFilter();
 
         foreach ($this->searchMany($this->buildQueries()) as $results) {
             foreach ($results as $result) {
@@ -74,7 +104,7 @@ final readonly class SearxProvider implements JobProviderInterface
                     continue;
                 }
 
-                if ($this->isClearlyIrrelevant($title, $url, $description)) {
+                if ($noiseFilter->isClearlyIrrelevant($title, $url, $description)) {
                     continue;
                 }
 
@@ -237,61 +267,6 @@ final readonly class SearxProvider implements JobProviderInterface
             'page' => $page,
             'error' => $error->getMessage(),
         ]);
-    }
-
-    /**
-     * Détermine si un résultat est manifestement hors-sujet.
-     *
-     * La détection se fait en deux passes :
-     *   1. Présence d'un pattern bloquant (tutoriels, docs, Wikipedia…) → rejeté
-     *   2. Absence de tout signal emploi (job, emploi, freelance, CDI…) → rejeté
-     *
-     * Un résultat qui ne contient aucun pattern bloquant mais au moins un signal
-     * emploi est considéré comme potentiellement pertinent.
-     */
-    private function isClearlyIrrelevant(string $title, string $url, string $description): bool
-    {
-        $text = strtolower($title . ' ' . $url . ' ' . $description);
-
-        $blockedPatterns = [
-            'tutorial',
-            'cours',
-            'formation',
-            'manual',
-            'documentation',
-            'wikipedia',
-            'youtube.com',
-            'openclassrooms.com',
-            'w3schools.com',
-            'geeksforgeeks.org',
-            'php.net',
-            'github.com/php',
-        ];
-
-        foreach ($blockedPatterns as $pattern) {
-            if (str_contains($text, $pattern)) {
-                return true;
-            }
-        }
-
-        $jobSignals = [
-            'job',
-            'jobs',
-            'emploi',
-            'emplois',
-            'recrute',
-            'hiring',
-            'remote',
-            'freelance',
-            'mission',
-            'cdi',
-            'developer',
-            'développeur',
-            'backend',
-            'full stack',
-            'fullstack',
-        ];
-        return array_all($jobSignals, fn ($signal) => !str_contains($text, (string) $signal));
     }
 
     /**

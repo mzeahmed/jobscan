@@ -39,7 +39,8 @@ final class RunPipelineCommand extends Command
         $this
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Analyse les offres sans persistance ni notification.')
             ->addOption('reset', null, InputOption::VALUE_NONE, 'Vide la table des offres avant le pipeline (hors production).')
-            ->addOption('provider', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Provider à exécuter (remoteok, rss, searxng).');
+            ->addOption('provider', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Provider à exécuter (remoteok, rss, searxng).')
+            ->addOption('skip-health-check', null, InputOption::VALUE_NONE, 'Ne vérifie pas la disponibilité des providers avant le run.');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -51,6 +52,7 @@ final class RunPipelineCommand extends Command
 
         $dryRun = (bool) $input->getOption('dry-run');
         $reset = (bool) $input->getOption('reset');
+        $skipHealthCheck = (bool) $input->getOption('skip-health-check');
         /** @var list<string> $selectedProviders */
         $selectedProviders = array_map(strtolower(...), (array) $input->getOption('provider'));
         $providers = iterator_to_array($this->providers);
@@ -95,6 +97,12 @@ final class RunPipelineCommand extends Command
 
         foreach ($providers as $provider) {
             if ($selectedProviders !== [] && !\in_array($provider->name(), $selectedProviders, true)) {
+                continue;
+            }
+
+            if (!$skipHealthCheck && !$provider->isHealthy()) {
+                $io->warning(sprintf('Provider "%s" indisponible — ignoré pour ce run.', $provider->name()));
+
                 continue;
             }
 

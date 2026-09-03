@@ -155,6 +155,8 @@ toute valeur contenant elle-même un espace.
 | `app.profile.job_locations` | `JOB_LOCATIONS` | `SearxProvider` | Localisations combinées aux requêtes non localisées |
 | `app.profile.searx_max_pages` | — (reste en YAML) | `SearxProvider` | Nombre maximal de pages récupérées par requête |
 | `app.profile.searx_query_delay_ms` | — (reste en YAML) | `SearxProvider` | Délai entre les lots concurrents (`0` le désactive) |
+| `app.profile.searx_blocked_patterns` | — (reste en YAML) | `SearxNoiseFilter` | Patterns qui écartent un résultat de recherche (docs, tutoriels…) |
+| `app.profile.searx_job_signals` | — (reste en YAML) | `SearxNoiseFilter` | Mots-clés attestant qu'un résultat est bien une offre |
 | `app.profile.persistence_batch_size` | — (reste en YAML) | `JobProcessor` | Nombre d'offres persistées par lot Doctrine |
 | `app.profile.ai_max_retries` | — (reste en YAML) | Clients LLM | Nombre de retries après l'appel initial |
 | `app.profile.ai_initial_retry_delay_ms` | — (reste en YAML) | Clients LLM | Délai initial du backoff exponentiel |
@@ -174,7 +176,13 @@ contiennent déjà une.
 
 ## Providers
 
-JOBSCAN supporte plusieurs providers, chacun implémentant `JobProviderInterface`.
+JOBSCAN supporte plusieurs providers, chacun implémentant `JobProviderInterface`
+(`name()`, `isHealthy()`, `fetch()`).
+
+Au démarrage de `app:jobs:run`, chaque provider est sondé via `isHealthy()` : un
+provider injoignable (ex. `SEARXNG_URL` mal configurée) est ignoré avec un
+avertissement, sans annuler le run. L'option `--skip-health-check` désactive ce
+contrôle (utile hors ligne ou en test).
 
 ### RsFeedProvider
 
@@ -365,6 +373,7 @@ Pour simuler un run sans écriture ni notification, ou limiter les sources :
 ```bash
 php bin/console app:jobs:run --dry-run
 php bin/console app:jobs:run --provider=remoteok --provider=searxng
+php bin/console app:jobs:run --skip-health-check
 php bin/console app:jobs:stats
 ```
 
