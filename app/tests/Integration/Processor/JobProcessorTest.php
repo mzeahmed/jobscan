@@ -5,7 +5,12 @@ declare(strict_types=1);
 namespace App\Tests\Integration\Processor;
 
 use App\DTO\JobDto;
+use App\AI\AIClient;
+use App\Scoring\Scoring;
 use Doctrine\ORM\Events;
+use Psr\Log\LoggerInterface;
+use App\Notification\Notifier;
+use App\Processor\JobIdentity;
 use App\Processor\JobProcessor;
 use App\Repository\JobRepository;
 use Doctrine\ORM\Tools\SchemaTool;
@@ -165,9 +170,43 @@ final class JobProcessorTest extends KernelTestCase
         self::assertSame(1, $this->repository->countAll());
     }
 
+    public function testExcludesConfiguredPlatformDomainsBeforeAiAnalysis(): void
+    {
+        $results = $this->processorWithExcludedDomains(['linkedin.com', 'indeed.com'])->processBatch([
+            $this->job(1, 'https://www.linkedin.com/jobs/view/1'),
+            $this->job(2, 'https://fr.indeed.com/viewjob?jk=2'),
+            $this->job(3, 'https://notlinkedin.com/jobs/3'),
+        ]);
+
+        self::assertSame([
+            JobProcessingStatus::Filtered,
+            JobProcessingStatus::Filtered,
+            JobProcessingStatus::Saved,
+        ], array_map(static fn ($result) => $result->status, $results));
+        self::assertSame(1, $this->llm->calls);
+        self::assertSame(1, $this->repository->countAll());
+    }
+
     private function processor(): JobProcessor
     {
         return self::getContainer()->get(JobProcessor::class);
+    }
+
+    /** @param list<string> $domains */
+    private function processorWithExcludedDomains(array $domains): JobProcessor
+    {
+        $container = self::getContainer();
+
+        return new JobProcessor(
+            $this->repository,
+            $container->get(AIClient::class),
+            $container->get(Scoring::class),
+            $container->get(Notifier::class),
+            $container->get(JobIdentity::class),
+            $container->get(LoggerInterface::class),
+            ['php', 'symfony', 'wordpress', 'backend', 'fullstack', 'api'],
+            $domains,
+        );
     }
 
     private function job(int $index, ?string $url = null): JobDto
@@ -189,9 +228,11 @@ final class MutableLlmClient implements LLMClientInterface
 
     /** @var list<string|null|\Throwable> */
     public array $responses = [];
+    public int $calls = 0;
 
     public function analyze(string $systemPrompt, string $userText): ?string
     {
+        ++$this->calls;
         $response = $this->responses === [] ? self::SUCCESS_RESPONSE : array_shift($this->responses);
 
         if ($response instanceof \Throwable) {

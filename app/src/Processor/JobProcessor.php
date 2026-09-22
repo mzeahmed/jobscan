@@ -31,6 +31,7 @@ final readonly class JobProcessor implements JobProcessorInterface
 {
     /**
      * @param list<string> $filterKeywords Mots-clés requis (config `app.profile.filter_keywords`)
+     * @param list<string> $excludedPlatformDomains Domaines exclus (config `app.profile.excluded_platform_domains`)
      * @param int $maxJobAgeDays Âge maximum (config `app.profile.max_job_age_days`)
      */
     public function __construct(
@@ -41,6 +42,7 @@ final readonly class JobProcessor implements JobProcessorInterface
         private JobIdentity $jobIdentity,
         private LoggerInterface $logger,
         private array $filterKeywords = [],
+        private array $excludedPlatformDomains = [],
         private int $maxJobAgeDays = 30,
         private int $aiPrescoreThreshold = 10,
         private int $batchSize = 20,
@@ -116,14 +118,21 @@ final readonly class JobProcessor implements JobProcessorInterface
     /**
      * @param array<string, true> $pendingCanonicalUrls
      * @param array<string, true> $pendingFingerprints
+     *
      * @return array{result: JobProcessingResult, job: ?Job}
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    private function prepare(
-        JobDto $dto,
-        bool $dryRun,
-        array &$pendingCanonicalUrls,
-        array &$pendingFingerprints,
-    ): array {
+    private function prepare(JobDto $dto, bool $dryRun, array &$pendingCanonicalUrls, array &$pendingFingerprints): array
+    {
+        if ($this->isFromExcludedPlatform($dto->url)) {
+            $this->logger->debug('Offre ignorée : plateforme exclue.', [
+                'url' => $dto->url,
+                'title' => $dto->title,
+            ]);
+
+            return ['result' => new JobProcessingResult(JobProcessingStatus::Filtered), 'job' => null];
+        }
+
         $title = strtolower($dto->title);
         $desc = strtolower($dto->description);
         $matches = array_any($this->filterKeywords, fn ($keyword) => str_contains($title, (string) $keyword) || str_contains($desc, (string) $keyword));
@@ -218,18 +227,33 @@ final readonly class JobProcessor implements JobProcessorInterface
         ];
     }
 
+    private function isFromExcludedPlatform(string $url): bool
+    {
+        $host = parse_url($url, PHP_URL_HOST);
+        if (!is_string($host) || $host === '') {
+            return false;
+        }
+
+        $host = strtolower(rtrim($host, '.'));
+
+        foreach ($this->excludedPlatformDomains as $domain) {
+            $domain = strtolower(ltrim(rtrim(trim($domain), '.'), '.'));
+            if ($domain !== '' && ($host === $domain || str_ends_with($host, '.' . $domain))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /**
      * @param list<array{index: int, job: Job, used_fallback: bool}> $pending
      * @param array<int, JobProcessingResult> $results
      * @param array<string, true> $pendingCanonicalUrls
      * @param array<string, true> $pendingFingerprints
      */
-    private function flushPending(
-        array &$pending,
-        array &$results,
-        array &$pendingCanonicalUrls,
-        array &$pendingFingerprints,
-    ): bool {
+    private function flushPending(array &$pending, array &$results, array &$pendingCanonicalUrls, array &$pendingFingerprints): bool
+    {
         try {
             $this->jobRepository->flush();
         } catch (\Throwable $e) {

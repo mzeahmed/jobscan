@@ -20,6 +20,8 @@ parameters:
     app.profile.known_stack: '%env(csv:KNOWN_STACK)%'
     app.profile.searx_queries: '%env(csv:SEARX_QUERIES)%'
     app.profile.job_locations: '%env(csv:JOB_LOCATIONS)%'
+    app.profile.empty_csv: ''
+    app.profile.excluded_platform_domains: '%env(csv:default:app.profile.empty_csv:EXCLUDED_PLATFORM_DOMAINS)%'
     app.profile.max_job_age_days: 30
     app.profile.recent_job_days: 14
     app.profile.ai_prescore_threshold: 10

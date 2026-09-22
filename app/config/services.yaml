@@ -123,6 +123,7 @@ services:
     App\Processor\JobProcessor:
         arguments:
             $filterKeywords: '%app.profile.filter_keywords%'
+            $excludedPlatformDomains: '%app.profile.excluded_platform_domains%'
             $maxJobAgeDays: '%app.profile.max_job_age_days%'
             $aiPrescoreThreshold: '%app.profile.ai_prescore_threshold%'
             $batchSize: '%app.profile.persistence_batch_size%'

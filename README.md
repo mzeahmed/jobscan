@@ -124,6 +124,8 @@ FILTER_KEYWORDS=php,symfony,wordpress,backend,fullstack,api
 KNOWN_STACK=php,symfony,wordpress,mysql,postgresql,redis,docker,react,vue,api
 SEARX_QUERIES="php symfony remote job,php symfony freelance remote"
 JOB_LOCATIONS="Paris,Remote"
+# Domaines de plateformes à ignorer, séparés par des virgules
+EXCLUDED_PLATFORM_DOMAINS=linkedin.com
 ```
 
 > Le moteur LLM actif se choisit avec `DEFAULT_LLM_PROVIDER` (`ollama`, `lmstudio`
@@ -140,6 +142,7 @@ FILTER_KEYWORDS=php,symfony,wordpress,backend,fullstack,api
 KNOWN_STACK=php,symfony,wordpress,mysql,postgresql,redis,docker,react,vue,api,rabbitmq,laravel,typescript,javascript
 SEARX_QUERIES="php symfony remote job,php symfony freelance remote,wordpress php remote developer,backend php api remote job,développeur php,mission freelance php symfony remote"
 JOB_LOCATIONS="Marseille,Paris,Ile-de-France,Remote"
+EXCLUDED_PLATFORM_DOMAINS=linkedin.com,indeed.com
 ```
 
 `app/config/packages/jobscan.yaml` les expose comme paramètres de service via le
@@ -153,6 +156,7 @@ toute valeur contenant elle-même un espace.
 | `app.profile.known_stack` | `KNOWN_STACK` | `AIClient` | Détecte la stack technique en fallback heuristique |
 | `app.profile.searx_queries` | `SEARX_QUERIES` | `SearxProvider` | Requêtes envoyées à SearXNG à chaque run |
 | `app.profile.job_locations` | `JOB_LOCATIONS` | `SearxProvider` | Localisations combinées aux requêtes non localisées |
+| `app.profile.excluded_platform_domains` | `EXCLUDED_PLATFORM_DOMAINS` | `JobProcessor` | Écarte les URL de ces domaines, y compris leurs sous-domaines, avant l'analyse IA |
 | `app.profile.searx_max_pages` | — (reste en YAML) | `SearxProvider` | Nombre maximal de pages récupérées par requête |
 | `app.profile.searx_query_delay_ms` | — (reste en YAML) | `SearxProvider` | Délai entre les lots concurrents (`0` le désactive) |
 | `app.profile.searx_blocked_patterns` | — (reste en YAML) | `SearxNoiseFilter` | Patterns qui écartent un résultat de recherche (docs, tutoriels…) |
