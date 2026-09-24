@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Job;
+use App\DTO\JobListingFilters;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -154,6 +156,83 @@ class JobRepository extends ServiceEntityRepository
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
+
+    public function countFiltered(JobListingFilters $filters): int
+    {
+        return (int) $this->filteredQueryBuilder($filters)
+            ->select('COUNT(j.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /** @return Job[] */
+    public function findFilteredPaginated(JobListingFilters $filters, int $page, int $limit): array
+    {
+        $offset = max(0, ($page - 1) * $limit);
+        $query = $this->filteredQueryBuilder($filters);
+
+        if ($filters->sort === 'score') {
+            $query->orderBy('j.score', 'DESC')->addOrderBy('j.createdAt', 'DESC');
+        } else {
+            $query->orderBy('j.createdAt', 'DESC');
+        }
+
+        return $query
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /** @return list<string> */
+    public function findSources(): array
+    {
+        /** @var list<string> $sources */
+        $sources = $this->createQueryBuilder('j')
+            ->select('DISTINCT j.source')
+            ->orderBy('j.source', 'ASC')
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        return $sources;
+    }
+
+    private function filteredQueryBuilder(JobListingFilters $filters): QueryBuilder
+    {
+        $query = $this->createQueryBuilder('j');
+
+        if ($filters->location !== null) {
+            $query->andWhere('LOWER(j.location) LIKE LOWER(:location)')
+                ->setParameter('location', '%' . $filters->location . '%');
+        }
+        if ($filters->remote !== null) {
+            $query->andWhere('j.remote = :remote')->setParameter('remote', $filters->remote);
+        }
+        if ($filters->contractType !== null) {
+            $query->andWhere('j.contractType = :contractType')->setParameter('contractType', $filters->contractType->value);
+        }
+        if ($filters->seniority !== null) {
+            $query->andWhere('j.seniority = :seniority')->setParameter('seniority', $filters->seniority->value);
+        }
+        if ($filters->freelance !== null) {
+            $query->andWhere('j.freelance = :freelance')->setParameter('freelance', $filters->freelance);
+        }
+        if ($filters->minimumScore !== null) {
+            $query->andWhere('j.score >= :minimumScore')->setParameter('minimumScore', $filters->minimumScore);
+        }
+        if ($filters->source !== null) {
+            $query->andWhere('j.source = :source')->setParameter('source', $filters->source);
+        }
+        if ($filters->ageInDays !== null) {
+            $query->andWhere('j.createdAt >= :createdSince')
+                ->setParameter('createdSince', new \DateTimeImmutable(sprintf('-%d days', $filters->ageInDays)));
+        }
+        if ($filters->notified !== null) {
+            $query->andWhere($filters->notified ? 'j.notifiedAt IS NOT NULL' : 'j.notifiedAt IS NULL');
+        }
+
+        return $query;
     }
 
     /**
