@@ -7,6 +7,7 @@ namespace App\AI;
 use App\DTO\Seniority;
 use App\DTO\ContractType;
 use App\DTO\AiAnalysisDto;
+use App\Scoring\TextMatcher;
 use Psr\Log\LoggerInterface;
 use Psr\Cache\CacheItemPoolInterface;
 use App\AI\Provider\LLMClientInterface;
@@ -55,19 +56,25 @@ final class AIClient
     /**
      * Analyse une description d'offre et retourne les données structurées extraites.
      *
-     * Le texte est nettoyé et tronqué à 3 000 caractères avant envoi.
+     * Le titre, l'entreprise et le lieu (s'ils sont fournis) précèdent la description,
+     * qui est nettoyée et tronquée à 3 000 caractères avant envoi.
      * En cas de cache hit, le LLM n'est pas sollicité.
      * En cas d'échec LLM, le fallback heuristique est automatiquement utilisé.
      *
      * @throws InvalidArgumentException
      */
-    public function analyze(string $text, ?\DateTimeImmutable $publishedAt = null): AiAnalysisDto
-    {
+    public function analyze(
+        string $text,
+        ?\DateTimeImmutable $publishedAt = null,
+        ?string $title = null,
+        ?string $company = null,
+        ?string $location = null,
+    ): AiAnalysisDto {
         $this->lastAnalysisUsedFallback = false;
-        $text = $this->cleanText($text);
-        $text = mb_substr($text, 0, 3000);
+        $text = $this->buildInput($this->cleanText($text), $title, $company, $location);
 
-        $cacheKey = 'ai_' . hash('sha256', $text);
+        // Préfixe versionné : les entrées de cache antérieures n'ont pas les champs de pertinence.
+        $cacheKey = 'ai_v2_' . hash('sha256', $text);
         $item = $this->cache->getItem($cacheKey);
 
         if ($item->isHit()) {
@@ -179,7 +186,49 @@ final class AIClient
             budget: (string) ($data['budget'] ?? 'non précisé'),
             recent: false,
             seniority: $seniority,
+            primaryLanguage: $this->normalizeLanguage($data['primary_language'] ?? null),
+            relevance: $this->normalizeRelevance($data['relevance'] ?? null),
+            locationOk: \is_bool($data['location_ok'] ?? null) ? $data['location_ok'] : null,
         );
+    }
+
+    private function normalizeLanguage(mixed $value): ?string
+    {
+        if (!\is_string($value)) {
+            return null;
+        }
+
+        $value = strtolower(trim($value));
+
+        return $value === '' ? null : $value;
+    }
+
+    private function normalizeRelevance(mixed $value): ?int
+    {
+        if (!\is_int($value) && !(\is_string($value) && is_numeric($value)) && !\is_float($value)) {
+            return null;
+        }
+
+        return max(0, min(100, (int) round((float) $value)));
+    }
+
+    /**
+     * Assemble l'entrée du LLM : métadonnées de l'offre (titre, entreprise, lieu) puis
+     * description tronquée à 3 000 caractères.
+     */
+    private function buildInput(string $description, ?string $title, ?string $company, ?string $location): string
+    {
+        $header = [];
+        foreach (['Titre' => $title, 'Entreprise' => $company, 'Lieu' => $location] as $label => $value) {
+            $value = $value === null ? '' : $this->cleanText($value);
+            if ($value !== '') {
+                $header[] = $label . ' : ' . $value;
+            }
+        }
+
+        $description = mb_substr($description, 0, 3000);
+
+        return $header === [] ? $description : implode("\n", $header) . "\nDescription : " . $description;
     }
 
     /**
@@ -196,9 +245,14 @@ final class AIClient
      */
     private function heuristicFallback(string $text): AiAnalysisDto
     {
-        $lower = strtolower($text);
-        $freelance = str_contains($lower, 'freelance') || str_contains($lower, 'mission') || str_contains($lower, 'tjm');
-        $cdi = str_contains($lower, 'cdi') || str_contains($lower, 'contrat à durée indéterminée');
+        $lower = TextMatcher::normalize($text);
+        $has = static fn (string ...$words): bool => array_any(
+            $words,
+            static fn (string $word): bool => TextMatcher::containsNormalized($lower, $word),
+        );
+
+        $freelance = $has('freelance', 'mission', 'tjm');
+        $cdi = $has('cdi', 'contrat a duree indeterminee');
 
         $contractType = match (true) {
             $freelance => ContractType::Freelance,
@@ -207,9 +261,9 @@ final class AIClient
         };
 
         $seniority = match (true) {
-            str_contains($lower, 'senior') || str_contains($lower, 'confirmé') || str_contains($lower, 'confirme') => Seniority::Senior,
-            str_contains($lower, 'junior') || str_contains($lower, 'débutant') || str_contains($lower, 'debutant') => Seniority::Junior,
-            str_contains($lower, 'mid') || str_contains($lower, 'intermédiaire') || str_contains($lower, 'intermediaire') => Seniority::Mid,
+            $has('senior', 'confirme') => Seniority::Senior,
+            $has('junior', 'debutant') => Seniority::Junior,
+            $has('mid', 'intermediaire') => Seniority::Mid,
             default => Seniority::Unknown,
         };
 
@@ -217,9 +271,7 @@ final class AIClient
             stack: $this->extractStack($lower),
             contractType: $contractType,
             freelance: $freelance,
-            remote: str_contains($lower, 'remote')
-                        || str_contains($lower, 'télétravail')
-                        || str_contains($lower, 'teletravail'),
+            remote: $has('remote', 'teletravail'),
             budget: $this->extractBudget($lower),
             recent: false,
             seniority: $seniority,
@@ -235,7 +287,7 @@ final class AIClient
     {
         return array_values(array_filter(
             $this->knownStack,
-            static fn (string $tech) => str_contains($text, $tech)
+            static fn (string $tech) => TextMatcher::containsNormalized($text, $tech)
         ));
     }
 
@@ -292,6 +344,9 @@ final class AIClient
             budget: $analysis->budget,
             recent: $recent,
             seniority: $analysis->seniority,
+            primaryLanguage: $analysis->primaryLanguage,
+            relevance: $analysis->relevance,
+            locationOk: $analysis->locationOk,
         );
     }
 }

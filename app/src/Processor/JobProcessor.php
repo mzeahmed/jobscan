@@ -8,6 +8,7 @@ use App\DTO\JobDto;
 use App\Entity\Job;
 use App\AI\AIClient;
 use App\Scoring\Scoring;
+use App\Scoring\TextMatcher;
 use Psr\Log\LoggerInterface;
 use App\Notification\Notifier;
 use App\Repository\JobRepository;
@@ -133,9 +134,8 @@ final readonly class JobProcessor implements JobProcessorInterface
             return ['result' => new JobProcessingResult(JobProcessingStatus::Filtered), 'job' => null];
         }
 
-        $title = strtolower($dto->title);
-        $desc = strtolower($dto->description);
-        $matches = array_any($this->filterKeywords, fn ($keyword) => str_contains($title, (string) $keyword) || str_contains($desc, (string) $keyword));
+        $haystack = TextMatcher::normalize($dto->title . ' ' . $dto->description);
+        $matches = array_any($this->filterKeywords, static fn ($keyword) => TextMatcher::containsNormalized($haystack, (string) $keyword));
 
         if (!$matches) {
             return ['result' => new JobProcessingResult(JobProcessingStatus::Filtered), 'job' => null];
@@ -191,7 +191,7 @@ final readonly class JobProcessor implements JobProcessorInterface
             return ['result' => new JobProcessingResult(JobProcessingStatus::LowPrescore), 'job' => null];
         }
 
-        $aiData = $this->AIClient->analyze($dto->description, $dto->publishedAt);
+        $aiData = $this->AIClient->analyze($dto->description, $dto->publishedAt, $dto->title, $dto->company, $dto->location);
         ['score' => $score, 'breakdown' => $breakdown] = $this->scoringService->compute($dto, $aiData);
 
         $job = Job::fromDTO($dto);

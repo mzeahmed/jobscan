@@ -140,6 +140,7 @@ de YAML n'est nécessaire pour adapter JOBSCAN à un autre profil technique.
 ```dotenv
 FILTER_KEYWORDS=php,symfony,wordpress,backend,fullstack,api
 KNOWN_STACK=php,symfony,wordpress,mysql,postgresql,redis,docker,react,vue,api,rabbitmq,laravel,typescript,javascript
+TARGET_LANGUAGES=php,symfony,wordpress,laravel
 SEARX_QUERIES="php symfony remote job,php symfony freelance remote,wordpress php remote developer,backend php api remote job,développeur php,mission freelance php symfony remote"
 JOB_LOCATIONS="Marseille,Paris,Ile-de-France,Remote"
 EXCLUDED_PLATFORM_DOMAINS=linkedin.com,indeed.com
@@ -154,6 +155,13 @@ toute valeur contenant elle-même un espace.
 |---|---|---|---|
 | `app.profile.filter_keywords` | `FILTER_KEYWORDS` | `JobProcessor` | Écarte les offres hors scope avant tout traitement IA |
 | `app.profile.known_stack` | `KNOWN_STACK` | `AIClient` | Détecte la stack technique en fallback heuristique |
+| `app.profile.target_languages` | `TARGET_LANGUAGES` | `Scoring` | Langages principaux recherchés ; un langage hors liste (jugé par le LLM) est pénalisé. Vide = pas de pénalité |
+| `app.profile.description` | `PROFILE_DESCRIPTION` | prompt LLM | Profil recherché décrit au LLM pour juger la pertinence (optionnel) |
+| `app.profile.scoring_prescore_kw` | `SCORING_PRESCORE_KEYWORDS` | `Scoring` | Mots-clés du pré-score (avant l'IA), au format `mot:points` |
+| `app.profile.scoring_title_keywords` | `SCORING_TITLE_KEYWORDS` | `Scoring` | Points si le mot-clé est dans le titre |
+| `app.profile.scoring_stack_keywords` | `SCORING_STACK_KEYWORDS` | `Scoring` | Points si la techno est dans la stack extraite par l'IA |
+| `app.profile.scoring_desc_kw` | `SCORING_DESCRIPTION_KEYWORDS` | `Scoring` | Points si le mot-clé est dans la description |
+| `app.profile.scoring_negative_keywords` | `SCORING_NEGATIVE_KEYWORDS` | `Scoring` | Mots-clés pénalisants (points négatifs), pré-score et score final |
 | `app.profile.searx_queries` | `SEARX_QUERIES` | `SearxProvider` | Requêtes envoyées à SearXNG à chaque run |
 | `app.profile.job_locations` | `JOB_LOCATIONS` | `SearxProvider` | Localisations combinées aux requêtes non localisées |
 | `app.profile.excluded_platform_domains` | `EXCLUDED_PLATFORM_DOMAINS` | `JobProcessor` | Écarte les URL de ces domaines, y compris leurs sous-domaines, avant l'analyse IA |
@@ -168,6 +176,18 @@ toute valeur contenant elle-même un espace.
 | `app.ai_system_prompt` | — (reste en YAML) | `AIClient` | Prompt système envoyé au provider IA |
 
 Pour adapter JOBSCAN à un autre profil (ex : Python / Django, ou Java / Spring), il suffit d'ajuster ces variables dans `app/.env.local`.
+
+Les variables `SCORING_*` utilisent le format `mot:points` séparé par des virgules
+(points négatifs autorisés, `"full stack:7"` entre guillemets si le mot contient un espace).
+Une entrée mal formée fait échouer le démarrage avec un message explicite. Une variable absente
+**ou vide** retombe sur le profil PHP/Symfony/WordPress par défaut défini dans `jobscan.yaml`.
+
+```dotenv
+SCORING_PRESCORE_KEYWORDS=java:15,golang:15,spring:10,backend:7,api:5
+SCORING_TITLE_KEYWORDS=java:20,golang:20
+SCORING_STACK_KEYWORDS=spring:30,kubernetes:20
+SCORING_NEGATIVE_KEYWORDS=stage:-50,alternance:-50
+```
 
 Les pondérations, seuils, retries LLM et Telegram ainsi que les limites SearXNG sont
 regroupés sous `app.profile.*` dans `config/packages/jobscan.yaml`. Les appels LLM

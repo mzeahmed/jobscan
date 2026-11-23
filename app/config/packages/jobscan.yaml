@@ -21,6 +21,27 @@ parameters:
     app.profile.searx_queries: '%env(csv:SEARX_QUERIES)%'
     app.profile.job_locations: '%env(csv:JOB_LOCATIONS)%'
     app.profile.empty_csv: ''
+    # Langages/frameworks principaux recherchés. Une offre dont le langage principal
+    # (jugé par le LLM) n'en fait pas partie est pénalisée ; vide = pas de pénalité.
+    app.profile.target_languages: '%env(csv:default:app.profile.empty_csv:TARGET_LANGUAGES)%'
+    # Description du profil recherché, injectée dans le prompt système du LLM.
+    app.profile.description: '%env(default:app.profile.default_description:PROFILE_DESCRIPTION)%'
+    app.profile.default_description: >-
+        développeur PHP / Symfony / WordPress (backend ou fullstack), en freelance ou CDI,
+        en full remote ou basé en France (Marseille, Aix-en-Provence, Paris, Île-de-France)
+    # Pondérations du scoring, au format `mot:points` séparés par des virgules (points négatifs
+    # autorisés). Les valeurs par défaut ci-dessous correspondent au profil PHP/Symfony/WordPress.
+    app.profile.scoring_prescore_kw: '%env(csv:default:app.profile.default_prescore_kw:SCORING_PRESCORE_KEYWORDS)%'
+    app.profile.default_prescore_kw: 'php:10,symfony:15,wordpress:10,backend:7,fullstack:7,api:5'
+    app.profile.scoring_title_keywords: '%env(csv:default:app.profile.default_title_kw:SCORING_TITLE_KEYWORDS)%'
+    app.profile.default_title_kw: 'php:20'
+    app.profile.scoring_stack_keywords: '%env(csv:default:app.profile.default_stack_kw:SCORING_STACK_KEYWORDS)%'
+    app.profile.default_stack_kw: 'symfony:30,wordpress:20'
+    app.profile.scoring_desc_kw: '%env(csv:default:app.profile.default_desc_kw:SCORING_DESCRIPTION_KEYWORDS)%'
+    app.profile.default_desc_kw: 'mission:10,urgent:15,asap:15'
+    # Mots-clés pénalisants, appliqués au pré-score et au score final.
+    app.profile.scoring_negative_keywords: '%env(csv:default:app.profile.default_neg_kw:SCORING_NEGATIVE_KEYWORDS)%'
+    app.profile.default_neg_kw: 'stage:-50,stagiaire:-50,alternance:-50,alternant:-50'
     app.profile.excluded_platform_domains: '%env(csv:default:app.profile.empty_csv:EXCLUDED_PLATFORM_DOMAINS)%'
     app.profile.max_job_age_days: 30
     app.profile.recent_job_days: 14
@@ -92,40 +113,24 @@ parameters:
 
     app.profile.scoring:
         prescore:
-            keywords:
-                php: 10
-                symfony: 15
-                wordpress: 10
-                backend: 7
-                fullstack: 7
-                api: 5
+            keywords: '%app.profile.scoring_prescore_kw%'
             remote_keywords:
                 - remote
                 - télétravail
                 - teletravail
             remote_bonus: 5
-            negative_keywords:
-                stage: -50
-                alternance: -50
+            negative_keywords: '%app.profile.scoring_negative_keywords%'
         compute:
-            title_keywords:
-                php: 20
-            stack_keywords:
-                symfony: 30
-                wordpress: 20
+            title_keywords: '%app.profile.scoring_title_keywords%'
+            stack_keywords: '%app.profile.scoring_stack_keywords%'
             contract_bonuses:
                 freelance: 15
                 cdi: 10
             flag_bonuses:
                 remote: 10
                 recent: 20
-            description_keywords:
-                mission: 10
-                urgent: 15
-                asap: 15
-            negative_keywords:
-                stage: -50
-                alternance: -50
+            description_keywords: '%app.profile.scoring_desc_kw%'
+            negative_keywords: '%app.profile.scoring_negative_keywords%'
             seniority_bonuses:
                 senior: 15
                 mid: 5
@@ -134,6 +139,15 @@ parameters:
                 min_daily_rate: 500
                 min_annual_salary: 55
                 points: 10
+            # Jugement de pertinence fourni par le LLM (champs `relevance`,
+            # `primary_language`, `location_ok`). Sans effet si le LLM est indisponible.
+            relevance:
+                # Bonus/malus linéaire autour de 50 : relevance 100 → +max, 0 → -max.
+                max_points: 20
+                # Un langage principal hors de cette liste est pénalisé (env TARGET_LANGUAGES).
+                target_languages: '%app.profile.target_languages%'
+                off_target_penalty: -30
+                location_penalty: -15
 
     app.ai_system_prompt: |
         Tu es un extracteur de données d'offres d'emploi.
@@ -152,8 +166,16 @@ parameters:
           "freelance": true,
           "remote": true,
           "budget": "500€/j ou 45k€/an ou non précisé",
-          "seniority": "junior|mid|senior|unknown"
+          "seniority": "junior|mid|senior|unknown",
+          "primary_language": "java",
+          "relevance": 85,
+          "location_ok": true
         }
+
+        L'entrée peut commencer par les lignes "Titre :", "Entreprise :", "Lieu :"
+        puis "Description :". Le titre est le signal le plus fiable.
+
+        Profil recherché : %app.profile.description%.
 
         Règles strictes :
 
@@ -168,6 +190,17 @@ parameters:
           - senior si 3+ ans ou autonomie demandée
         - "stack" :
           - uniquement technologies explicitement présentes
+        - "primary_language" :
+          - langage ou framework principal du poste, en minuscules (php, java, python, node, dotnet, ruby, go...)
+          - basé sur le titre en priorité ; "unknown" si impossible à déterminer
+        - "relevance" (entier 0-100) : adéquation avec le profil recherché
+          - 80-100 : poste correspondant clairement au profil, contrat et lieu compatibles
+          - 40-79 : technologie du profil présente mais secondaire, ou informations incomplètes
+          - 0-39 : autre technologie principale, ou poste hors du profil
+        - "location_ok" :
+          - true si remote ou lieu compatible avec le profil
+          - false si le lieu est explicitement incompatible (ex. présentiel à l'étranger)
+          - null si le lieu n'est pas précisé
 
         Si doute → "unknown"
 

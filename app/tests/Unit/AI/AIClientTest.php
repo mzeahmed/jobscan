@@ -54,6 +54,71 @@ class AIClientTest extends TestCase
         $this->assertSame('500€/j', $result->budget);
     }
 
+    public function testHeuristicFallbackUsesWholeWordMatching(): void
+    {
+        $this->provider->method('analyze')->willReturn(null);
+
+        $result = $this->makeClient()->analyze('Commission sur middleware, utilise PhpStorm');
+
+        $this->assertSame(ContractType::Unknown, $result->contractType);
+        $this->assertFalse($result->freelance);
+        $this->assertSame(Seniority::Unknown, $result->seniority);
+        $this->assertNotContains('php', $result->stack);
+        $this->assertNull($result->relevance);
+    }
+
+    public function testParsesRelevanceFieldsFromLlm(): void
+    {
+        $this->provider->method('analyze')->willReturn(json_encode([
+            'stack' => ['java'],
+            'contract_type' => 'freelance',
+            'seniority' => 'senior',
+            'primary_language' => ' Java ',
+            'relevance' => 150,
+            'location_ok' => null,
+        ]));
+
+        $result = $this->makeClient()->analyze('Poste Java');
+
+        $this->assertSame('java', $result->primaryLanguage);
+        $this->assertSame(100, $result->relevance); // borné à 100
+        $this->assertNull($result->locationOk);
+    }
+
+    public function testMissingOrInvalidRelevanceFieldsAreNull(): void
+    {
+        $this->provider->method('analyze')->willReturn(json_encode([
+            'stack' => ['php'],
+            'primary_language' => 42,
+            'relevance' => 'élevée',
+            'location_ok' => 'oui',
+        ]));
+
+        $result = $this->makeClient()->analyze('Poste PHP');
+
+        $this->assertNull($result->primaryLanguage);
+        $this->assertNull($result->relevance);
+        $this->assertNull($result->locationOk);
+    }
+
+    public function testSendsTitleCompanyAndLocationToLlm(): void
+    {
+        $provider = $this->createMock(LLMClientInterface::class);
+        $provider->expects($this->once())
+            ->method('analyze')
+            ->with(
+                'system prompt',
+                $this->callback(static fn (string $text): bool => str_starts_with(
+                    $text,
+                    "Titre : Dev PHP\nEntreprise : Acme\nLieu : Paris\nDescription : Corps de l'offre",
+                )),
+            )
+            ->willReturn(json_encode(['stack' => ['php']]));
+
+        $client = new AIClient($provider, new NullLogger(), $this->cache, 'system prompt', self::KNOWN_STACK);
+        $client->analyze("Corps de l'offre", null, 'Dev PHP', 'Acme', 'Paris');
+    }
+
     public function testStopsCallingUnavailableProviderForTheRestOfTheRun(): void
     {
         $provider = $this->createMock(LLMClientInterface::class);

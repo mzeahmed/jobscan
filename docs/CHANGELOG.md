@@ -10,6 +10,30 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-11-23
+
+#### Added
+
+- `TextMatcher` : recherche de mots-clés par mots entiers, insensible à la casse et
+  aux accents.
+- Jugement de pertinence par le LLM (`primary_language`, `relevance`, `location_ok`),
+  intégré au score via `app.profile.scoring.compute.relevance` (bonus/malus de
+  pertinence, malus langage hors cible et localisation hors cible).
+
+- Profil entièrement configurable par env : `TARGET_LANGUAGES`, `PROFILE_DESCRIPTION`
+  (prompt LLM) et pondérations du scoring `SCORING_PRESCORE_KEYWORDS`,
+  `SCORING_TITLE_KEYWORDS`, `SCORING_STACK_KEYWORDS`, `SCORING_DESCRIPTION_KEYWORDS`,
+  `SCORING_NEGATIVE_KEYWORDS` (format `mot:points`). Défauts = profil PHP/Symfony/WordPress.
+
+#### Changed
+
+- Mots-clés pénalisants par défaut étendus à `stagiaire` et `alternant` (le matching par
+  mots entiers ne les couvre plus via `stage`/`alternance`).
+- `Scoring`, `JobProcessor` et le fallback heuristique d'`AIClient` n'utilisent plus
+  `str_contains` : « api » ne matche plus « capital », « mission » plus « commission ».
+- Le LLM reçoit le titre, l'entreprise et le lieu en plus de la description.
+- Clé de cache IA versionnée (`ai_v2_`) : les analyses en cache sont recalculées.
+
 ### 2026-09-02
 
 #### Added

@@ -10,6 +10,7 @@ use App\Scoring\Scoring;
 use App\DTO\ContractType;
 use App\DTO\AiAnalysisDto;
 use PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class ScoringTest extends TestCase
 {
@@ -40,6 +41,12 @@ class ScoringTest extends TestCase
                 'negative_keywords' => ['stage' => -50, 'alternance' => -50],
                 'seniority_bonuses' => ['senior' => 15, 'mid' => 5, 'junior' => -10],
                 'budget_bonus' => ['min_daily_rate' => 500, 'min_annual_salary' => 55, 'points' => 10],
+                'relevance' => [
+                    'max_points' => 20,
+                    'target_languages' => ['php', 'wordpress'],
+                    'off_target_penalty' => -30,
+                    'location_penalty' => -15,
+                ],
             ],
         ]);
     }
@@ -262,6 +269,149 @@ class ScoringTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // Mots entiers
+    // -------------------------------------------------------------------------
+
+    public function testPreScoreIgnoresSubstringMatches(): void
+    {
+        $job = $this->job('Chargé de commission', 'Capital et backstage, phpstorm');
+
+        $this->assertSame(0, $this->service->preScore($job));
+    }
+
+    public function testComputeDescriptionKeywordIgnoresSubstrings(): void
+    {
+        ['score' => $score] = $this->service->compute($this->job('Dev', 'Commission élevée'), $this->ai());
+
+        $this->assertSame(0, $score); // "mission" ne doit pas matcher "commission"
+    }
+
+    // -------------------------------------------------------------------------
+    // Pertinence LLM
+    // -------------------------------------------------------------------------
+
+    public function testComputeRelevanceBonusAndPenalty(): void
+    {
+        $job = $this->job('Dev', 'Poste');
+
+        ['score' => $high, 'breakdown' => $breakdown] = $this->service->compute($job, $this->ai(relevance: 100));
+        ['score' => $low] = $this->service->compute($this->job('Dev PHP', 'Poste'), $this->ai(relevance: 0));
+        ['score' => $neutral] = $this->service->compute($job, $this->ai(relevance: 50));
+
+        $this->assertSame(20, $high);
+        $this->assertContains('+20 (pertinence IA 100)', $breakdown);
+        $this->assertSame(0, $low); // php titre:20 - 20
+        $this->assertSame(0, $neutral);
+    }
+
+    public function testComputePenalizesOffTargetLanguage(): void
+    {
+        $job = $this->job('Développeur Java PHP', 'Poste');
+        $ai = $this->ai(primaryLanguage: 'java');
+
+        ['score' => $score, 'breakdown' => $breakdown] = $this->service->compute($job, $ai);
+
+        $this->assertSame(0, $score); // php titre:20 - 30 → clampé
+        $this->assertContains('-30 (langage principal java hors cible)', $breakdown);
+    }
+
+    public function testComputeTargetOrUnknownLanguageIsNotPenalized(): void
+    {
+        $job = $this->job('Dev', 'Poste');
+
+        $this->assertSame(0, $this->service->compute($job, $this->ai(primaryLanguage: 'php'))['score']);
+        $this->assertSame(0, $this->service->compute($job, $this->ai(primaryLanguage: 'unknown', stack: []))['score']);
+        $this->assertEmpty(array_filter(
+            $this->service->compute($job, $this->ai(primaryLanguage: 'unknown'))['breakdown'],
+            static fn (string $line) => str_contains($line, 'langage'),
+        ));
+    }
+
+    public function testComputeEmptyTargetLanguagesDisablesLanguagePenalty(): void
+    {
+        $service = new Scoring(['prescore' => [], 'compute' => [
+            'title_keywords' => [], 'stack_keywords' => [], 'contract_bonuses' => ['freelance' => 0, 'cdi' => 0],
+            'flag_bonuses' => [], 'description_keywords' => [], 'negative_keywords' => [], 'seniority_bonuses' => [],
+            'budget_bonus' => ['min_daily_rate' => 500, 'min_annual_salary' => 55, 'points' => 10],
+            // CSV vide issu de l'env : [''] — ne doit pas pénaliser tous les langages.
+            'relevance' => ['target_languages' => [''], 'off_target_penalty' => -30],
+        ]]);
+
+        $result = $service->compute($this->job('Dev', 'Poste'), $this->ai(primaryLanguage: 'java'));
+
+        $this->assertSame([], $result['breakdown']);
+    }
+
+    public function testWeightsAcceptEnvStyleKeywordPointsLists(): void
+    {
+        $service = new Scoring([
+            'prescore' => [
+                'keywords' => ['golang:20', 'full stack:7', 'sre : 5'],
+                'remote_keywords' => [],
+                'remote_bonus' => 0,
+                'negative_keywords' => ['stage:-50', ''],
+            ],
+            'compute' => [
+                'title_keywords' => ['golang:25'],
+                'stack_keywords' => ['kubernetes:+10'],
+                'contract_bonuses' => ['freelance' => 0, 'cdi' => 0],
+                'flag_bonuses' => [],
+                'description_keywords' => [],
+                'negative_keywords' => ['stage:-50'],
+                'seniority_bonuses' => [],
+                'budget_bonus' => ['min_daily_rate' => 500, 'min_annual_salary' => 55, 'points' => 10],
+            ],
+        ]);
+
+        $this->assertSame(27, $service->preScore($this->job('Développeur Golang', 'Poste full stack')));
+        $this->assertSame(-30, $service->preScore($this->job('Stage Golang', 'x')));
+        $this->assertSame(35, $service->compute($this->job('Dev Golang', 'x'), $this->ai(stack: ['kubernetes']))['score']);
+    }
+
+    #[DataProvider('invalidWeights')]
+    public function testInvalidWeightEntryFailsFast(string $entry): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        new Scoring(['prescore' => ['keywords' => [$entry]], 'compute' => []]);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function invalidWeights(): iterable
+    {
+        yield 'sans points' => ['symfony'];
+        yield 'points non numériques' => ['symfony:beaucoup'];
+        yield 'mot-clé vide' => [':10'];
+    }
+
+    public function testComputeConfigurableTargetLanguagesJavaGolang(): void
+    {
+        $service = new Scoring(['prescore' => [], 'compute' => [
+            'title_keywords' => [], 'stack_keywords' => [], 'contract_bonuses' => ['freelance' => 0, 'cdi' => 0],
+            'flag_bonuses' => [], 'description_keywords' => [], 'negative_keywords' => [], 'seniority_bonuses' => [],
+            'budget_bonus' => ['min_daily_rate' => 500, 'min_annual_salary' => 55, 'points' => 10],
+            'relevance' => ['target_languages' => ['java', 'golang'], 'off_target_penalty' => -30],
+        ]]);
+
+        $this->assertSame([], $service->compute($this->job('Dev', 'x'), $this->ai(primaryLanguage: 'golang'))['breakdown']);
+        $this->assertContains(
+            '-30 (langage principal php hors cible)',
+            $service->compute($this->job('Dev', 'x'), $this->ai(primaryLanguage: 'php'))['breakdown'],
+        );
+    }
+
+    public function testComputePenalizesLocationMismatchOnlyWhenFalse(): void
+    {
+        $job = $this->job('Développeur PHP', 'Poste');
+
+        $this->assertSame(5, $this->service->compute($job, $this->ai(locationOk: false))['score']); // 20 - 15
+        $this->assertSame(20, $this->service->compute($job, $this->ai(locationOk: true))['score']);
+        $this->assertSame(20, $this->service->compute($job, $this->ai(locationOk: null))['score']);
+    }
+
+    // -------------------------------------------------------------------------
 
     private function job(string $title, string $description): JobDto
     {
@@ -276,7 +426,10 @@ class ScoringTest extends TestCase
         bool $recent = false,
         string $budget = 'non précisé',
         Seniority $seniority = Seniority::Unknown,
+        ?string $primaryLanguage = null,
+        ?int $relevance = null,
+        ?bool $locationOk = null,
     ): AiAnalysisDto {
-        return new AiAnalysisDto($stack, $contractType, $freelance, $remote, $budget, $recent, $seniority);
+        return new AiAnalysisDto($stack, $contractType, $freelance, $remote, $budget, $recent, $seniority, $primaryLanguage, $relevance, $locationOk);
     }
 }

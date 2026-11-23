@@ -26,29 +26,96 @@ use App\DTO\AiAnalysisDto;
  */
 final readonly class Scoring
 {
+    /** @var array<string, mixed> */
+    private array $scoringConfig;
+
     /**
      * @param array{
      *     prescore: array{
-     *         keywords: array<string, int>,
+     *         keywords: array<array-key, int|string>,
      *         remote_keywords: list<string>,
      *         remote_bonus: int,
-     *         negative_keywords: array<string, int>,
+     *         negative_keywords: array<array-key, int|string>,
      *     },
      *     compute: array{
-     *         title_keywords: array<string, int>,
-     *         stack_keywords: array<string, int>,
+     *         title_keywords: array<array-key, int|string>,
+     *         stack_keywords: array<array-key, int|string>,
      *         contract_bonuses: array<string, int>,
      *         flag_bonuses: array<string, int>,
-     *         description_keywords: array<string, int>,
-     *         negative_keywords: array<string, int>,
+     *         description_keywords: array<array-key, int|string>,
+     *         negative_keywords: array<array-key, int|string>,
      *         seniority_bonuses: array<string, int>,
      *         budget_bonus: array{min_daily_rate: int, min_annual_salary: int, points: int},
+     *         relevance?: array{max_points?: int, target_languages?: list<string>, off_target_penalty?: int, location_penalty?: int},
      *     },
-     * } $scoringConfig Configuration issue de `app.profile.scoring` dans `jobscan.yaml`
+     * } $scoringConfig Configuration issue de `app.profile.scoring` dans `jobscan.yaml`. Les tables de
+     *   pondération acceptent `mot-clé => points` ou une liste `"mot:points"` (variables d'environnement).
      */
-    public function __construct(
-        private array $scoringConfig,
-    ) {
+    public function __construct(array $scoringConfig)
+    {
+        $this->scoringConfig = self::normalizeConfig($scoringConfig);
+    }
+
+    /**
+     * Convertit les tables de pondération issues de l'environnement (`['symfony:30', 'stage:-50']`)
+     * en tableaux `mot-clé => points`. Les tables déjà au format `mot-clé => points` sont conservées.
+     *
+     * @param  array<string, mixed>  $config
+     * @return array<string, mixed>
+     */
+    private static function normalizeConfig(array $config): array
+    {
+        $tables = [
+            'prescore' => ['keywords', 'negative_keywords'],
+            'compute' => ['title_keywords', 'stack_keywords', 'description_keywords', 'negative_keywords'],
+        ];
+
+        foreach ($tables as $section => $keys) {
+            foreach ($keys as $key) {
+                if (isset($config[$section][$key]) && \is_array($config[$section][$key])) {
+                    $config[$section][$key] = self::parseWeights($config[$section][$key], $section . '.' . $key);
+                }
+            }
+        }
+
+        return $config;
+    }
+
+    /**
+     * @param  array<array-key, mixed>  $raw
+     * @return array<string, int>
+     */
+    private static function parseWeights(array $raw, string $name): array
+    {
+        $weights = [];
+
+        foreach ($raw as $key => $value) {
+            if (\is_string($key)) {
+                $weights[$key] = (int) $value;
+                continue;
+            }
+
+            $entry = trim((string) $value);
+            if ($entry === '') {
+                continue; // CSV vide issu de l'env
+            }
+
+            $separator = strrpos($entry, ':');
+            $points = $separator === false ? '' : trim(substr($entry, $separator + 1));
+            $keyword = $separator === false ? '' : trim(substr($entry, 0, $separator));
+
+            if ($keyword === '' || 1 !== preg_match('/^[+-]?\d+$/', $points)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'Pondération invalide "%s" dans %s : format attendu "mot:points" (ex. "symfony:30").',
+                    $entry,
+                    $name,
+                ));
+            }
+
+            $weights[$keyword] = (int) $points;
+        }
+
+        return $weights;
     }
 
     /**
@@ -62,23 +129,23 @@ final readonly class Scoring
     {
         $score = 0;
         $config = $this->scoringConfig['prescore'];
-        $text = strtolower($job->title . ' ' . $job->description);
+        $text = TextMatcher::normalize($job->title . ' ' . $job->description);
 
         foreach ($config['keywords'] as $keyword => $points) {
-            if (str_contains($text, $keyword)) {
+            if (TextMatcher::containsNormalized($text, (string) $keyword)) {
                 $score += $points;
             }
         }
 
         foreach ($config['remote_keywords'] as $keyword) {
-            if (str_contains($text, $keyword)) {
+            if (TextMatcher::containsNormalized($text, (string) $keyword)) {
                 $score += $config['remote_bonus'];
                 break;
             }
         }
 
         foreach ($config['negative_keywords'] as $keyword => $points) {
-            if (str_contains($text, $keyword)) {
+            if (TextMatcher::containsNormalized($text, (string) $keyword)) {
                 $score += $points;
             }
         }
@@ -109,12 +176,12 @@ final readonly class Scoring
         $score = 0;
         $breakdown = [];
         $config = $this->scoringConfig['compute'];
-        $title = strtolower($job->title);
-        $desc = strtolower($job->description);
+        $title = TextMatcher::normalize($job->title);
+        $desc = TextMatcher::normalize($job->description);
         $stack = array_map(strtolower(...), $ai->stack);
 
         foreach ($config['title_keywords'] as $keyword => $points) {
-            if (str_contains($title, $keyword)) {
+            if (TextMatcher::containsNormalized($title, (string) $keyword)) {
                 $score += $points;
                 $breakdown[] = sprintf('%+d (%s titre)', $points, $keyword);
             }
@@ -146,14 +213,14 @@ final readonly class Scoring
         }
 
         foreach ($config['description_keywords'] as $keyword => $points) {
-            if (str_contains($desc, $keyword)) {
+            if (TextMatcher::containsNormalized($desc, (string) $keyword)) {
                 $score += $points;
                 $breakdown[] = sprintf('%+d (%s)', $points, $keyword);
             }
         }
 
         foreach ($config['negative_keywords'] as $keyword => $points) {
-            if (str_contains($desc, $keyword)) {
+            if (TextMatcher::containsNormalized($desc, (string) $keyword)) {
                 $score += $points;
                 $breakdown[] = sprintf('%+d (%s)', $points, $keyword);
             }
@@ -171,7 +238,56 @@ final readonly class Scoring
             $breakdown[] = sprintf('%+d (%s)', $budgetBonus['points'], $budgetBonus['label']);
         }
 
+        foreach ($this->relevanceAdjustments($ai, $config['relevance'] ?? []) as $adjustment) {
+            $score += $adjustment['points'];
+            $breakdown[] = sprintf('%+d (%s)', $adjustment['points'], $adjustment['label']);
+        }
+
         return ['score' => max(0, min($score, 100)), 'breakdown' => $breakdown];
+    }
+
+    /**
+     * Ajustements issus du jugement de pertinence du LLM (champs optionnels : absents
+     * du fallback heuristique, auquel cas aucun ajustement n'est appliqué).
+     *
+     * - `relevance` (0-100) : bonus/malus linéaire autour de 50, borné à ±`max_points`
+     * - `primary_language` hors `target_languages` : malus `off_target_penalty`
+     * - `location_ok` = false : malus `location_penalty`
+     *
+     * @param  array{max_points?: int, target_languages?: list<string>, off_target_penalty?: int, location_penalty?: int}  $config
+     * @return list<array{points: int, label: string}>
+     */
+    private function relevanceAdjustments(AiAnalysisDto $ai, array $config): array
+    {
+        $adjustments = [];
+
+        $maxPoints = $config['max_points'] ?? 0;
+        if ($ai->relevance !== null && $maxPoints > 0) {
+            $points = (int) round(($ai->relevance - 50) / 50 * $maxPoints);
+            if (0 !== $points) {
+                $adjustments[] = ['points' => $points, 'label' => sprintf('pertinence IA %d', $ai->relevance)];
+            }
+        }
+
+        $targets = array_values(array_filter(
+            array_map(static fn (string $language): string => TextMatcher::normalize(trim($language)), $config['target_languages'] ?? []),
+            static fn (string $language): bool => $language !== '',
+        ));
+        $language = $ai->primaryLanguage;
+        $penalty = $config['off_target_penalty'] ?? 0;
+        if ($language !== null && $targets !== [] && 0 !== $penalty
+            && !in_array($language, ['', 'unknown', 'none'], true)
+            && !in_array(TextMatcher::normalize($language), $targets, true)
+        ) {
+            $adjustments[] = ['points' => $penalty, 'label' => sprintf('langage principal %s hors cible', $language)];
+        }
+
+        $locationPenalty = $config['location_penalty'] ?? 0;
+        if (false === $ai->locationOk && 0 !== $locationPenalty) {
+            $adjustments[] = ['points' => $locationPenalty, 'label' => 'localisation hors cible'];
+        }
+
+        return $adjustments;
     }
 
     /**
