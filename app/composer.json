@@ -9,6 +9,7 @@
         "ext-iconv": "*",
         "ext-libxml": "*",
         "ext-simplexml": "*",
+        "directorytree/imapengine": "^1.26",
         "doctrine/doctrine-bundle": ">=3.3.0",
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^3.6.7",

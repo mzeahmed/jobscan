@@ -17,6 +17,7 @@ use App\Repository\ProviderRunRepository;
 use Symfony\Component\Console\Command\Command;
 use App\Analysis\PendingAnalysisRunnerInterface;
 use Symfony\Component\Console\Input\InputOption;
+use App\Provider\IngestionAwareProviderInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -146,6 +147,14 @@ final class RunPipelineCommand extends Command
                 $results = $this->processor->processBatch($jobs, $dryRun);
             } catch (\Throwable $e) {
                 $results = array_fill(0, count($jobs), JobProcessingResult::failed($e->getMessage()));
+            }
+
+            if (!$dryRun && $provider instanceof IngestionAwareProviderInterface) {
+                try {
+                    $provider->acknowledge($jobs, $results);
+                } catch (\Throwable $e) {
+                    $errors[] = $e->getMessage();
+                }
             }
 
             $providerNew = 0;

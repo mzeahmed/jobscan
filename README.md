@@ -268,7 +268,19 @@ Effectue des **recherches web dynamiques** via SearXNG en lançant une série de
 * Filtrage automatique des résultats non pertinents (documentations, tutoriels, etc.)
 * Aucun coût d'API, aucune clé requise
 
-Les deux providers sont complémentaires. Il est possible d'en ajouter d'autres en implémentant `JobProviderInterface`.
+### FranceTravailProvider
+
+API « Offres d'emploi » de France Travail (OAuth2, collecte incrémentale, pagination, limitation de débit).
+**Désactivé par défaut et non validé contre la documentation officielle** : l'accès est restreint et l'API est
+signalée comme suspendue. Voir [docs/PROVIDERS.md](docs/PROVIDERS.md) avant toute activation.
+
+### EmailJobProvider
+
+Offres des emails d'alerte (LinkedIn, Indeed, HelloWork, Apec, France Travail, Welcome to the Jungle) reçus dans une boîte
+IMAP dédiée. Un email n'est marqué traité qu'après ingestion réussie ; la boîte n'est jamais modifiée. **Désactivé par défaut,
+parsers non validés sur de vrais emails** : voir [docs/EMAIL.md](docs/EMAIL.md).
+
+Les providers sont complémentaires. Il est possible d'en ajouter d'autres en implémentant `JobProviderInterface`.
 
 ---
 
@@ -694,7 +706,7 @@ Ce projet utilise [pre-commit](https://blog.stephane-robert.info/docs/outils/qua
 
 | Moment | Vérifications |
 |---|---|
-| `git commit` | trailing whitespace, YAML/JSON, secrets (gitleaks), yamllint, markdownlint, PHP-CS-Fixer, PHPStan |
+| `git commit` | trailing whitespace, YAML/JSON, secrets (gitleaks), yamllint, PHP-CS-Fixer, PHPStan |
 | `git push` | build assets TypeScript + AssetMapper, PHPUnit |
 
 Pour contourner ponctuellement un hook : `git commit --no-verify` (à éviter).

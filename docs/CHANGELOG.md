@@ -10,6 +10,34 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-11-26
+
+#### Added
+
+- `EmailJobProvider` : offres des emails d'alerte reçus dans une boîte IMAP dédiée (client
+  `ImapEmailClient` via `directorytree/imapengine`, mot de passe d'application ou jeton OAuth2),
+  parsers extensibles (`EmailParserInterface`, tag `app.email_parser`) pour LinkedIn, Indeed, HelloWork,
+  Apec, France Travail et Welcome to the Jungle, plus un parser générique opt-in. Liens de suivi
+  non suivis (pas de SSRF), URLs normalisées, date de publication toujours inconnue.
+- Table `processed_email` : suivi persistant des emails traités. Un email n'est marqué traité qu'après
+  ingestion réussie (`IngestionAwareProviderInterface::acknowledge`), jamais sur le statut lu/non lu.
+- Fixtures d'emails anonymisées et reconstruites ; `docs/EMAIL.md`. **Désactivé par défaut ; parsers non validés sur de vrais emails.**
+
+#### Changed
+
+- `.env.test` vide `EXCLUDED_PLATFORM_DOMAINS` et `COLLECTION_BLOCKED_DOMAINS` : les tests ne dépendent plus des
+  exclusions propres à la machine.
+
+### 2026-11-25
+
+#### Added
+
+- `FranceTravailProvider` : API « Offres d'emploi » v2 de France Travail (OAuth2 client credentials
+  avec jeton en cache, collecte incrémentale depuis le dernier succès, pagination, limitation de débit,
+  retry avec backoff sur 429/5xx, renouvellement du jeton sur 401). **Désactivé par défaut
+  (`FRANCE_TRAVAIL_ENABLED`) et non validé contre la documentation officielle** : voir `docs/PROVIDERS.md`.
+- `docs/PROVIDERS.md` : tableau des providers et checklist de validation France Travail.
+
 ### 2026-11-24
 
 #### Added

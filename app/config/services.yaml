@@ -1,6 +1,14 @@
 # yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
 
 parameters:
+    app.email.default_port: 993
+    app.email.default_encryption: ssl
+    app.email.default_authentication: plain
+    app.email.default_folder: INBOX
+    app.email.default_validate_certificate: true
+    app.france_travail.scope: !php/const App\Provider\FranceTravailProvider::DEFAULT_SCOPE
+    app.france_travail.token_url: !php/const App\Provider\FranceTravailProvider::DEFAULT_TOKEN_URL
+    app.france_travail.api_url: !php/const App\Provider\FranceTravailProvider::DEFAULT_API_URL
     telegram.bot_token: '%env(TELEGRAM_BOT_TOKEN)%'
     telegram.chat_id: '%env(TELEGRAM_CHAT_ID)%'
     app.job_feed_urls:
@@ -18,6 +26,8 @@ services:
     _instanceof:
         App\Provider\JobProviderInterface:
             tags: ['app.job_provider']
+        App\Email\Parser\EmailParserInterface:
+            tags: ['app.email_parser']
 
     App\:
         resource: '../src/'
@@ -104,6 +114,49 @@ services:
     App\Provider\RemoteOkProvider:
         arguments:
             $apiUrl: '%env(REMOTEOK_API_URL)%'
+        tags: ['app.job_provider']
+
+    App\Provider\FranceTravailProvider:
+        arguments:
+            $cache: '@cache.app'
+            $enabled: '%env(bool:default::FRANCE_TRAVAIL_ENABLED)%'
+            $clientId: '%env(default::FRANCE_TRAVAIL_CLIENT_ID)%'
+            $clientSecret: '%env(default::FRANCE_TRAVAIL_CLIENT_SECRET)%'
+            $scope: '%env(default:app.france_travail.scope:FRANCE_TRAVAIL_SCOPE)%'
+            $tokenUrl: '%env(default:app.france_travail.token_url:FRANCE_TRAVAIL_TOKEN_URL)%'
+            $apiUrl: '%env(default:app.france_travail.api_url:FRANCE_TRAVAIL_API_URL)%'
+            $keywords: '%env(csv:default:app.profile.empty_csv:FRANCE_TRAVAIL_KEYWORDS)%'
+            $departments: '%env(csv:default:app.profile.empty_csv:FRANCE_TRAVAIL_DEPARTMENTS)%'
+            $maxPages: '%app.profile.france_travail_max_pages%'
+            $pageSize: '%app.profile.france_travail_page_size%'
+            $lookbackDays: '%app.profile.france_travail_lookback_days%'
+            $minRequestIntervalMs: '%app.profile.france_travail_min_request_interval_ms%'
+        tags: ['app.job_provider']
+
+    App\Email\ImapEmailClient:
+        arguments:
+            $host: '%env(string:default::EMAIL_IMAP_HOST)%'
+            $port: '%env(int:default:app.email.default_port:EMAIL_IMAP_PORT)%'
+            $encryption: '%env(default:app.email.default_encryption:EMAIL_IMAP_ENCRYPTION)%'
+            $username: '%env(string:default::EMAIL_IMAP_USERNAME)%'
+            $password: '%env(string:default::EMAIL_IMAP_PASSWORD)%'
+            $authentication: '%env(default:app.email.default_authentication:EMAIL_IMAP_AUTH)%'
+            $folder: '%env(default:app.email.default_folder:EMAIL_IMAP_FOLDER)%'
+            $validateCertificate: '%env(bool:default:app.email.default_validate_certificate:EMAIL_IMAP_VALIDATE_CERT)%'
+
+    App\Email\EmailClientInterface: '@App\Email\ImapEmailClient'
+
+    App\Email\Parser\GenericEmailParser:
+        arguments:
+            $senderDomains: '%env(csv:default:app.profile.empty_csv:EMAIL_GENERIC_SENDER_DOMAINS)%'
+            $linkDomains: '%env(csv:default:app.profile.empty_csv:EMAIL_GENERIC_LINK_DOMAINS)%'
+
+    App\Email\EmailJobProvider:
+        arguments:
+            $parsers: !tagged_iterator app.email_parser
+            $enabled: '%env(bool:default::EMAIL_ENABLED)%'
+            $lookbackDays: '%app.profile.email_lookback_days%'
+            $maxMessages: '%app.profile.email_max_messages%'
         tags: ['app.job_provider']
 
     App\Provider\SearxNoiseFilter:

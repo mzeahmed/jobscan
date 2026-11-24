@@ -1,0 +1,28 @@
+{
+  "resultats": [
+    {
+      "id": "000AAAA",
+      "intitule": "Développeur PHP Symfony H/F",
+      "description": "Nous recherchons un <b>développeur PHP</b> confirmé pour rejoindre l'équipe.\nStack : Symfony, Docker.",
+      "dateCreation": "2026-11-23T08:15:02.000Z",
+      "dateActualisation": "2026-11-24T06:00:00.000Z",
+      "lieuTravail": { "libelle": "13 - MARSEILLE 01", "commune": "13201" },
+      "entreprise": { "nom": "Exemple SAS" },
+      "typeContrat": "CDI",
+      "typeContratLibelle": "Contrat à durée indéterminée",
+      "salaire": { "libelle": "Annuel de 40000 Euros à 48000 Euros sur 12 mois" },
+      "origineOffre": { "origine": "1", "urlOrigine": "https://candidat.exemple.test/offres/recherche/detail/000AAAA" }
+    },
+    {
+      "id": "000BBBB",
+      "intitule": "Développeur back-end",
+      "description": "Mission freelance.",
+      "dateCreation": "2026-11-22T10:00:00.000Z",
+      "lieuTravail": { "libelle": "75 - PARIS 08" },
+      "origineOffre": { "origine": "2" }
+    },
+    { "id": "000CCCC", "description": "Offre sans intitulé" },
+    { "intitule": "Offre sans identifiant" },
+    "entrée invalide"
+  ]
+}

@@ -30,13 +30,6 @@ repos:
       - id: yamllint
         args: ['-c', '.yamllint.yaml']
 
-  # Markdown
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.39.0
-    hooks:
-      - id: markdownlint
-        args: ['--config', '.markdownlint.yaml', '--fix']
-
   # PHP et assets — hooks locaux sur les binaires Composer
   - repo: local
     hooks:

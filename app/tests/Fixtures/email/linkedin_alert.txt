@@ -1,0 +1,10 @@
+FIXTURE RECONSTRUITE ET ANONYMISÉE — ce n’est pas un vrai email de la plateforme : mise en page supposée, à valider sur un vrai exemple.
+
+Nouvelles offres pour « développeur php »
+
+Développeur PHP Symfony
+Exemple SAS
+Marseille, France
+Voir l'offre : https://www.linkedin.com/comm/jobs/view/4012345678/?trackingId=abc%3D%3D&refId=xyz
+
+Se désabonner : https://www.linkedin.com/e/v2?e=unsubscribe

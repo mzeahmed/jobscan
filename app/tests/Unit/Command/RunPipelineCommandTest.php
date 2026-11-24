@@ -196,6 +196,52 @@ final class RunPipelineCommandTest extends TestCase
         self::assertSame(Command::SUCCESS, $tester->execute(['--dry-run' => true]));
     }
 
+    public function testAcknowledgesIngestionAwareProvidersAfterIngestionButNeverInDryRun(): void
+    {
+        $results = [new JobProcessingResult(JobProcessingStatus::Saved)];
+        $processor = $this->createStub(JobProcessorInterface::class);
+        $processor->method('processBatch')->willReturn($results);
+        $jobs = [new JobDto('PHP', 'https://example.test/1', 'PHP', 'test')];
+        $provider = new class ($jobs) implements JobProviderInterface, \App\Provider\IngestionAwareProviderInterface {
+            /** @var list<array{list<JobDto>, list<JobProcessingResult>}> */
+            public array $acknowledged = [];
+
+            /** @param list<JobDto> $jobs */
+            public function __construct(private readonly array $jobs)
+            {
+            }
+
+            public function name(): string
+            {
+                return 'email';
+            }
+
+            public function isHealthy(): bool
+            {
+                return true;
+            }
+
+            public function fetch(): array
+            {
+                return $this->jobs;
+            }
+
+            public function acknowledge(array $jobs, array $results): void
+            {
+                $this->acknowledged[] = [$jobs, $results];
+            }
+        };
+
+        $tester = new CommandTester($this->command([$provider], $processor));
+        self::assertSame(Command::SUCCESS, $tester->execute([]));
+        self::assertCount(1, $provider->acknowledged);
+        self::assertSame($jobs, $provider->acknowledged[0][0]);
+        self::assertSame($results, $provider->acknowledged[0][1]);
+
+        $tester->execute(['--dry-run' => true]);
+        self::assertCount(1, $provider->acknowledged, 'Le dry-run ne marque rien comme traité.');
+    }
+
     public function testAnalyzesPendingJobsAfterCollectionUnlessDisabled(): void
     {
         $processor = $this->createStub(JobProcessorInterface::class);
