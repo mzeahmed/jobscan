@@ -10,6 +10,25 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-01
+
+#### Added
+
+- Notifications Telegram fondées sur le matching, sur trois niveaux : opportunité prioritaire (immédiate, sonore), offre intéressante (immédiate silencieuse, en récapitulatif
+  ou désactivée, selon `app.notifications.interesting_mode`), offre secondaire (récapitulatif périodique). Seuils et modes configurables (`app.notifications.*`). Seules
+  les offres compatibles sont notifiées : la fraîcheur seule ne rend jamais une offre incompatible notifiable, et une extraction heuristique ne peut être que « intéressante ».
+- Messages enrichis (poste, entreprise, lieu, contrat, salaire, télétravail, date de publication distinguée de la détection, ancienneté, compatibilité, fraîcheur, priorité,
+  profil et CV recommandés, principales raisons, lien), limités aux informations disponibles, échappés et bornés sous la limite de Telegram.
+- `notification_log` (migration non destructive) : une offre est notifiée au plus une fois, immédiatement ou en récapitulatif ; respect de `job.notified_at`.
+- `app:notifications:digest` (`--dry-run`, `--max-items`, `--no-catchup`) : récapitulatif borné, marquage des seules offres reprises, rien de marqué en cas d'échec d'envoi, rattrapage
+  des notifications immédiates manquées, limite d'ancienneté (`app.notifications.max_age_days`).
+- `TelegramNotifier::send()` accepte des notifications silencieuses et la désactivation de l'aperçu des liens.
+- `docs/NOTIFICATIONS.md`.
+
+#### Fixed
+
+- Échappement Telegram : les apostrophes des titres produisaient `&apos;`, entité que Telegram ne reconnaît pas ; elles produisent maintenant `&#039;` (y compris pour l'ancien message).
+
 ### 2026-11-30
 
 #### Added

@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\Job;
 use App\Entity\JobMatch;
 use App\Matching\MatchVerdict;
+use App\Entity\NotificationLog;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 
@@ -79,6 +80,64 @@ class JobMatchRepository extends ServiceEntityRepository
         }
 
         return array_values($query->getQuery()->getResult());
+    }
+
+    /**
+     * Le résultat compatible le plus prioritaire d'une offre, ou `null` si aucun profil ne la juge compatible.
+     */
+    public function findBestEligible(Job $job): ?JobMatch
+    {
+        return $this->createQueryBuilder('m')
+            ->where('m.job = :job')
+            ->andWhere('m.verdict = :eligible')
+            ->setParameter('job', $job)
+            ->setParameter('eligible', MatchVerdict::Eligible->value)
+            ->orderBy('m.priorityScore', 'DESC')
+            ->addOrderBy('m.matchScore', 'DESC')
+            ->addOrderBy('m.id', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * Offres compatibles pas encore notifiées, avec leur meilleur résultat, les plus prioritaires d'abord.
+     *
+     * Écarte les offres déjà notifiées (immédiatement ou en récapitulatif), les doublons probables et celles
+     * détectées avant `$detectedSince`. Une offre n'apparaît qu'une fois, même si plusieurs profils la jugent compatible.
+     *
+     * @return list<JobMatch>
+     */
+    public function findUnnotified(int $minimumPriority, \DateTimeImmutable $detectedSince, int $limit): array
+    {
+        /** @var list<JobMatch> $matches */
+        $matches = $this->createQueryBuilder('m')
+            ->addSelect('j')
+            ->join('m.job', 'j')
+            ->where('m.verdict = :eligible')
+            ->andWhere('m.priorityScore >= :minimum')
+            ->andWhere('j.notifiedAt IS NULL')
+            ->andWhere('j.probableDuplicateOfId IS NULL')
+            ->andWhere('j.firstSeenAt >= :since')
+            ->andWhere(sprintf('NOT EXISTS (SELECT l.id FROM %s l WHERE l.job = j)', NotificationLog::class))
+            ->andWhere(sprintf('m.priorityScore = (SELECT MAX(m2.priorityScore) FROM %s m2 WHERE m2.job = m.job AND m2.verdict = :eligible)', JobMatch::class))
+            ->setParameter('eligible', MatchVerdict::Eligible->value)
+            ->setParameter('minimum', $minimumPriority)
+            ->setParameter('since', $detectedSince)
+            ->orderBy('m.priorityScore', 'DESC')
+            ->addOrderBy('m.matchScore', 'DESC')
+            ->addOrderBy('j.firstSeenAt', 'DESC')
+            ->addOrderBy('m.id', 'ASC')
+            ->setMaxResults(max(1, $limit))
+            ->getQuery()
+            ->getResult();
+
+        $unique = [];
+        foreach ($matches as $match) {
+            $unique[(int) $match->getJob()->getId()] ??= $match;
+        }
+
+        return array_values($unique);
     }
 
     /**

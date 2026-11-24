@@ -62,6 +62,21 @@ parameters:
     app.profile.analysis_max_delay_minutes: 1440
     app.profile.analysis_batch_limit: 50
     app.profile.notification_threshold: 60
+    # --- Notifications Telegram fondées sur le matching ----------------------------------------------
+    # Niveaux d'une offre compatible selon son score de priorité (décroissants). Une offre non compatible
+    # (éliminée, sous le seuil, données insuffisantes) n'est jamais notifiée, même très fraîche.
+    app.notifications.priority_threshold: 80
+    app.notifications.interesting_threshold: 60
+    app.notifications.secondary_threshold: 40
+    # Offre intéressante : immediate (notification silencieuse), digest (récapitulatif) ou off.
+    app.notifications.interesting_mode: immediate
+    # Offre secondaire : digest (récapitulatif) ou off. L'opportunité prioritaire est toujours immédiate.
+    app.notifications.secondary_mode: digest
+    # Offres reprises au maximum dans un récapitulatif (les autres figurent dans le suivant).
+    app.notifications.digest_max_items: 15
+    # Une offre détectée depuis plus longtemps n'est plus notifiée (récapitulatif, rattrapage) : évite d'inonder
+    # Telegram d'offres anciennes après un changement de profil.
+    app.notifications.max_age_days: 3
     app.profile.telegram_max_attempts: 3
     app.profile.telegram_initial_retry_delay_ms: 250
     # France Travail (provider désactivé par défaut, voir FRANCE_TRAVAIL_ENABLED).

@@ -10,6 +10,7 @@ use App\Entity\JobSource;
 use App\DTO\AnalysisStatus;
 use App\DTO\JobListingFilters;
 use Doctrine\ORM\QueryBuilder;
+use App\Entity\NotificationLog;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\DBAL\Platforms\SQLitePlatform;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -201,6 +202,7 @@ class JobRepository extends ServiceEntityRepository
         $connection = $this->getEntityManager()->getConnection();
 
         return $connection->transactional(static function ($connection): int {
+            $connection->executeStatement('DELETE FROM notification_log');
             $connection->executeStatement('DELETE FROM job_match');
             $connection->executeStatement('DELETE FROM job_source');
             $deleted = $connection->executeStatement('DELETE FROM job');
@@ -390,6 +392,13 @@ class JobRepository extends ServiceEntityRepository
     {
         // Sources et résultats de matching sont supprimés explicitement : SQLite n'applique pas
         // ON DELETE CASCADE sans `PRAGMA foreign_keys`.
+        $this->getEntityManager()->createQueryBuilder()
+            ->delete(NotificationLog::class, 'n')
+            ->where('n.job IN (SELECT j3.id FROM ' . Job::class . ' j3 WHERE j3.createdAt < :before)')
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->execute();
+
         $this->getEntityManager()->createQueryBuilder()
             ->delete(JobMatch::class, 'm')
             ->where('m.job IN (SELECT j2.id FROM ' . Job::class . ' j2 WHERE j2.createdAt < :before)')

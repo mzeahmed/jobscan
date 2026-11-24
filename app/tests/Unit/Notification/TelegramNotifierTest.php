@@ -77,4 +77,24 @@ final class TelegramNotifierTest extends TestCase
         self::assertTrue($notifier->send('message'));
         self::assertSame(2, $requests);
     }
+
+    public function testSendsSilentMessagesWithoutLinkPreviewOnRequest(): void
+    {
+        $payloads = [];
+        $client = new MockHttpClient(static function (string $method, string $url, array $options) use (&$payloads): MockResponse {
+            $payloads[] = json_decode((string) $options['body'], true, flags: JSON_THROW_ON_ERROR);
+
+            return new MockResponse('{"ok":true}', ['http_code' => 200]);
+        });
+        $notifier = new TelegramNotifier($client, new NullLogger(), 'token', 'chat', 1, 0);
+
+        $notifier->send('bruyant');
+        $notifier->send('silencieux', true, false);
+
+        self::assertFalse($payloads[0]['disable_notification'], 'Par défaut, la notification est sonore.');
+        self::assertFalse($payloads[0]['link_preview_options']['is_disabled']);
+        self::assertTrue($payloads[1]['disable_notification']);
+        self::assertTrue($payloads[1]['link_preview_options']['is_disabled']);
+        self::assertSame('HTML', $payloads[1]['parse_mode']);
+    }
 }

@@ -37,8 +37,11 @@ final readonly class TelegramNotifier
      *
      * Toute exception levée par le client HTTP est capturée et journalisée
      * en niveau `error` sans être propagée.
+     *
+     * @param bool $silent Notification sans son ni vibration (le message reste visible dans le chat)
+     * @param bool $linkPreview Aperçu des liens ; à désactiver pour un message qui en contient beaucoup
      */
-    public function send(string $message): bool
+    public function send(string $message, bool $silent = false, bool $linkPreview = true): bool
     {
         $attempts = 0;
 
@@ -56,6 +59,8 @@ final readonly class TelegramNotifier
                         'chat_id' => $this->chatId,
                         'text' => $message,
                         'parse_mode' => 'HTML',
+                        'disable_notification' => $silent,
+                        'link_preview_options' => ['is_disabled' => !$linkPreview],
                     ],
                     'timeout' => 15,
                 ]);

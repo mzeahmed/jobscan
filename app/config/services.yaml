@@ -61,6 +61,16 @@ services:
             $maxAttempts: '%app.profile.telegram_max_attempts%'
             $initialRetryDelayMs: '%app.profile.telegram_initial_retry_delay_ms%'
 
+    App\Notification\NotificationPolicy:
+        arguments:
+            $priorityThreshold: '%app.notifications.priority_threshold%'
+            $interestingThreshold: '%app.notifications.interesting_threshold%'
+            $secondaryThreshold: '%app.notifications.secondary_threshold%'
+            $interestingMode: '%app.notifications.interesting_mode%'
+            $secondaryMode: '%app.notifications.secondary_mode%'
+            $digestMaxItems: '%app.notifications.digest_max_items%'
+            $maxAgeDays: '%app.notifications.max_age_days%'
+
     App\Notification\Notifier:
         arguments:
             $scoreThreshold: '%app.profile.notification_threshold%'

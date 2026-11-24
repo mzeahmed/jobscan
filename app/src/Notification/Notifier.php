@@ -20,11 +20,16 @@ final readonly class Notifier
         private TelegramNotifier $telegram,
         private LoggerInterface $logger,
         private int $scoreThreshold = 60,
+        private ?MatchNotifier $matchNotifier = null,
     ) {
     }
 
     /**
      * Envoie une notification pour l'offre donnée si les conditions sont remplies.
+     *
+     * Dès qu'un candidat et un profil de recherche actif sont configurés, les notifications suivent le matching
+     * (niveaux, scores, récapitulatif : voir `MatchNotifier`). Sans profil, l'ancien mécanisme fondé sur le
+     * score historique reste en vigueur, tel quel.
      *
      * Conditions de blocage (silencieux) :
      *   - L'offre a déjà été notifiée (`notifiedAt` non null)
@@ -37,6 +42,10 @@ final readonly class Notifier
      */
     public function notify(Job $job): bool
     {
+        if ($this->matchNotifier?->isActive() === true) {
+            return $this->matchNotifier->notify($job);
+        }
+
         if ($job->getNotifiedAt() !== null) {
             $this->logger->debug('Notification ignorée : déjà envoyée.', [
                 'title' => $job->getTitle(),
@@ -77,8 +86,8 @@ final readonly class Notifier
      */
     private function formatMessage(Job $job): string
     {
-        $title = htmlspecialchars((string) $job->getTitle(), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
-        $url = htmlspecialchars((string) $job->getUrl(), ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8');
+        $title = TelegramHtml::escape((string) $job->getTitle());
+        $url = TelegramHtml::escape((string) $job->getUrl());
 
         return sprintf(
             "<b>Nouvelle opportunité détectée</b>\n\n" .

@@ -12,8 +12,8 @@ profil de recherche ────┘                                             
 date de publication ───────────────────────────────────► FreshnessScore ──────────────────┘
 ```
 
-Le matching **ne remplace pas encore** le scoring historique (`Scoring`, score /100 de la table `job`) : les deux coexistent.
-Notifications et interface web continuent d'utiliser l'ancien score ; elles adopteront le matching dans un lot ultérieur.
+Le matching **ne remplace pas** le scoring historique (`Scoring`, score /100 de la table `job`) : les deux coexistent. Les **notifications Telegram** suivent le matching dès qu'un profil
+est configuré (voir [NOTIFICATIONS.md](NOTIFICATIONS.md)) ; l'interface web continue d'utiliser l'ancien score.
 
 ## Principe central : inconnu ≠ incompatible
 
@@ -137,4 +137,4 @@ Quand relancer quoi :
 - **Pertinence du poste** : fondée sur la présence de mots, sans compréhension sémantique ; un mot-clé très générique (« api ») donne un signal faible (40 %).
 - **Expérience** : une seule durée cumulée, pas par compétence ; les années déclarées par compétence ne sont pas comparées aux années demandées.
 - **Qualité dépendante de l'extraction** : un petit modèle qui manque des compétences exigées produit un matching moins informatif ; l'extraction heuristique rend les compétences exigées inconnues.
-- **Pas encore de recommandation de CV d'après leur contenu**, ni d'interface web ou de notification fondées sur ces scores (lots suivants).
+- **Pas encore de recommandation de CV d'après leur contenu**, ni d'interface web fondée sur ces scores (lots suivants).
