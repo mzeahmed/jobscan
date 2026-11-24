@@ -25,7 +25,7 @@ final class AnalyticsWebTest extends WebTestCaseBase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Analytics');
-        self::assertSelectorTextContains('.empty', 'Aucune candidature envoyée');
+        self::assertSelectorTextContains('.empty-state__title', 'Aucune candidature envoyée');
     }
 
     public function testThePageShowsTheFunnelAndEscapesSourceNames(): void
@@ -48,10 +48,11 @@ final class AnalyticsWebTest extends WebTestCaseBase
         $html = (string) $this->client->getResponse()->getContent();
 
         self::assertResponseIsSuccessful();
-        self::assertStringContainsString('4/5 (80 %)', $page->text());
+        self::assertMatchesRegularExpression('/4\/5\s+80 %/', $page->text());
+        self::assertCount(8, $page->filter('progress.meter[value="80"]'), 'Une barre par taux affiché : réponses et entretiens dans chacun des quatre tableaux de répartition.');
         self::assertStringContainsString('&lt;script&gt;alert(1)&lt;/script&gt;', $html);
         self::assertStringNotContainsString('<script>alert(1)', $html);
-        self::assertStringContainsString('5,0 jour(s)', $page->text(), 'Délai médian de 5 jours.');
+        self::assertMatchesRegularExpression('/5,0\s*jours/', $page->text(), 'Délai médian de 5 jours.');
     }
 
     public function testThePeriodSelectorAndAnInvalidPeriod(): void
@@ -63,6 +64,6 @@ final class AnalyticsWebTest extends WebTestCaseBase
             self::assertResponseIsSuccessful($period);
         }
         $page = $this->client->request('GET', '/analytics?since=n-importe-quoi');
-        self::assertSame('90 jours', trim($page->filter('.btn--primary')->text()), 'Une période inconnue retombe sur 90 jours.');
+        self::assertSame('90 jours', trim($page->filter('.chip--active')->text()), 'Une période inconnue retombe sur 90 jours.');
     }
 }

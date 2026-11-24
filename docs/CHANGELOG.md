@@ -10,6 +10,20 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-14
+
+#### Changed
+
+- Interface : refonte visuelle des pages de suivi dans le système de design existant. Connexion en carte centrée avec logo ; messages en bannières ; liste des candidatures avec filtres en pastilles, statuts colorés et
+  encart « relances à faire » ; détail en deux colonnes (statut et informations, historique en chronologie) ; Analytics avec indicateurs, barres de progression (élément natif `<progress>`, compatible avec la CSP) et tableaux
+  en panneaux ; actions des offres sous leur carte, « Suivre » mis en avant et « Ignorer » en rouge au survol. Compteurs de la barre du haut réservés à la liste des offres.
+- Variantes de boutons (`btn--primary`, `btn--ghost`) à spécificité renforcée : Bootstrap, chargé après le style maison, les rendait transparentes.
+
+#### Fixed
+
+- L'historique d'une candidature saisie après coup (brouillon créé aujourd'hui, envoi daté d'il y a dix jours) était trié par date et présentait « Brouillon » comme dernière étape, donc comme statut actuel ; il suit désormais l'ordre
+  réel des statuts.
+
 ### 2026-12-13
 
 #### Fixed

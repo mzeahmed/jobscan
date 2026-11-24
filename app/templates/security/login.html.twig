@@ -4,31 +4,37 @@
 {% block sidebar %}{% endblock %}
 {% block topbar %}{% endblock %}
 {% block body_class %}login-page{% endblock %}
+{% block main_class %}main-content--bare{% endblock %}
 
 {% block body %}
-    <main class="login">
-        <h1 class="login__title">JOBSCAN</h1>
+    <main class="login-shell">
+        <div class="login-card">
+            <div class="login-brand">
+                <img class="login-brand__logo" src="{{ asset('images/feather.png') }}" alt="">
+                <div class="login-brand__name">JOBSCAN</div>
+                <div class="login-brand__tag">Votre recherche d'emploi, sous contrôle</div>
+            </div>
 
-        {% if not configured %}
-            <p class="flash flash--error" role="alert">
-                L'interface n'est pas configurée : aucun mot de passe n'est défini.
-                Lancez <code>php bin/console app:ui:hash-password</code> et ajoutez le résultat à <code>.env.local</code> (voir docs/UI.md).
-            </p>
-        {% elseif error %}
-            <p class="flash flash--error" role="alert">Identifiants invalides ou trop de tentatives : réessayez plus tard.</p>
-        {% endif %}
+            {% if not configured %}
+                <p class="flash flash--error" role="alert">
+                    <span>L'interface n'est pas configurée : aucun mot de passe n'est défini. Lancez <code>php bin/console app:ui:hash-password</code> et ajoutez le résultat à <code>.env.local</code> (voir docs/UI.md).</span>
+                </p>
+            {% elseif error %}
+                <p class="flash flash--error" role="alert"><span>Identifiants invalides ou trop de tentatives : réessayez plus tard.</span></p>
+            {% endif %}
 
-        <form method="post" action="{{ path('app_login') }}" class="login__form">
-            <label class="filter-field">
-                <span>Identifiant</span>
-                <input class="filter-input" type="text" name="_username" value="{{ last_username }}" autocomplete="username" required autofocus>
-            </label>
-            <label class="filter-field">
-                <span>Mot de passe</span>
-                <input class="filter-input" type="password" name="_password" autocomplete="current-password" required>
-            </label>
-            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-            <button class="btn btn--primary" type="submit">Se connecter</button>
-        </form>
+            <form method="post" action="{{ path('app_login') }}" class="login-form">
+                <label class="filter-field">
+                    <span>Identifiant</span>
+                    <input class="filter-input" type="text" name="_username" value="{{ last_username }}" autocomplete="username" required autofocus>
+                </label>
+                <label class="filter-field">
+                    <span>Mot de passe</span>
+                    <input class="filter-input" type="password" name="_password" autocomplete="current-password" required>
+                </label>
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                <button class="btn btn--primary btn--block" type="submit">Se connecter</button>
+            </form>
+        </div>
     </main>
 {% endblock %}

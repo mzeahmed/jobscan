@@ -24,15 +24,16 @@ class ApplicationStatusChangeRepository extends ServiceEntityRepository
         $this->getEntityManager()->persist($change);
     }
 
-    /** @return list<ApplicationStatusChange> Du plus ancien au plus récent */
+    /** @return list<ApplicationStatusChange> Dans l'ordre où les statuts se sont succédé */
     public function findHistory(Application $application): array
     {
         /** @var list<ApplicationStatusChange> $history */
         $history = $this->createQueryBuilder('c')
             ->where('c.application = :application')
             ->setParameter('application', $application)
-            ->orderBy('c.changedAt', 'ASC')
-            ->addOrderBy('c.id', 'ASC')
+            // Ordre d'enregistrement, pas de date : une candidature saisie après coup (envoyée il y a une semaine, brouillon créé
+            // aujourd'hui) a des dates qui ne suivent pas la séquence réelle des statuts.
+            ->orderBy('c.id', 'ASC')
             ->getQuery()
             ->getResult();
 

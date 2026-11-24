@@ -223,13 +223,23 @@
                                     <span class="badge badge--contract">{{ job.userState.label }}</span>
                                 {% endif %}
                             </div>
+                            <a href="{{ job.url|safe_url }}"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="btn btn--primary btn--sm"
+                               aria-label="Voir l'offre {{ job.title }} (nouvel onglet)">
+                                Voir l'offre
+                                <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                            </a>
+                        </footer>
+
                             <div class="job-card__actions">
                                 {% if applicationsByJob[job.id] is defined %}
                                     <a class="btn btn--ghost btn--sm" href="{{ path('app_application_show', {id: applicationsByJob[job.id]}) }}">Candidature</a>
                                 {% else %}
                                     <form method="post" action="{{ path('app_job_track', {id: job.id}) }}">
                                         <input type="hidden" name="_token" value="{{ csrf_token('job_track_' ~ job.id) }}">
-                                        <button class="btn btn--ghost btn--sm" type="submit">Suivre</button>
+                                        <button class="btn btn--accent btn--sm" type="submit">Suivre</button>
                                     </form>
                                 {% endif %}
                                 {% for state, label in {saved: 'Sauvegarder', ignored: 'Ignorer', archived: 'Archiver'} %}
@@ -237,7 +247,7 @@
                                         <form method="post" action="{{ path('app_job_decide', {id: job.id}) }}">
                                             <input type="hidden" name="_token" value="{{ csrf_token('job_decide_' ~ job.id) }}">
                                             <input type="hidden" name="state" value="{{ state }}">
-                                            <button class="btn btn--ghost btn--sm" type="submit">{{ label }}</button>
+                                            <button class="btn btn--ghost btn--sm {{ state == 'ignored' ? 'btn--danger' : '' }}" type="submit">{{ label }}</button>
                                         </form>
                                     {% endif %}
                                 {% endfor %}
@@ -249,15 +259,6 @@
                                     </form>
                                 {% endif %}
                             </div>
-                            <a href="{{ job.url|safe_url }}"
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               class="btn btn--primary btn--sm"
-                               aria-label="Voir l'offre {{ job.title }} (nouvel onglet)">
-                                Voir l'offre
-                                <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
-                            </a>
-                        </footer>
 
                     </article>
 

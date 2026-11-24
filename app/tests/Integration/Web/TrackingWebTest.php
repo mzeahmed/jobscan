@@ -189,7 +189,7 @@ final class TrackingWebTest extends WebTestCaseBase
         $this->client->request('GET', '/applications/' . $application->getId());
 
         self::assertSelectorNotExists('form[action$="/status"]');
-        self::assertSelectorTextContains('.empty', 'statut final');
+        self::assertSelectorTextContains('.final-note', 'statut final');
     }
 
     public function testSaveTheDetails(): void
@@ -300,13 +300,28 @@ final class TrackingWebTest extends WebTestCaseBase
 
         $list = $this->client->request('GET', '/applications');
 
-        self::assertSelectorTextContains('.flash--error', '1 relance à faire');
-        self::assertCount(1, $list->filter('td strong[title="Relance due"]'));
+        self::assertSelectorTextContains('.callout', '1 relance à faire');
+        self::assertCount(1, $list->filter('td .tag-due'));
 
         $this->client->request('GET', '/applications/' . $due->getId());
-        self::assertSelectorTextContains('small', 'rappel Telegram envoyé le');
+        self::assertSelectorTextContains('.field-hint', 'rappel Telegram envoyé le');
         $this->client->request('GET', '/applications/' . $future->getId());
-        self::assertSelectorNotExists('small');
+        self::assertSelectorNotExists('.field-hint');
+    }
+
+    public function testTheHistoryFollowsTheSequenceOfStatusesEvenForABackfilledApplication(): void
+    {
+        $manager = self::getContainer()->get(ApplicationManager::class);
+        // Brouillon créé aujourd'hui, mais candidature envoyée il y a dix jours (saisie après coup).
+        $application = $manager->start($this->persistJob('Saisie après coup', 'https://jobs.example/backfill'), new \DateTimeImmutable());
+        $manager->changeStatus($application, ApplicationStatus::Applied, new \DateTimeImmutable('-10 days'));
+        $manager->changeStatus($application, ApplicationStatus::Interview, new \DateTimeImmutable('-3 days'));
+        $this->entityManager->flush();
+
+        $page = $this->client->request('GET', '/applications/' . $application->getId());
+
+        $titles = $page->filter('.timeline__title')->each(static fn ($node): string => (string) preg_replace('/\s+/', ' ', trim($node->text())));
+        self::assertSame(['Brouillon', 'Brouillon → Postulé', 'Postulé → Entretien'], $titles, 'La dernière étape est le statut actuel, quelles que soient les dates saisies.');
     }
 
     public function testUnknownApplicationsAndJobsAreNotFound(): void

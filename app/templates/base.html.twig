@@ -32,11 +32,16 @@
                     {% include 'partials/_topbar.html.twig' %}
                 {% endblock %}
 
-                {% for type, messages in app.flashes %}
-                    {% for message in messages %}
-                        <p class="flash flash--{{ type }}" role="{{ type == 'error' ? 'alert' : 'status' }}">{{ message }}</p>
-                    {% endfor %}
-                {% endfor %}
+                {% set flashMessages = app.flashes %}
+                {% if flashMessages|length %}
+                    <div class="flash-stack">
+                        {% for type, messages in flashMessages %}
+                            {% for message in messages %}
+                                <p class="flash flash--{{ type }}" role="{{ type == 'error' ? 'alert' : 'status' }}">{{ message }}</p>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
 
                 {# Page content #}
                 {% block body %}{% endblock %}

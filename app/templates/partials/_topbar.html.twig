@@ -11,24 +11,25 @@
     </div>
 
     <div class="topbar__meta">
-        <div class="topbar__stat">
-            <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
-            <span class="topbar__stat-value">{{ totalJobs ?? '' }}</span>
-            {% if totalJobs is defined and totalJobs > 0 %}
+        {# Compteurs de la liste des offres : seulement là où ils ont un sens #}
+        {% if totalJobs is defined %}
+            <div class="topbar__stat">
+                <i class="fa-solid fa-file-lines" aria-hidden="true"></i>
+                <span class="topbar__stat-value">{{ totalJobs }}</span>
                 offre{{ totalJobs > 1 ? 's' : '' }}
-            {% endif %}
-        </div>
+            </div>
 
-        <div class="topbar__divider" aria-hidden="true"></div>
+            <div class="topbar__divider" aria-hidden="true"></div>
+        {% endif %}
 
-        <div class="topbar__stat">
-            <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
-            {% if currentPage is defined and totalPages is defined %}
+        {% if currentPage is defined and totalPages is defined %}
+            <div class="topbar__stat">
+                <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
                 Page <span class="topbar__stat-value">{{ currentPage }}</span>/{{ totalPages }}
-            {% endif %}
-        </div>
+            </div>
 
-        <div class="topbar__divider" aria-hidden="true"></div>
+            <div class="topbar__divider" aria-hidden="true"></div>
+        {% endif %}
 
         <a class="btn btn--ghost btn--sm" href="{{ app.request.requestUri }}">
             <i class="fa-solid fa-rotate" aria-hidden="true"></i>

@@ -4,82 +4,116 @@
 
 {% block body %}
     {% set job = application.job %}
-    <section class="page">
-        <div class="page__header">
-            <a href="{{ path('app_applications') }}" class="btn btn--ghost btn--sm">← Candidatures</a>
-            <h1 class="page__title">{{ job.title }}</h1>
-            <p class="page__subtitle">
-                {{ job.company ?? 'Entreprise non précisée' }}{% if job.location %} · {{ job.location }}{% endif %}
-                · <span class="badge badge--source">{{ application.status.label }}</span>
-                · <a href="{{ job.url|safe_url }}" target="_blank" rel="noopener noreferrer nofollow">Voir l'offre</a>
-            </p>
+    <div class="content-wrapper">
+
+        <div class="page-header page-header--split">
+            <div>
+                <div class="page-header__eyebrow">Candidature</div>
+                <h1 class="page-header__title">{{ job.title }}</h1>
+                <div class="page-header__meta">
+                    <span class="status-pill status-pill--{{ application.status.value }}">{{ application.status.label }}</span>
+                    <span>{{ job.company ?? 'Entreprise non précisée' }}{% if job.location %} · {{ job.location }}{% endif %}</span>
+                </div>
+            </div>
+            <div class="page-header__actions">
+                <a href="{{ path('app_applications') }}" class="btn btn--ghost btn--sm">← Candidatures</a>
+                <a href="{{ job.url|safe_url }}" target="_blank" rel="noopener noreferrer nofollow" class="btn btn--primary btn--sm">Voir l'offre</a>
+            </div>
         </div>
 
-        <h2>Changer le statut</h2>
-        {% if transitions is empty %}
-            <p class="empty">« {{ application.status.label }} » est un statut final.</p>
-        {% else %}
-            <form method="post" action="{{ path('app_application_status', {id: application.id}) }}" class="filter-bar">
-                <div class="filter-fields">
-                    <label class="filter-field">
-                        <span>Nouveau statut</span>
-                        <select class="select" name="status" required>
-                            {% for status in transitions %}<option value="{{ status.value }}">{{ status.label }}</option>{% endfor %}
-                        </select>
-                    </label>
-                    <label class="filter-field">
-                        <span>Date (aujourd'hui par défaut)</span>
-                        <input class="filter-input" type="date" name="at" max="{{ 'now'|date('Y-m-d') }}">
-                    </label>
-                    <label class="filter-field filter-field--location">
-                        <span>Note</span>
-                        <input class="filter-input" type="text" name="note" maxlength="500">
-                    </label>
+        <div class="detail-grid">
+            <div>
+                <section class="panel">
+                    <div class="panel__header">
+                        <h2 class="panel__title">Changer le statut</h2>
+                        <span class="panel__hint">Seules les transitions autorisées sont proposées</span>
+                    </div>
+                    <div class="panel__body">
+                        {% if transitions is empty %}
+                            <p class="final-note">« {{ application.status.label }} » est un statut final.</p>
+                        {% else %}
+                            <form method="post" action="{{ path('app_application_status', {id: application.id}) }}" class="inline-form">
+                                <label class="filter-field">
+                                    <span>Nouveau statut</span>
+                                    <select class="select" name="status" required>
+                                        {% for status in transitions %}<option value="{{ status.value }}">{{ status.label }}</option>{% endfor %}
+                                    </select>
+                                </label>
+                                <label class="filter-field">
+                                    <span>Date (aujourd'hui par défaut)</span>
+                                    <input class="filter-input" type="date" name="at" max="{{ 'now'|date('Y-m-d') }}">
+                                </label>
+                                <label class="filter-field filter-field--wide">
+                                    <span>Note</span>
+                                    <input class="filter-input" type="text" name="note" maxlength="500" placeholder="Facultatif">
+                                </label>
+                                <input type="hidden" name="_token" value="{{ csrf_token('application_status_' ~ application.id) }}">
+                                <button class="btn btn--primary" type="submit">Enregistrer le statut</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <section class="panel">
+                    <div class="panel__header">
+                        <h2 class="panel__title">Informations</h2>
+                        <span class="panel__hint">Saisies par vous, jamais déduites</span>
+                    </div>
+                    <form method="post" action="{{ path('app_application_details', {id: application.id}) }}" class="panel__body">
+                        <div class="form-grid">
+                            <label class="filter-field"><span>Recruteur</span>
+                                <input class="filter-input" type="text" name="recruiter_name" maxlength="255" value="{{ application.recruiterName }}"></label>
+                            <label class="filter-field"><span>Contact du recruteur</span>
+                                <input class="filter-input" type="text" name="recruiter_contact" maxlength="255" value="{{ application.recruiterContact }}"></label>
+                            <label class="filter-field"><span>Canal</span>
+                                <select class="select" name="channel">
+                                    <option value="">—</option>
+                                    {% for channel in channels %}<option value="{{ channel.value }}" {{ application.channel == channel ? 'selected' }}>{{ channel.label }}</option>{% endfor %}
+                                </select></label>
+                            <label class="filter-field"><span>Version de CV</span>
+                                <select class="select" name="cv">
+                                    <option value="">—</option>
+                                    {% for cv in cvs %}<option value="{{ cv.id }}" {{ application.cvVersionId == cv.id ? 'selected' }}>{{ cv.label }}</option>{% endfor %}
+                                </select></label>
+                            <label class="filter-field"><span>Relance prévue</span>
+                                <input class="filter-input" type="date" name="follow_up" value="{{ application.followUpAt ? application.followUpAt|date('Y-m-d') }}">
+                                {% if application.followUpDue(now) %}
+                                    <small class="field-hint">⏰ Relance due{{ application.followUpRemindedAt ? ' — rappel Telegram envoyé le ' ~ application.followUpRemindedAt|date('d/m/Y H:i') : '' }}.</small>
+                                {% endif %}
+                            </label>
+                            <span></span>
+                            <label class="filter-field span-2"><span>Message envoyé</span>
+                                <textarea class="filter-input" name="message_sent" rows="6" maxlength="20000">{{ application.messageSent }}</textarea></label>
+                            <label class="filter-field span-2"><span>Notes</span>
+                                <textarea class="filter-input" name="notes" rows="4" maxlength="20000">{{ application.notes }}</textarea></label>
+                        </div>
+                        <input type="hidden" name="_token" value="{{ csrf_token('application_details_' ~ application.id) }}">
+                        <div class="form-actions">
+                            <button class="btn btn--primary" type="submit">Enregistrer</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+
+            <aside class="panel">
+                <div class="panel__header">
+                    <h2 class="panel__title">Historique</h2>
+                    <span class="panel__hint">{{ history|length }} étape{{ history|length > 1 ? 's' : '' }}</span>
                 </div>
-                <input type="hidden" name="_token" value="{{ csrf_token('application_status_' ~ application.id) }}">
-                <button class="btn btn--primary" type="submit">Enregistrer le statut</button>
-            </form>
-        {% endif %}
-
-        <h2>Informations</h2>
-        <form method="post" action="{{ path('app_application_details', {id: application.id}) }}" class="stack">
-            <label class="filter-field"><span>Recruteur</span>
-                <input class="filter-input" type="text" name="recruiter_name" maxlength="255" value="{{ application.recruiterName }}"></label>
-            <label class="filter-field"><span>Contact du recruteur</span>
-                <input class="filter-input" type="text" name="recruiter_contact" maxlength="255" value="{{ application.recruiterContact }}"></label>
-            <label class="filter-field"><span>Canal</span>
-                <select class="select" name="channel">
-                    <option value="">—</option>
-                    {% for channel in channels %}<option value="{{ channel.value }}" {{ application.channel == channel ? 'selected' }}>{{ channel.label }}</option>{% endfor %}
-                </select></label>
-            <label class="filter-field"><span>Version de CV</span>
-                <select class="select" name="cv">
-                    <option value="">—</option>
-                    {% for cv in cvs %}<option value="{{ cv.id }}" {{ application.cvVersionId == cv.id ? 'selected' }}>{{ cv.label }}</option>{% endfor %}
-                </select></label>
-            <label class="filter-field"><span>Relance prévue</span>
-                <input class="filter-input" type="date" name="follow_up" value="{{ application.followUpAt ? application.followUpAt|date('Y-m-d') }}">
-                {% if application.followUpDue(now) %}
-                    <small>⏰ Relance due{{ application.followUpRemindedAt ? ' — rappel Telegram envoyé le ' ~ application.followUpRemindedAt|date('d/m/Y H:i') : '' }}.</small>
-                {% endif %}
-            </label>
-            <label class="filter-field"><span>Message envoyé</span>
-                <textarea class="filter-input" name="message_sent" rows="8" maxlength="20000">{{ application.messageSent }}</textarea></label>
-            <label class="filter-field"><span>Notes</span>
-                <textarea class="filter-input" name="notes" rows="5" maxlength="20000">{{ application.notes }}</textarea></label>
-            <input type="hidden" name="_token" value="{{ csrf_token('application_details_' ~ application.id) }}">
-            <button class="btn btn--primary" type="submit">Enregistrer</button>
-        </form>
-
-        <h2>Historique</h2>
-        <ol class="history">
-            {% for change in history %}
-                <li>
-                    {{ change.changedAt|date('d/m/Y H:i') }} —
-                    {% if change.fromStatus %}{{ change.fromStatus.label }} → {% endif %}<strong>{{ change.toStatus.label }}</strong>
-                    {% if change.note %}<span class="history__note"> · {{ change.note }}</span>{% endif %}
-                </li>
-            {% endfor %}
-        </ol>
-    </section>
+                <div class="panel__body">
+                    <ol class="timeline history">
+                        {% for change in history %}
+                            <li class="timeline__item">
+                                <div class="timeline__title">
+                                    {% if change.fromStatus %}<span class="timeline__arrow">{{ change.fromStatus.label }} →</span> {% endif %}{{ change.toStatus.label }}
+                                </div>
+                                <div class="timeline__meta">{{ change.changedAt|date('d/m/Y à H:i') }}</div>
+                                {% if change.note %}<div class="timeline__note">{{ change.note }}</div>{% endif %}
+                            </li>
+                        {% endfor %}
+                    </ol>
+                </div>
+            </aside>
+        </div>
+    </div>
 {% endblock %}

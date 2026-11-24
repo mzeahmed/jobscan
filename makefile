@@ -197,7 +197,7 @@ hard: ## Réinitialise le dépôt (destructif : changements perdus) — Exemple 
 
 # Branches que clean ne supprime jamais (noms entiers). La branche courante est
 # toujours conservée ; HEAD est la référence symbolique du remote.
-PROTECTED_BRANCHES := ^(main|develop|copilot-phase-1|HEAD)$$
+PROTECTED_BRANCHES := ^(main|develop|copilot|HEAD)$$
 
 LOCAL_BRANCHES  = git branch --format='%(refname:short)' | grep -vE '$(PROTECTED_BRANCHES)' | grep -vxF "$$(git branch --show-current)"
 REMOTE_BRANCHES = git branch -r --format='%(refname:lstrip=3)' | grep -vE '$(PROTECTED_BRANCHES)'
