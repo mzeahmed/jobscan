@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Analysis;
 
+use App\Entity\Job;
+use App\Matching\JobMatcher;
 use Psr\Log\LoggerInterface;
 use App\Notification\Notifier;
 use App\Repository\JobRepository;
@@ -24,6 +26,7 @@ final readonly class PendingAnalysisRunner implements PendingAnalysisRunnerInter
         private Notifier $notifier,
         private AnalysisRetryPolicy $retryPolicy,
         private LoggerInterface $logger,
+        private ?JobMatcher $matcher = null,
     ) {
     }
 
@@ -48,7 +51,11 @@ final readonly class PendingAnalysisRunner implements PendingAnalysisRunnerInter
                 ++$ai;
             }
 
-            // L'analyse est persistée avant toute notification.
+            if ($outcome->succeeded) {
+                $this->match($job, $now);
+            }
+
+            // L'analyse et son matching sont persistés avant toute notification.
             $this->jobRepository->flush();
 
             if ($outcome->succeeded && $this->notifier->notify($job)) {
@@ -81,6 +88,7 @@ final readonly class PendingAnalysisRunner implements PendingAnalysisRunnerInter
                 ++$skipped;
             } else {
                 ++$updated;
+                $this->match($job, $now, true);
                 $this->jobRepository->flush();
             }
         }
@@ -88,5 +96,21 @@ final readonly class PendingAnalysisRunner implements PendingAnalysisRunnerInter
         $this->jobRepository->clear();
 
         return new AnalysisSummary(analyzedByAi: $updated, failed: $failed, skipped: $skipped);
+    }
+
+    /**
+     * Apparie l'offre aux profils de recherche. Le matching est un enrichissement : son échec (profil
+     * invalide, par exemple) ne remet jamais en cause l'analyse, qui est déjà acquise.
+     */
+    private function match(Job $job, \DateTimeImmutable $now, bool $force = false): void
+    {
+        try {
+            $this->matcher?->matchJob($job, $now, $force);
+        } catch (\Throwable $e) {
+            $this->logger->warning('Matching impossible pour "{title}" : {error}', [
+                'title' => $job->getTitle(),
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

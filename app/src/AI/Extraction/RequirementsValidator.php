@@ -50,13 +50,6 @@ final readonly class RequirementsValidator
         'stage' => ['stage', 'stagiaire', 'internship', 'intern '],
     ];
 
-    /** Une langue peut être écrite dans l'annonce sous un autre nom (anglais / english). */
-    private const array LANGUAGE_GROUPS = [
-        ['anglais', 'english'], ['francais', 'french'], ['allemand', 'german', 'deutsch'], ['espagnol', 'spanish'],
-        ['italien', 'italian'], ['portugais', 'portuguese'], ['neerlandais', 'dutch', 'flamand'], ['chinois', 'chinese', 'mandarin'],
-        ['arabe', 'arabic'], ['russe', 'russian'], ['japonais', 'japanese'],
-    ];
-
     private const array CURRENCY_SYMBOLS = ['€' => 'EUR', '$' => 'USD', '£' => 'GBP'];
 
     /**
@@ -204,7 +197,7 @@ final readonly class RequirementsValidator
                 continue;
             }
 
-            if (!$matcher->containsAny($this->languageNames($name))) {
+            if (!$matcher->containsAny(LanguageGroups::names($name))) {
                 $warnings[] = sprintf('Langue « %s » absente de l\'annonce, écartée.', $name);
 
                 continue;
@@ -219,19 +212,6 @@ final readonly class RequirementsValidator
         }
 
         return $languages;
-    }
-
-    /** @return list<string> */
-    private function languageNames(string $name): array
-    {
-        $folded = TextMatcher::fold($name);
-        foreach (self::LANGUAGE_GROUPS as $group) {
-            if (in_array($folded, $group, true)) {
-                return $group;
-            }
-        }
-
-        return [$name];
     }
 
     /** @param list<string> $warnings */

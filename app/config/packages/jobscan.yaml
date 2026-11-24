@@ -139,6 +139,39 @@ parameters:
         - fullstack
         - full-stack
 
+    # --- Matching (compatibilité, priorité) ---------------------------------------------------------
+    # Priorité = compatibilité et fraîcheur pondérées (poids relatifs). Une offre éliminée vaut 0, et une offre
+    # non compatible ne dépasse jamais son score de compatibilité : la fraîcheur seule ne rend pas prioritaire.
+    app.profile.priority_match_weight: 75
+    app.profile.priority_freshness_weight: 25
+    # Couverture minimale (0-100) de l'information pour conclure : en dessous, le verdict est « données insuffisantes ».
+    # La couverture est la part du poids des critères applicables qui a pu être évaluée.
+    app.profile.match_min_coverage: 40
+    # Années d'expérience attendues par niveau de séniorité, quand l'annonce ne donne pas de nombre d'années.
+    app.profile.seniority_years:
+        junior: 0
+        mid: 2
+        senior: 5
+    # Noms de compétences équivalents ; le premier de chaque groupe est la forme canonique. La casse, les
+    # accents, la ponctuation et les numéros de version sont déjà ignorés (« PHP 8 » = « PHP »).
+    app.profile.skill_aliases:
+        - [javascript, js, ecmascript]
+        - [typescript, ts]
+        - [nodejs, node, 'node.js']
+        - [react, reactjs, 'react.js']
+        - [vue, vuejs, 'vue.js']
+        - [postgresql, postgres, pgsql]
+        - [kubernetes, k8s]
+        - [golang, go]
+        - [csharp, 'c#']
+        - ['gitlab ci/cd', 'gitlab ci', 'gitlab-ci']
+        - ['ci/cd', cicd]
+        - [aws, 'amazon web services']
+        - [gcp, 'google cloud platform', 'google cloud']
+        - [elasticsearch, 'elastic search']
+        - ['rest api', restful, 'api rest', rest]
+        - [wordpress, wp]
+
     # Barème de fraîcheur (hypothèse métier, pas une vérité statistique).
     # `max_hours` : borne supérieure exclue de la tranche, par âge croissant.
     app.profile.freshness_bands:

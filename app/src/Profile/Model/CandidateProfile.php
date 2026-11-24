@@ -50,6 +50,46 @@ final readonly class CandidateProfile
     ) {
     }
 
+    /**
+     * Années d'expérience cumulées d'après les expériences déclarées (périodes qui se chevauchent
+     * comptées une seule fois). `null` si aucune expérience n'est déclarée : l'expérience reste inconnue,
+     * elle n'est pas supposée nulle.
+     */
+    public function experienceYears(\DateTimeImmutable $now): ?float
+    {
+        if ($this->experiences === []) {
+            return null;
+        }
+
+        $intervals = [];
+        foreach ($this->experiences as $experience) {
+            $start = self::monthIndex($experience->startDate);
+            $end = $experience->endDate === null ? self::monthIndex($now->format('Y-m')) : self::monthIndex($experience->endDate);
+            if ($end >= $start) {
+                $intervals[] = [$start, $end + 1];
+            }
+        }
+
+        usort($intervals, static fn (array $a, array $b): int => $a[0] <=> $b[0]);
+
+        $months = 0;
+        $coveredUntil = null;
+        foreach ($intervals as [$start, $end]) {
+            $from = $coveredUntil === null ? $start : max($start, $coveredUntil);
+            if ($end > $from) {
+                $months += $end - $from;
+            }
+            $coveredUntil = max($coveredUntil ?? $end, $end);
+        }
+
+        return round($months / 12, 1);
+    }
+
+    private static function monthIndex(string $month): int
+    {
+        return ((int) substr($month, 0, 4)) * 12 + ((int) substr($month, 5, 2)) - 1;
+    }
+
     public function skill(string $name): ?Skill
     {
         $key = Skill::normalize($name);

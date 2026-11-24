@@ -230,6 +230,17 @@ services:
             $multiplier: '%app.profile.analysis_retry_multiplier%'
             $maxDelayMinutes: '%app.profile.analysis_max_delay_minutes%'
 
+    App\Matching\MatchScorer:
+        arguments:
+            $skillAliases: '%app.profile.skill_aliases%'
+            $seniorityYears: '%app.profile.seniority_years%'
+            $minCoverage: '%app.profile.match_min_coverage%'
+
+    App\Matching\PriorityCalculator:
+        arguments:
+            $matchWeight: '%app.profile.priority_match_weight%'
+            $freshnessWeight: '%app.profile.priority_freshness_weight%'
+
     App\Scoring\FreshnessScorer:
         arguments:
             $bands: '%app.profile.freshness_bands%'

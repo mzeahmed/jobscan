@@ -10,6 +10,26 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-11-30
+
+#### Added
+
+- Matching multi-profils : compatibilité (`MatchScorer`, 0–100), fraîcheur et priorité (`PriorityCalculator`, 75 % / 25 %), entièrement déterministes et
+  calculés en PHP à partir des exigences extraites et du profil déclaré. Critères éliminatoires évalués indépendamment du score ; une information inconnue
+  ou sans objet sort du calcul (elle n'est jamais une incompatibilité) et réduit une **couverture** qui conditionne le verdict (`eligible`, `below_threshold`,
+  `insufficient_data`, `eliminated`). Garde-fou : la fraîcheur seule ne rend jamais prioritaire une offre incompatible.
+- Résultats conservés par offre et par profil de recherche (`job_match`, migration non destructive), explicables (critères, compétences correspondantes ou
+  manquantes, éliminations, inconnus, arguments tirés du profil déclaré, CV recommandé), marqués d'une empreinte (profil + règles) : **recalculables sans appel au LLM**
+  et recalculés seulement s'ils sont périmés.
+- Rapprochement des compétences par alias (`app.profile.skill_aliases`), en ignorant casse, accents, ponctuation et numéros de version.
+- Commandes `app:jobs:match` (`--all`, `--priorities`), `app:jobs:priority` (`--search-profile`, `--all`, `--limit`) et `app:jobs:explain` (`--recompute`).
+- Le matching s'exécute après chaque analyse et ré-extraction ; son échec n'empêche jamais l'analyse. La purge et la réinitialisation des offres suppriment leurs résultats.
+- `docs/MATCHING.md`.
+
+#### Fixed
+
+- Tests : `.env.test` ne dépend plus du dossier de profil de la machine (`JOBSCAN_PROFILE_DIR` hermétique).
+
 ### 2026-11-29
 
 #### Added

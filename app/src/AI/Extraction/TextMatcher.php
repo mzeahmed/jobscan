@@ -52,6 +52,16 @@ final readonly class TextMatcher
         return str_contains($this->compact, $compact);
     }
 
+    /**
+     * Mot (ou suite de mots) entier, quelle que soit sa longueur : « stage » n'est pas « backstage ».
+     */
+    public function containsWord(string $needle): bool
+    {
+        $spaced = self::spaced(self::fold($needle));
+
+        return $spaced !== '' && str_contains($this->spaced, ' ' . $spaced . ' ');
+    }
+
     /** @param list<string> $needles */
     public function containsAny(array $needles): bool
     {

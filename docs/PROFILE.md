@@ -7,9 +7,9 @@ Jobscan distingue deux choses, décrites dans deux fichiers YAML **locaux** :
   (ex. « backend PHP/Symfony », « DevOps »), chacune avec ses mots-clés, ses compétences, ses
   exclusions, son seuil et ses pondérations.
 
-> **État** : ce lot ne fait que **charger et valider** les profils. Ils ne sont pas encore utilisés par
-> le pipeline : l'extraction IA des exigences d'une offre (lot 2.2), puis le matching, les scores de
-> compatibilité et de priorité (lot 2.3) les exploiteront. Le scoring actuel (`Scoring`) est inchangé.
+> **État** : le profil est utilisé par le **matching** (voir [MATCHING.md](MATCHING.md)) pour calculer la compatibilité des offres analysées
+> avec chaque profil de recherche actif. Le scoring historique (`Scoring`) est inchangé et reste celui des notifications. Aucune donnée du
+> profil n'est envoyée à un LLM : le matching est entièrement local et déterministe.
 
 ## Démarrage
 
@@ -87,8 +87,7 @@ Une table `search_profiles` indexée par un identifiant (minuscules, chiffres, `
 | `weights` | poids relatifs des critères (voir ci-dessous) |
 | `cv` | identifiant d'une version de CV de `candidate.yaml` |
 
-Une même offre pourra correspondre à plusieurs profils sans être dupliquée ; les résultats de matching seront
-conservés par profil (lot 2.3).
+Une même offre peut correspondre à plusieurs profils sans être dupliquée ; les résultats de matching sont conservés par profil.
 
 Règles vérifiées : identifiants uniques, compétence jamais à la fois ciblée et exclue (par le profil **ou** par
 le candidat), jamais à la fois prioritaire et secondaire, version de CV existante, poids et seuil dans les bornes

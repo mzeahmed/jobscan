@@ -352,6 +352,22 @@ matching par profil ; il n'est pas encore branché sur le scoring. Voir [docs/PR
 
 ---
 
+## Matching par profil de recherche
+
+Chaque offre analysée est appariée à vos profils de recherche : **compatibilité** (calculée en PHP, déterministe), **fraîcheur** et **priorité**
+(75 % compatibilité, 25 % fraîcheur, la fraîcheur seule ne rend jamais prioritaire une offre incompatible). Une information inconnue n'est jamais
+traitée comme une incompatibilité ; les critères éliminatoires (exclusions, contrat ou mode de travail explicitement hors préférences) sont évalués à part.
+
+```bash
+php bin/console app:jobs:priority        # offres compatibles par priorité, avec leur meilleur profil
+php bin/console app:jobs:explain 123     # pourquoi cette offre : critères, compétences manquantes, arguments, CV recommandé
+php bin/console app:jobs:match           # (re)calcule les résultats périmés, sans appel au LLM
+```
+
+Voir [docs/MATCHING.md](docs/MATCHING.md). Ce matching ne remplace pas encore le score historique, qui reste celui des notifications.
+
+---
+
 ## Moteur d'analyse IA
 
 JOBSCAN analyse les offres via un moteur LLM choisi par `DEFAULT_LLM_PROVIDER` :

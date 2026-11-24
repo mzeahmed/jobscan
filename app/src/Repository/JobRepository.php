@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Job;
+use App\Entity\JobMatch;
 use App\Entity\JobSource;
 use App\DTO\AnalysisStatus;
 use App\DTO\JobListingFilters;
@@ -152,6 +153,23 @@ class JobRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    /**
+     * Offres disposant d'exigences extraites, par ordre d'identifiant, pour le matching par lots.
+     *
+     * @return list<Job>
+     */
+    public function findWithRequirementsAfterId(int $afterId, int $limit): array
+    {
+        return array_values($this->createQueryBuilder('j')
+            ->where('j.id > :after')
+            ->andWhere('j.requirements IS NOT NULL')
+            ->setParameter('after', $afterId)
+            ->orderBy('j.id', 'ASC')
+            ->setMaxResults(max(1, $limit))
+            ->getQuery()
+            ->getResult());
+    }
+
     /** @return array<string, int> */
     public function countByAnalysisStatus(): array
     {
@@ -183,6 +201,7 @@ class JobRepository extends ServiceEntityRepository
         $connection = $this->getEntityManager()->getConnection();
 
         return $connection->transactional(static function ($connection): int {
+            $connection->executeStatement('DELETE FROM job_match');
             $connection->executeStatement('DELETE FROM job_source');
             $deleted = $connection->executeStatement('DELETE FROM job');
             if ($connection->getDatabasePlatform() instanceof SQLitePlatform) {
@@ -369,8 +388,15 @@ class JobRepository extends ServiceEntityRepository
      */
     public function deleteCreatedBefore(\DateTimeImmutable $before): int
     {
-        // Les sources sont supprimées explicitement : SQLite n'applique pas ON DELETE CASCADE
-        // sans `PRAGMA foreign_keys`.
+        // Sources et résultats de matching sont supprimés explicitement : SQLite n'applique pas
+        // ON DELETE CASCADE sans `PRAGMA foreign_keys`.
+        $this->getEntityManager()->createQueryBuilder()
+            ->delete(JobMatch::class, 'm')
+            ->where('m.job IN (SELECT j2.id FROM ' . Job::class . ' j2 WHERE j2.createdAt < :before)')
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->execute();
+
         $this->getEntityManager()->createQueryBuilder()
             ->delete(JobSource::class, 's')
             ->where('s.job IN (SELECT j.id FROM ' . Job::class . ' j WHERE j.createdAt < :before)')
