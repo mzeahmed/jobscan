@@ -1,0 +1,25 @@
+[
+  {
+    "id": "11111111-aaaa-bbbb-cccc-000000000001",
+    "text": "Développeur PHP Symfony H/F",
+    "categories": { "commitment": "CDI", "location": "Marseille", "team": "Plateforme", "department": "Ingénierie", "allLocations": ["Marseille", "Paris"] },
+    "country": "FR",
+    "workplaceType": "hybrid",
+    "descriptionPlain": "Rejoignez l'équipe plateforme.",
+    "lists": [ { "text": "Votre profil", "content": "<li>PHP 8</li><li>Symfony</li>" } ],
+    "additionalPlain": "Nous sommes une entreprise inclusive.",
+    "hostedUrl": "https://jobs.lever.co/exemple/11111111-aaaa-bbbb-cccc-000000000001",
+    "applyUrl": "https://jobs.lever.co/exemple/11111111-aaaa-bbbb-cccc-000000000001/apply",
+    "salaryRange": { "currency": "EUR", "interval": "per-year-salary", "min": 45000, "max": 55000 }
+  },
+  {
+    "id": "11111111-aaaa-bbbb-cccc-000000000002",
+    "text": "Ingénieur DevOps",
+    "categories": { "allLocations": ["Remote - EMEA"] },
+    "workplaceType": "unspecified",
+    "descriptionPlain": "Infrastructure.",
+    "hostedUrl": "https://jobs.lever.co/exemple/11111111-aaaa-bbbb-cccc-000000000002",
+    "salaryDescriptionPlain": "Entre 50k et 60k selon expérience"
+  },
+  { "id": "11111111-aaaa-bbbb-cccc-000000000003", "text": "Sans URL" }
+]

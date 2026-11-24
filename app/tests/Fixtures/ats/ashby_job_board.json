@@ -1,0 +1,36 @@
+{
+  "apiVersion": "1",
+  "jobs": [
+    {
+      "title": "Développeur PHP Symfony",
+      "location": "Marseille",
+      "secondaryLocations": [ { "location": "Paris", "address": { "addressLocality": "Paris", "addressCountry": "France" } } ],
+      "department": "Ingénierie",
+      "team": "Plateforme",
+      "isRemote": true,
+      "workplaceType": "Hybrid",
+      "descriptionHtml": "<p>Rejoignez-nous.</p>",
+      "descriptionPlain": "Rejoignez-nous pour construire la plateforme.",
+      "publishedAt": "2026-11-18T08:30:00.000+00:00",
+      "employmentType": "FullTime",
+      "jobUrl": "https://jobs.ashbyhq.com/exemple/aaaaaaaa-0000-0000-0000-000000000001",
+      "applyUrl": "https://jobs.ashbyhq.com/exemple/aaaaaaaa-0000-0000-0000-000000000001/application",
+      "isListed": true,
+      "compensation": { "compensationTierSummary": "45 000 € – 55 000 €" }
+    },
+    {
+      "title": "Offre non listée",
+      "location": "Paris",
+      "descriptionPlain": "Accessible seulement par lien direct.",
+      "publishedAt": "2026-11-18T08:30:00.000+00:00",
+      "jobUrl": "https://jobs.ashbyhq.com/exemple/aaaaaaaa-0000-0000-0000-000000000002",
+      "isListed": false
+    },
+    {
+      "title": "Développeur back-end sans date",
+      "location": "Remote",
+      "descriptionHtml": "<p>PHP <b>Symfony</b></p>",
+      "jobUrl": "https://jobs.ashbyhq.com/exemple/aaaaaaaa-0000-0000-0000-000000000003"
+    }
+  ]
+}

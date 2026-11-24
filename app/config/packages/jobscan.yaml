@@ -51,6 +51,12 @@ parameters:
     app.profile.france_travail_lookback_days: 7
     # 150 ms entre deux requêtes ≈ 6 appels/s, sous le quota annoncé de 10 appels/s.
     app.profile.france_travail_min_request_interval_ms: 150
+    # ATS (Greenhouse, Lever, Ashby) : API publiques, un provider est actif dès qu'un board est configuré.
+    # Pause minimale entre deux requêtes ; aucun quota n'est documenté pour ces API.
+    app.profile.ats_min_request_interval_ms: 200
+    # Lever : pagination skip/limit sans maximum documenté ; la collecte s'arrête sur une page vide.
+    app.profile.lever_page_size: 100
+    app.profile.lever_max_pages: 10
     # Alertes email (provider désactivé par défaut, voir EMAIL_ENABLED).
     # Fenêtre IMAP relue à chaque run : les emails déjà traités sont ignorés grâce à `processed_email`.
     app.profile.email_lookback_days: 7

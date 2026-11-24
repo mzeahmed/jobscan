@@ -1,0 +1,33 @@
+{
+  "jobs": [
+    {
+      "id": 4001001,
+      "internal_job_id": 9001,
+      "title": "Développeur PHP Symfony",
+      "updated_at": "2026-11-20T10:00:00-05:00",
+      "requisition_id": "REQ-1",
+      "location": { "name": "Marseille, France" },
+      "absolute_url": "https://careers.exemple.test/jobs/4001001",
+      "language": "fr",
+      "metadata": null,
+      "content": "&lt;p&gt;Nous recherchons un &lt;strong&gt;d&eacute;veloppeur PHP&lt;/strong&gt;.&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Symfony&lt;/li&gt;&lt;li&gt;Docker&lt;/li&gt;&lt;/ul&gt;",
+      "departments": [ { "id": 1, "name": "Ingénierie", "parent_id": null, "child_ids": [] } ],
+      "offices": [ { "id": 2, "name": "Marseille", "location": "Marseille, France", "parent_id": null, "child_ids": [] } ]
+    },
+    {
+      "id": 4001002,
+      "title": "Développeur back-end",
+      "updated_at": "2026-11-21T09:00:00Z",
+      "location": { "name": "Remote - France" },
+      "absolute_url": "https://boards.greenhouse.io/exemple/jobs/4001002",
+      "content": "Mission PHP.",
+      "departments": [],
+      "offices": []
+    },
+    { "id": 4001003, "updated_at": "2026-11-21T09:00:00Z", "absolute_url": "https://boards.greenhouse.io/exemple/jobs/4001003" },
+    { "title": "Sans identifiant", "absolute_url": "https://boards.greenhouse.io/exemple/jobs/x" },
+    { "id": 4001004, "title": "URL dangereuse", "absolute_url": "javascript:alert(1)" },
+    "entrée invalide"
+  ],
+  "meta": { "total": 6 }
+}

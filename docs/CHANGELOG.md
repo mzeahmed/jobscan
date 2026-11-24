@@ -10,6 +10,17 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-11-27
+
+#### Added
+
+- `GreenhouseProvider`, `LeverProvider`, `AshbyProvider` : offres des job boards d'entreprises via les API
+  publiques des ATS, pour une liste configurable de boards (`GREENHOUSE_BOARDS`, `LEVER_BOARDS`,
+  `ASHBY_BOARDS`, `LEVER_REGION`). Socle commun `AbstractAtsProvider` : retry avec backoff, limitation de
+  débit, validation stricte des identifiants de board, un board en échec n'empêche pas les autres.
+  Dates de publication inconnues pour Greenhouse et Lever, confiance moyenne pour Ashby. Testés avec des
+  réponses simulées (documentation officielle vérifiée, pas de test sur de vrais boards).
+
 ### 2026-11-26
 
 #### Added

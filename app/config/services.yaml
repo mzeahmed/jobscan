@@ -1,6 +1,7 @@
 # yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
 
 parameters:
+    app.ats.lever_default_region: global
     app.email.default_port: 993
     app.email.default_encryption: ssl
     app.email.default_authentication: plain
@@ -157,6 +158,27 @@ services:
             $enabled: '%env(bool:default::EMAIL_ENABLED)%'
             $lookbackDays: '%app.profile.email_lookback_days%'
             $maxMessages: '%app.profile.email_max_messages%'
+        tags: ['app.job_provider']
+
+    App\Provider\Ats\GreenhouseProvider:
+        arguments:
+            $boards: '%env(csv:default:app.profile.empty_csv:GREENHOUSE_BOARDS)%'
+            $minRequestIntervalMs: '%app.profile.ats_min_request_interval_ms%'
+        tags: ['app.job_provider']
+
+    App\Provider\Ats\LeverProvider:
+        arguments:
+            $boards: '%env(csv:default:app.profile.empty_csv:LEVER_BOARDS)%'
+            $minRequestIntervalMs: '%app.profile.ats_min_request_interval_ms%'
+            $region: '%env(default:app.ats.lever_default_region:LEVER_REGION)%'
+            $pageSize: '%app.profile.lever_page_size%'
+            $maxPages: '%app.profile.lever_max_pages%'
+        tags: ['app.job_provider']
+
+    App\Provider\Ats\AshbyProvider:
+        arguments:
+            $boards: '%env(csv:default:app.profile.empty_csv:ASHBY_BOARDS)%'
+            $minRequestIntervalMs: '%app.profile.ats_min_request_interval_ms%'
         tags: ['app.job_provider']
 
     App\Provider\SearxNoiseFilter:

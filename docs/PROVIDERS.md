@@ -10,6 +10,9 @@ journalisées et relevées par `FetchDiagnostics` pour le monitoring (`provider_
 | `RemoteOkProvider` | `remoteok` | toujours | champ `date` (`high`) | validé |
 | `SearxProvider` | `searxng` | toujours | `publishedDate` (`medium`) ou texte (`low`) | validé |
 | `FranceTravailProvider` | `francetravail` | `FRANCE_TRAVAIL_ENABLED=true` | `dateCreation` (`high`) | **non validé** |
+| `GreenhouseProvider` | `greenhouse` | `GREENHOUSE_BOARDS` non vide | inconnue (`updated_at` n'est pas une publication) | documentation vérifiée, **non testé sur une vraie réponse** |
+| `LeverProvider` | `lever` | `LEVER_BOARDS` non vide | inconnue (`createdAt` non documenté) | documentation vérifiée, **non testé sur une vraie réponse** |
+| `AshbyProvider` | `ashby` | `ASHBY_BOARDS` non vide | `publishedAt` (`medium`) | documentation vérifiée, **non testé sur une vraie réponse** |
 | `EmailJobProvider` | `email` | `EMAIL_ENABLED=true` | toujours inconnue | **parsers non validés** — voir [EMAIL.md](EMAIL.md) |
 
 ## France Travail — API « Offres d'emploi » v2
@@ -74,3 +77,62 @@ Réglages dans `jobscan.yaml` : `app.profile.france_travail_max_pages` (3), `_pa
   le contrat et le salaire, s'ils sont fournis, sont ajoutés à la description pour l'analyse. Les URLs non
   `http(s)` sont rejetées.
 - **Secrets** : ni le secret client ni le jeton ne sont journalisés ; ils ne vont que dans `.env.local`.
+
+## ATS — Greenhouse, Lever, Ashby
+
+Trois providers lisent les **API publiques de publication d'offres** des job boards d'entreprises : aucune clé, aucun
+scraping, hôtes fixes. Un provider est actif dès qu'au moins un board est configuré ; une liste vide le désactive (le run
+l'enregistre « désactivé »).
+
+> **Statut** : la documentation officielle de chacune a été lue lors de l'écriture, mais les providers n'ont été testés
+> qu'avec des réponses simulées (fixtures anonymisées respectant les champs documentés), pas sur de vrais boards. Lancez
+> d'abord `php bin/console app:jobs:run --dry-run --provider=greenhouse` (ou `lever`, `ashby`) sur un board connu.
+
+### Configuration (`app/.env.local`)
+
+```dotenv
+GREENHOUSE_BOARDS="exemple=Exemple SAS,autre-entreprise"
+LEVER_BOARDS="exemple=Exemple SAS"
+LEVER_REGION=global          # ou eu
+ASHBY_BOARDS="Exemple=Exemple SAS"
+```
+
+Chaque entrée est `identifiant` ou `identifiant=Nom de l'entreprise`. Le nom est celui que vous saisissez : les API ne le
+fournissent pas toutes, et Jobscan ne le déduit **jamais** de l'identifiant (entreprise inconnue sinon). L'identifiant n'accepte que
+lettres, chiffres, `.`, `_` et `-` (il est inséré dans l'URL : toute autre valeur est ignorée avec un avertissement).
+
+| ATS | Où trouver l'identifiant | Endpoint |
+|---|---|---|
+| Greenhouse | `boards.greenhouse.io/{identifiant}` (« Job Board URL token ») | `GET boards-api.greenhouse.io/v1/boards/{id}/jobs?content=true` |
+| Lever | `jobs.lever.co/{identifiant}` (`jobs.eu.lever.co` → `LEVER_REGION=eu`) | `GET api.lever.co/v0/postings/{id}?mode=json&skip=&limit=` |
+| Ashby | `jobs.ashbyhq.com/{identifiant}` | `GET api.ashbyhq.com/posting-api/job-board/{id}?includeCompensation=true` |
+
+Documentation : [Greenhouse](https://developers.greenhouse.io/job-board.html), [Lever](https://github.com/lever/postings-api),
+[Ashby](https://developers.ashbyhq.com/docs/public-job-posting-api).
+
+### Dates de publication
+
+| ATS | Donnée | Traitement |
+|---|---|---|
+| Greenhouse | `updated_at` seulement dans la liste (`first_published` n'est que dans le détail) | **inconnue** : une mise à jour n'est pas une publication |
+| Lever | `createdAt` absent de la documentation | **inconnue** (à confirmer sur une vraie réponse) |
+| Ashby | `publishedAt`, documenté comme dernière publication | `medium` |
+
+Un board contient souvent des offres anciennes : sans date fiable, elles ne sont pas écartées par le filtre d'ancienneté ;
+seuls les filtres par mots-clés et le pré-score les trient.
+
+### Comportement
+
+- **Informations structurées** fournies par l'API (contrat, mode de travail, équipe, salaire, rémunération) : ajoutées à la
+  description pour l'analyse, uniquement quand elles sont présentes. Le HTML est réduit à du texte (le contenu Greenhouse,
+  échappé en entités, est décodé d'abord).
+- **Identité** : Greenhouse `{board}:{id}`, Lever `id`, Ashby aucun identifiant documenté, donc l'URL de l'offre. Les doublons avec
+  une autre source (URL canonique identique) sont détectés par le pipeline.
+- **Pagination** : Greenhouse et Ashby renvoient toutes les offres en une réponse ; Lever pagine par `skip`/`limit` (maximum non
+  documenté) jusqu'à une page vide, une page sans nouvelle offre, ou `app.profile.lever_max_pages`.
+- **Fiabilité** : 429 et 5xx sont retentés (trois essais, backoff, `Retry-After` respecté, plafonné à 10 s) ; les autres 4xx (board
+  inconnu) non. Un board en échec n'empêche pas les autres : le run est « partiel » dans `app:jobs:stats`.
+- **Débit** : 200 ms minimum entre deux requêtes (`app.profile.ats_min_request_interval_ms`). Aucun quota n'est documenté.
+- **Collecte incrémentale** : non applicable, aucune de ces API n'offre de filtre par date. Les offres déjà connues sont écartées par la
+  déduplication ; une collecte toutes les 15 minutes reste raisonnable pour quelques boards.
+- **Ashby** : les offres non listées (`isListed: false`, accessibles par lien direct seulement) sont ignorées.
