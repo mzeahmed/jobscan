@@ -10,6 +10,13 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-12
+
+#### Added
+
+- `docs/SCHEDULER.md` : évaluation de Symfony Scheduler (et Messenger) fondée sur un prototype jetable : cadence, exécution en série des tâches lentes, échec sans rejeu, rattrapage des exécutions
+  manquées (stateful), dépendance supplémentaire pour les horaires cron, coût mémoire. Décision : ne pas adopter pour l'instant ; conditions de révision et esquisse d'adoption.
+
 ### 2026-12-11
 
 #### Added

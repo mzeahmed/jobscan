@@ -44,7 +44,7 @@ L'image est construite en plusieurs étapes (`dev`, `build`, `prod`) : dépendan
 | `app:report:weekly --telegram` | le dimanche à 18 h 30 |
 | `app:jobs:purge` | **désactivée** : à décommenter en connaissance de cause |
 
-Chaque tâche prend un `flock` : une exécution encore en cours n'est jamais doublée. Fuseau : `TZ` (Europe/Paris par défaut). Pour changer les horaires, modifiez le fichier et reconstruisez (`make prod-up-workers`).
+Pourquoi supercronic et non Symfony Scheduler : voir [SCHEDULER.md](SCHEDULER.md). Chaque tâche prend un `flock` : une exécution encore en cours n'est jamais doublée. Fuseau : `TZ` (Europe/Paris par défaut). Pour changer les horaires, modifiez le fichier et reconstruisez (`make prod-up-workers`).
 
 ## Sécurité
 
