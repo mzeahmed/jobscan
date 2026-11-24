@@ -50,7 +50,11 @@ final class TrackingController extends AbstractController
     {
         $filter = ApplicationStatus::tryFrom($request->query->getString('status'));
 
+        $now = new \DateTimeImmutable();
+
         return $this->render('application/index.html.twig', [
+            'now' => $now,
+            'dueCount' => $this->applications->countDueFollowUps($now),
             'applications' => $this->applications->findByStatuses($filter === null ? null : [$filter], 200),
             'counts' => $this->applications->countByStatus(),
             'statuses' => ApplicationStatus::cases(),
@@ -69,6 +73,7 @@ final class TrackingController extends AbstractController
         $application = $this->application($id);
 
         return $this->render('application/show.html.twig', [
+            'now' => new \DateTimeImmutable(),
             'application' => $application,
             'history' => $this->history->findHistory($application),
             'transitions' => $application->getStatus()->allowedTransitions(),

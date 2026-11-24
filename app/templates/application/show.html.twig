@@ -58,7 +58,11 @@
                     {% for cv in cvs %}<option value="{{ cv.id }}" {{ application.cvVersionId == cv.id ? 'selected' }}>{{ cv.label }}</option>{% endfor %}
                 </select></label>
             <label class="filter-field"><span>Relance prévue</span>
-                <input class="filter-input" type="date" name="follow_up" value="{{ application.followUpAt ? application.followUpAt|date('Y-m-d') }}"></label>
+                <input class="filter-input" type="date" name="follow_up" value="{{ application.followUpAt ? application.followUpAt|date('Y-m-d') }}">
+                {% if application.followUpDue(now) %}
+                    <small>⏰ Relance due{{ application.followUpRemindedAt ? ' — rappel Telegram envoyé le ' ~ application.followUpRemindedAt|date('d/m/Y H:i') : '' }}.</small>
+                {% endif %}
+            </label>
             <label class="filter-field"><span>Message envoyé</span>
                 <textarea class="filter-input" name="message_sent" rows="8" maxlength="20000">{{ application.messageSent }}</textarea></label>
             <label class="filter-field"><span>Notes</span>

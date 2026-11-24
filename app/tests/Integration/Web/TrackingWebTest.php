@@ -286,6 +286,29 @@ final class TrackingWebTest extends WebTestCaseBase
         self::assertSame(ApplicationStatus::Draft, $first->getStatus());
     }
 
+    public function testDueFollowUpsAreHighlightedInTheListAndOnTheDetail(): void
+    {
+        $manager = self::getContainer()->get(ApplicationManager::class);
+        $due = $manager->start($this->persistJob('Relance due', 'https://jobs.example/due'), new \DateTimeImmutable('-20 days'));
+        $manager->changeStatus($due, ApplicationStatus::Applied, new \DateTimeImmutable('-15 days'));
+        $due->setFollowUpAt(new \DateTimeImmutable('-2 days'));
+        $due->markReminded(new \DateTimeImmutable('-1 day'));
+        $future = $manager->start($this->persistJob('Relance future', 'https://jobs.example/future'), new \DateTimeImmutable('-20 days'));
+        $manager->changeStatus($future, ApplicationStatus::Applied, new \DateTimeImmutable('-15 days'));
+        $future->setFollowUpAt(new \DateTimeImmutable('+5 days'));
+        $this->entityManager->flush();
+
+        $list = $this->client->request('GET', '/applications');
+
+        self::assertSelectorTextContains('.flash--error', '1 relance à faire');
+        self::assertCount(1, $list->filter('td strong[title="Relance due"]'));
+
+        $this->client->request('GET', '/applications/' . $due->getId());
+        self::assertSelectorTextContains('small', 'rappel Telegram envoyé le');
+        $this->client->request('GET', '/applications/' . $future->getId());
+        self::assertSelectorNotExists('small');
+    }
+
     public function testUnknownApplicationsAndJobsAreNotFound(): void
     {
         $this->client->request('GET', '/applications/999');

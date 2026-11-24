@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Telegram;
 
 use App\Entity\Job;
+use App\Entity\Application;
 use Psr\Log\LoggerInterface;
 use App\Repository\JobRepository;
 use App\Notification\TelegramHtml;
@@ -66,7 +67,15 @@ final readonly class UpdateHandler
             return;
         }
 
-        $parsed = JobKeyboard::parse(is_string($callback['data'] ?? null) ? $callback['data'] : '');
+        $data = is_string($callback['data'] ?? null) ? $callback['data'] : '';
+        $reminder = ReminderKeyboard::parse($data);
+        if ($reminder !== null) {
+            $this->handleReminder($reminder[0], $reminder[1], $callbackId, $chatId, self::int($message['message_id'] ?? null), $now);
+
+            return;
+        }
+
+        $parsed = JobKeyboard::parse($data);
         $job = $parsed === null ? null : $this->jobs->find($parsed[1]);
         if ($parsed === null || $job === null) {
             $this->bot->answerCallback($callbackId, 'Offre introuvable.');
@@ -83,6 +92,42 @@ final readonly class UpdateHandler
         if ($markup !== null && $messageId !== null) {
             $this->bot->editKeyboard($chatId, $messageId, $markup);
         }
+    }
+
+    private function handleReminder(string $action, int $applicationId, string $callbackId, int $chatId, ?int $messageId, \DateTimeImmutable $now): void
+    {
+        $application = $this->applications->find($applicationId);
+        if ($application === null) {
+            $this->bot->answerCallback($callbackId, 'Candidature introuvable.');
+
+            return;
+        }
+
+        $text = match ($action) {
+            ReminderKeyboard::DONE => $this->done($application, $now),
+            ReminderKeyboard::SHORT => $this->snooze($application, $now, ReminderKeyboard::SHORT_DAYS),
+            default => $this->snooze($application, $now, ReminderKeyboard::LONG_DAYS),
+        };
+        $this->entityManager->flush();
+
+        $this->bot->answerCallback($callbackId, $text);
+        if ($messageId !== null) {
+            $this->bot->editKeyboard($chatId, $messageId, ['inline_keyboard' => []]);
+        }
+    }
+
+    private function done(Application $application, \DateTimeImmutable $now): string
+    {
+        $application->completeFollowUp($now);
+
+        return 'Relance consignée. Planifiez la suivante dans l\'interface web si besoin.';
+    }
+
+    private function snooze(Application $application, \DateTimeImmutable $now, int $days): string
+    {
+        $application->snoozeFollowUp($now, $days);
+
+        return sprintf('Relance reportée de %d jours.', $days);
     }
 
     /** @return array{0: string, 1: array<string, mixed>|null} Texte de confirmation et nouveau clavier */

@@ -62,6 +62,7 @@ final class ApplicationListCommand extends Command
             return Command::SUCCESS;
         }
 
+        $now = new \DateTimeImmutable();
         $rows = [];
         foreach ($applications as $application) {
             $job = $application->getJob();
@@ -72,7 +73,7 @@ final class ApplicationListCommand extends Command
                 $job->getCompany() ?? '—',
                 $application->getAppliedAt()?->format('d/m/Y') ?? '—',
                 $application->getCvVersionLabel() ?? '—',
-                $application->getFollowUpAt()?->format('d/m/Y') ?? '—',
+                ($application->getFollowUpAt()?->format('d/m/Y') ?? '—') . ($application->isFollowUpDue($now) ? ' ⏰' : ''),
             ];
         }
         $io->table(['#', 'Statut', 'Poste', 'Entreprise', 'Postulé le', 'CV', 'Relance'], $rows);

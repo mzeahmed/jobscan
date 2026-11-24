@@ -132,4 +132,49 @@ class ApplicationRepository extends ServiceEntityRepository
 
         return $map;
     }
+
+    /**
+     * Candidatures dont la relance est due et pas encore rappelée : envoyées, encore ouvertes, date atteinte.
+     * Les plus en retard d'abord.
+     *
+     * @return list<Application>
+     */
+    public function findDueFollowUps(\DateTimeImmutable $now, int $limit): array
+    {
+        $final = array_map(static fn (ApplicationStatus $status): string => $status->value, array_filter(ApplicationStatus::cases(), static fn (ApplicationStatus $status): bool => $status->isTerminal()));
+
+        /** @var list<Application> $due */
+        $due = $this->createQueryBuilder('a')
+            ->addSelect('j')
+            ->join('a.job', 'j')
+            ->where('a.followUpAt IS NOT NULL')
+            ->andWhere('a.followUpAt <= :now')
+            ->andWhere('a.followUpRemindedAt IS NULL')
+            ->andWhere('a.status NOT IN (:excluded)')
+            ->setParameter('now', $now)
+            ->setParameter('excluded', [ApplicationStatus::Draft->value, ...$final])
+            ->orderBy('a.followUpAt', 'ASC')
+            ->addOrderBy('a.id', 'ASC')
+            ->setMaxResults(max(1, $limit))
+            ->getQuery()
+            ->getResult();
+
+        return $due;
+    }
+
+    /** Nombre de relances dues, rappelées ou non (pour l'affichage). */
+    public function countDueFollowUps(\DateTimeImmutable $now): int
+    {
+        $final = array_map(static fn (ApplicationStatus $status): string => $status->value, array_filter(ApplicationStatus::cases(), static fn (ApplicationStatus $status): bool => $status->isTerminal()));
+
+        return (int) $this->createQueryBuilder('a')
+            ->select('COUNT(a.id)')
+            ->where('a.followUpAt IS NOT NULL')
+            ->andWhere('a.followUpAt <= :now')
+            ->andWhere('a.status NOT IN (:excluded)')
+            ->setParameter('now', $now)
+            ->setParameter('excluded', [ApplicationStatus::Draft->value, ...$final])
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

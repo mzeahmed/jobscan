@@ -10,6 +10,14 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-07
+
+#### Added
+
+- Rappels de relance : `app:reminders:send` (`--dry-run`, `--limit`) envoie par Telegram un rappel pour chaque relance planifiée dont la date est atteinte, une seule fois par date, sans
+  rappel pour un brouillon ni une candidature terminée. Boutons ✅ Relancé et ⏰ +3 j / +7 j. Message sans contact ni nom de recruteur. Relances dues signalées dans l'interface web et `app:applications:list`.
+- Migration non destructive (`job_application.follow_up_reminded_at`). `docs/REMINDERS.md`.
+
 ### 2026-12-06
 
 #### Added

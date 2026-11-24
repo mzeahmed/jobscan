@@ -14,6 +14,10 @@ Les notifications ([NOTIFICATIONS.md](NOTIFICATIONS.md)) portent des **boutons**
 
 Le clavier du message est mis à jour après chaque action. Les actions plus fines (dates, notes, CV, message envoyé) se font dans l'[interface web](UI.md) ou en ligne de commande.
 
+## Boutons d'un rappel de relance
+
+✅ Relancé, ⏰ +3 j, ⏰ +7 j : voir [REMINDERS.md](REMINDERS.md).
+
 ## Commandes
 
 - `/offres` : les 5 meilleures offres compatibles encore à trier (ni décidées, ni candidatées, ni doublons), chacune avec ses boutons ;

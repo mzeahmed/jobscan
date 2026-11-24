@@ -9,6 +9,10 @@
             <p class="page__subtitle">Ce que vous avez déclaré : Jobscan n'envoie rien à un recruteur.</p>
         </div>
 
+        {% if dueCount > 0 %}
+            <p class="flash flash--error" role="status">⏰ {{ dueCount }} relance{{ dueCount > 1 ? 's' : '' }} à faire (date atteinte).</p>
+        {% endif %}
+
         <nav class="status-filter" aria-label="Filtrer par statut">
             <a class="btn btn--sm {{ filter is null ? 'btn--primary' : 'btn--ghost' }}" href="{{ path('app_applications') }}">Toutes</a>
             {% for status in statuses %}
@@ -34,7 +38,7 @@
                             <td><a href="{{ path('app_application_show', {id: application.id}) }}">{{ application.job.title }}</a></td>
                             <td>{{ application.job.company ?? '—' }}</td>
                             <td>{{ application.appliedAt ? application.appliedAt|date('d/m/Y') : '—' }}</td>
-                            <td>{{ application.followUpAt ? application.followUpAt|date('d/m/Y') : '—' }}</td>
+                            <td>{% if application.followUpAt %}{{ application.followUpAt|date('d/m/Y') }}{% if application.followUpDue(now) %} <strong title="Relance due">⏰</strong>{% endif %}{% else %}—{% endif %}</td>
                             <td>{{ application.cvVersionLabel ?? '—' }}</td>
                         </tr>
                     {% endfor %}

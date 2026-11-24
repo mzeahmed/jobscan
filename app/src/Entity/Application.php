@@ -65,6 +65,10 @@ class Application
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $followUpAt = null;
 
+    /** Quand le rappel de relance a été envoyé pour la date de relance courante (remis à zéro si cette date change). */
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $followUpRemindedAt = null;
+
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $respondedAt = null;
 
@@ -257,7 +261,53 @@ class Application
             throw new InvalidApplicationException('La date de relance précède la date de candidature.');
         }
 
+        if ($at != $this->followUpAt) {
+            $this->followUpRemindedAt = null;
+        }
         $this->followUpAt = $at;
+    }
+
+    public function getFollowUpRemindedAt(): ?\DateTimeImmutable
+    {
+        return $this->followUpRemindedAt;
+    }
+
+    /** Une relance est due : date atteinte, candidature envoyée et encore ouverte. */
+    public function isFollowUpDue(\DateTimeImmutable $now): bool
+    {
+        $status = $this->getStatus();
+
+        return $this->followUpAt !== null
+            && $this->followUpAt <= $now
+            && $status !== ApplicationStatus::Draft
+            && !$status->isTerminal();
+    }
+
+    public function needsReminder(\DateTimeImmutable $now): bool
+    {
+        return $this->isFollowUpDue($now) && $this->followUpRemindedAt === null;
+    }
+
+    public function markReminded(\DateTimeImmutable $at): void
+    {
+        $this->followUpRemindedAt = $at;
+    }
+
+    /** « Relancé » : consigne le contact et solde la relance. */
+    public function completeFollowUp(\DateTimeImmutable $now): void
+    {
+        $this->lastContactAt = $now;
+        $this->followUpAt = null;
+        $this->followUpRemindedAt = null;
+        $this->updatedAt = $now;
+    }
+
+    /** Reporte la relance de quelques jours à partir de maintenant. */
+    public function snoozeFollowUp(\DateTimeImmutable $now, int $days): void
+    {
+        $this->followUpAt = $now->modify(sprintf('+%d days', max(1, $days)));
+        $this->followUpRemindedAt = null;
+        $this->updatedAt = $now;
     }
 
     public function getRespondedAt(): ?\DateTimeImmutable
