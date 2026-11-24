@@ -585,11 +585,15 @@ Dashboard Traefik :
 
 > Si Ollama tourne sur la machine hôte et Symfony dans Docker, `OLLAMA_BASE_URL` est automatiquement configuré sur `http://host.docker.internal:11434/v1` dans le `docker-compose.yml`.
 
+Le conteneur de développement tourne sous **votre** identifiant (`HOST_UID`/`HOST_GID`, exportés par le `makefile`) : plus de fichiers appartenant à root dans `app/`.
+
+**Déploiement autonome** (`docker-compose.prod.yml`) : code figé dans l'image, utilisateur sans privilège, planification (`cron`) et boutons Telegram en services optionnels, aucun secret dans les images. `make prod-up` / `make prod-up-workers` ; voir [docs/DEPLOY.md](docs/DEPLOY.md).
+
 ---
 
 ## Automatisation (Cron)
 
-JOBSCAN peut tourner de manière entièrement autonome via un cron local.
+JOBSCAN peut tourner de manière entièrement autonome via un cron local (ou, dans Docker, via le service `cron` du [déploiement autonome](docs/DEPLOY.md)).
 
 ```bash
 crontab -e

@@ -10,7 +10,8 @@ services:
         # (voir README > Avec Docker).
         ports:
             - "8443:443"
-            - "9080:8080"
+            # Tableau de bord sans authentification (`insecure: true`) : réservé à cette machine.
+            - "127.0.0.1:9080:8080"
         volumes:
             - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
             - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
@@ -22,11 +23,17 @@ services:
         build:
             context: .
             dockerfile: docker/php/Dockerfile
+            target: dev
         container_name: jobscan_app
         working_dir: /app
+        # Sous VOTRE identifiant (exporté par le makefile : HOST_UID/HOST_GID) : les fichiers créés dans ./app
+        # (vendor, var, cache) vous appartiennent. Avant, ils appartenaient à root et exigeaient `chmod 777`.
+        user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
         volumes:
             - ./app:/app
         environment:
+            HOME: /tmp
+            COMPOSER_HOME: /tmp/composer
             APP_ENV: dev
             DATABASE_URL: "sqlite:///%kernel.project_dir%/var/jobscan.db"
             SEARXNG_URL: http://searxng:8080

@@ -10,6 +10,31 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-09
+
+#### Added
+
+- Déploiement Docker autonome (`docker-compose.prod.yml`, `make prod-up`, `make prod-up-workers`) : image multi-étapes (`dev`, `build`, `prod`) avec code figé, dépendances sans `--dev`, ressources compilées et
+  OPcache de production ; utilisateur sans privilège, racine en lecture seule, aucune capacité Linux ; migrations au démarrage ; services optionnels `cron` (supercronic épinglé par empreinte, tâches sous `flock`)
+  et `telegram` ; web publié uniquement sur `127.0.0.1`. Pile testée de bout en bout dans un projet Docker isolé. `docs/DEPLOY.md`.
+- Extension PHP `pcntl` dans l'image (arrêt propre des services de longue durée).
+
+#### Changed
+
+- Le conteneur de développement tourne sous l'identifiant de l'utilisateur (`HOST_UID`/`HOST_GID`) au lieu de root : plus de fichiers appartenant à root dans `app/` (cause du `chmod -R 777 app/var` et des
+  `composer install` impossibles depuis l'hôte).
+- `docker/nginx/default.conf` : `server_name _`, `server_tokens off`, corps de requête limité à 1 Mo.
+
+#### Security
+
+- `.dockerignore` n'excluait ni `app/.env` ni `app/.env.local` : le `COPY` du Dockerfile les embarquait dans l'image. Ils sont exclus, ainsi que `app/tests` ; l'image part du modèle `.env.example`.
+- Tableau de bord Traefik (sans authentification) publié sur `127.0.0.1:9080` au lieu de toutes les interfaces.
+- Documentation et exemple de `TRUSTED_PROXIES` : l'adresse exacte du proxy remplace `private_ranges` (CVE-2026-121619).
+
+#### Fixed
+
+- `app:telegram:poll` plantait sans l'extension `pcntl` (constantes `SIGINT`/`SIGTERM` indéfinies), donc dans l'image PHP officielle ; il fonctionne désormais sans, et l'image l'inclut.
+
 ### 2026-12-08
 
 #### Added

@@ -9,7 +9,7 @@ framework:
         cookie_httponly: true
         cookie_samesite: lax
 
-    # Derrière un proxy inverse (Traefik) : adresses des proxys de confiance (TRUSTED_PROXIES, ex. `private_ranges`). Vide
+    # Derrière un proxy inverse (Traefik) : adresses des proxys de confiance (TRUSTED_PROXIES : adresses ou réseaux exacts ; éviter `private_ranges`, CVE-2026-121619). Vide
     # par défaut : aucun en-tête X-Forwarded-* n'est cru, donc personne ne peut falsifier son adresse ou le schéma HTTPS.
     trusted_proxies: '%env(default:app.trusted_proxies_default:TRUSTED_PROXIES)%'
     trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port']

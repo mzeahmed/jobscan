@@ -1,0 +1,19 @@
+# Planification de Jobscan (supercronic). Fuseau : variable TZ du conteneur (UTC par défaut).
+# Chaque tâche prend un verrou : une exécution encore en cours n'est jamais doublée.
+# Service optionnel : `docker compose -f docker-compose.prod.yml --profile workers up -d`.
+
+# Collecte, analyse, matching et notifications immédiates.
+0 */3 * * *   flock -n /tmp/jobs-run.lock php /app/bin/console app:jobs:run --no-interaction
+
+# Reprise des analyses en attente ou en échec (selon la politique de retentative).
+20 * * * *    flock -n /tmp/jobs-analyze.lock php /app/bin/console app:jobs:analyze --no-interaction
+
+# Rappels de relance dues (un seul par date).
+5 * * * *     flock -n /tmp/reminders.lock php /app/bin/console app:reminders:send --no-interaction
+
+# Récapitulatif quotidien des offres secondaires, et rattrapage des notifications manquées.
+0 18 * * *    flock -n /tmp/digest.lock php /app/bin/console app:notifications:digest --no-interaction
+
+# Purge : volontairement désactivée. Elle épargne les offres suivies, sauvegardées, ignorées ou archivées,
+# mais supprime les autres : à activer en connaissance de cause.
+# 0 4 * * 0   flock -n /tmp/purge.lock php /app/bin/console app:jobs:purge --older-than=60d --no-interaction

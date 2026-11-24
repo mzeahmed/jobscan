@@ -41,7 +41,7 @@ Seul le **hash** est stocké, jamais le mot de passe. Il n'y a qu'un compte : l'
 ## Exposition
 
 - **En local** (`php -S 127.0.0.1:8000 -t public`, `symfony serve`) : n'écoute que sur votre machine. C'est la configuration recommandée.
-- **Derrière Traefik / HTTPS** : définissez `TRUSTED_PROXIES` (ex. `private_ranges`) pour que HTTPS et l'adresse du client soient correctement détectés ; sans cela, le cookie de session n'est pas marqué `Secure`. N'y mettez que vos propres proxys.
+- **Derrière Traefik / HTTPS** : définissez `TRUSTED_PROXIES` avec l'**adresse ou le réseau exact de votre proxy** (ex. `172.18.0.0/16`, le réseau Docker de Traefik) pour que HTTPS et l'adresse du client soient correctement détectés ; sans cela, le cookie de session n'est pas marqué `Secure`. N'y mettez que vos propres proxys. **Évitez le raccourci `private_ranges`** : un avis de sécurité (CVE-2026-121619) montre qu'il fait confiance à des clients présentant certaines adresses IPv6 de transition, jusqu'à la mise à jour de Symfony en 8.1.11.
 - N'exposez pas l'interface sur Internet sans HTTPS. Le mot de passe ne protège pas un échange en clair.
 
 ## Limites

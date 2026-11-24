@@ -51,7 +51,8 @@ final class TelegramPollCommand extends Command implements SignalableCommandInte
     #[\Override]
     public function getSubscribedSignals(): array
     {
-        return [\SIGINT, \SIGTERM];
+        // Les signaux n'existent qu'avec l'extension pcntl : sans elle, la commande tourne, mais ne s'arrête proprement que par --max-seconds.
+        return \defined('SIGINT') && \defined('SIGTERM') ? [\SIGINT, \SIGTERM] : [];
     }
 
     #[\Override]

@@ -1,6 +1,11 @@
-.PHONY: help setup hosts build up down logs bash migrate run-pipeline llm-load llm-status alerts fix-perms test test-unit test-integration
+.PHONY: help setup hosts build up down logs bash migrate run-pipeline llm-load llm-status alerts fix-perms test test-unit test-integration prod-up prod-up-workers prod-down prod-logs prod-ps
 
 COMPOSE = docker compose -f docker-compose.yml
+COMPOSE_PROD = docker compose -f docker-compose.prod.yml
+
+# Le conteneur de développement tourne sous votre identifiant (voir docker-compose.yml) : rien n'appartient à root.
+export HOST_UID ?= $(shell id -u)
+export HOST_GID ?= $(shell id -g)
 
 # Le projet requiert PHP >= 8.4.1 : on prend php8.4 s'il existe, sinon le php par défaut.
 # Surchargeable : make run-pipeline PHP=php8.5
@@ -73,6 +78,22 @@ down: ## Stop les conteneurs — Exemple : make down
 	@echo "$(GREEN)Conteneurs arrêtés$(NO_COLOR)"
 
 restart: down up ## Redémarre les conteneurs — Exemple : make restart
+
+prod-up: ## Déploiement autonome : web seul — Exemple : make prod-up
+	$(COMPOSE_PROD) up -d --build
+	@echo "$(BLUE)Application : http://127.0.0.1:$${JOBSCAN_HTTP_PORT:-8088}/login (derrière votre proxy HTTPS)$(NO_COLOR)"
+
+prod-up-workers: ## Déploiement autonome avec planification et boutons Telegram — Exemple : make prod-up-workers
+	$(COMPOSE_PROD) --profile workers up -d --build
+
+prod-down: ## Arrête le déploiement autonome (les données sont conservées) — Exemple : make prod-down
+	$(COMPOSE_PROD) --profile workers down
+
+prod-logs: ## Journaux du déploiement autonome — Exemple : make prod-logs
+	$(COMPOSE_PROD) --profile workers logs -f
+
+prod-ps: ## Conteneurs du déploiement autonome — Exemple : make prod-ps
+	$(COMPOSE_PROD) --profile workers ps
 
 logs: ## Logs des conteneurs — Exemple : make logs
 	@echo "$(YELLOW)Affichage des logs...$(NO_COLOR)"

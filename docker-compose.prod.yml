@@ -1,0 +1,97 @@
+# Déploiement autonome : tout est dans les images (code, ressources, planification) ; seuls les DONNÉES sont montées.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build                      # web uniquement
+#   docker compose -f docker-compose.prod.yml --profile workers up -d --build    # + planification (cron) et boutons Telegram
+#
+# Ne partage rien avec docker-compose.yml (développement) : volumes, réseau et conteneurs sont distincts.
+# Identifiants : app/.env.local (ignoré par Git), lu à l'exécution — jamais copié dans une image. Voir docs/DEPLOY.md.
+
+name: jobscan-prod
+
+x-app: &app
+    image: jobscan-app:prod
+    build:
+        context: .
+        dockerfile: docker/php/Dockerfile
+        target: prod
+    restart: unless-stopped
+    env_file:
+        - path: ${JOBSCAN_ENV_FILE:-./app/.env.local}
+          required: false
+    environment: &app-env
+        APP_ENV: prod
+        DATABASE_URL: "sqlite:////app/var/jobscan.db"
+        # Profil candidat : données personnelles, montées en lecture seule, jamais dans l'image.
+        JOBSCAN_PROFILE_DIR: /profile
+        TZ: ${TZ:-Europe/Paris}
+    volumes:
+        - var:/app/var
+        - ${JOBSCAN_PROFILE_DIR:-./app/config/profile/local}:/profile:ro
+    # Durcissement : racine en lecture seule, aucune capacité, pas d'élévation de privilèges.
+    read_only: true
+    tmpfs:
+        - /tmp
+    cap_drop:
+        - ALL
+    security_opt:
+        - no-new-privileges:true
+    networks:
+        - application
+
+services:
+    app:
+        <<: *app
+        container_name: jobscan_prod_app
+        environment:
+            <<: *app-env
+            # Applique les migrations (non destructives) au démarrage ; les services de travail attendent que ce service soit sain.
+            JOBSCAN_AUTO_MIGRATE: "1"
+        healthcheck:
+            test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
+            interval: 10s
+            timeout: 3s
+            retries: 12
+            start_period: 20s
+
+    nginx:
+        build:
+            context: .
+            dockerfile: docker/nginx/Dockerfile
+            additional_contexts:
+                app: service:app
+        image: jobscan-nginx:prod
+        container_name: jobscan_prod_nginx
+        restart: unless-stopped
+        depends_on:
+            app:
+                condition: service_healthy
+        # Uniquement sur cette machine : exposez-le par votre proxy HTTPS (voir docs/DEPLOY.md), jamais en clair sur Internet.
+        ports:
+            - "127.0.0.1:${JOBSCAN_HTTP_PORT:-8088}:80"
+        networks:
+            - application
+
+    # ── Services de travail (profil « workers ») ─────────────────────────────────────────────────────
+    cron:
+        <<: *app
+        container_name: jobscan_prod_cron
+        profiles: ["workers"]
+        command: ["supercronic", "-passthrough-logs", "/etc/jobscan/crontab"]
+        depends_on:
+            app:
+                condition: service_healthy
+
+    telegram:
+        <<: *app
+        container_name: jobscan_prod_telegram
+        profiles: ["workers"]
+        command: ["php", "/app/bin/console", "app:telegram:poll"]
+        depends_on:
+            app:
+                condition: service_healthy
+
+volumes:
+    var:
+
+networks:
+    application:

@@ -1,11 +1,24 @@
 .git
-app/node_modules
+.github
+docs
+README.md
+
+# Secrets et données personnelles : jamais dans une image (les identifiants arrivent à l'exécution, par `env_file`).
+app/.env
+app/.env.local
+app/.env.*.local
+app/config/profile/local/*
 app/var/*
 app/vendor/*
-docker-compose.yml
-docker-compose.override.yml
-docker-compose.prod.yml
-docker/
+app/node_modules
+app/.phpunit.cache
+app/tests
+
+# Définition de l'infrastructure : inutile dans le contexte de build (sauf ce que les Dockerfile copient).
+docker-compose*.yml
 traefik/
-# Profil candidat : données personnelles, jamais dans une image
-app/config/profile/local/*
+certs/
+docker/*
+!docker/php
+!docker/nginx
+!docker/cron
