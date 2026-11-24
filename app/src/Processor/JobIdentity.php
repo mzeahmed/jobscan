@@ -9,9 +9,17 @@ use App\Entity\Job;
 
 final readonly class JobIdentity
 {
+    /**
+     * Paramètres de pur suivi publicitaire ou emailing, sans effet sur l'offre affichée.
+     *
+     * `ref` et `source` en sont volontairement absents : selon les sites, ils peuvent
+     * désigner la ressource elle-même. Les retirer risquerait de fusionner à tort deux
+     * offres distinctes ; les conserver, au pire, laisse passer un doublon que l'empreinte
+     * (titre, entreprise, lieu) signalera comme probable.
+     */
     private const array TRACKING_PARAMETERS = [
         'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content',
-        'gclid', 'fbclid', 'mc_cid', 'mc_eid', 'ref', 'source',
+        'gclid', 'fbclid', 'mc_cid', 'mc_eid',
     ];
 
     public function canonicalUrl(string $url): string

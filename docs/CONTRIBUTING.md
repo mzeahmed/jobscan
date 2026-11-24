@@ -10,7 +10,7 @@ Merci de l'intérêt porté au projet. Ce guide explique comment installer, lanc
 - Composer
 - Symfony CLI
 - SQLite
-- [LM Studio](https://lmstudio.ai/) avec un modèle chargé (ex. `google/gemma-3-4b-it`)
+- [Ollama](https://ollama.com/) avec un modèle téléchargé (recommandé), ou LM Studio / une clé Gemini
 - [SearXNG](https://docs.searxng.org/) en local ou via Docker
 
 ---
@@ -26,14 +26,19 @@ make setup
 
 # Installer les dépendances
 cd app
+
+# .env est ignoré par Git : le créer depuis le modèle AVANT composer install
+cp .env.example .env
 composer install
 
-# Copier et adapter la configuration
-cp .env .env.local
-# → Renseigner TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, OLLAMA_BASE_URL, etc.
+# Surcharges propres à la machine (ignorées par Git)
+# → Renseigner TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, OLLAMA_BASE_URL, etc. dans .env.local
+
+# Assets TypeScript (requis pour l'interface web et pour PHPUnit)
+php bin/console typescript:build
 
 # Créer la base de données et appliquer les migrations
-symfony console doctrine:migrations:migrate --no-interaction
+php bin/console doctrine:migrations:migrate --no-interaction
 ```
 
 ---
@@ -41,7 +46,7 @@ symfony console doctrine:migrations:migrate --no-interaction
 ## Lancer le pipeline
 
 ```bash
-# Exécution complète (RSS + SearXNG → IA → score → alerte)
+# Exécution complète (RSS + RemoteOK + SearXNG → IA → score → alerte)
 make run-pipeline
 
 # Ou directement

@@ -6,6 +6,9 @@ namespace App\Provider;
 
 use App\DTO\JobDto;
 use Psr\Log\LoggerInterface;
+use App\DTO\PublicationDateSource;
+use App\Monitoring\FetchDiagnostics;
+use App\DTO\PublicationDateConfidence;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -32,6 +35,8 @@ final readonly class RsFeedProvider implements JobProviderInterface
         private HttpClientInterface $httpClient,
         private LoggerInterface $logger,
         private array $feedUrls = [],
+        private ?CollectionPolicy $collectionPolicy = null,
+        private ?FetchDiagnostics $diagnostics = null,
     ) {
     }
 
@@ -79,11 +84,18 @@ final readonly class RsFeedProvider implements JobProviderInterface
     public function fetch(): array
     {
         $results = [];
+        $configured = array_filter(
+            $this->feedUrls,
+            static fn (?string $url): bool => \is_string($url) && trim($url) !== '',
+        );
 
-        foreach ($this->feedUrls as $feedUrl) {
-            if (!\is_string($feedUrl) || trim($feedUrl) === '') {
-                continue;
-            }
+        if ($configured === []) {
+            $this->diagnostics?->markDisabled($this->name());
+
+            return [];
+        }
+
+        foreach ($configured as $feedUrl) {
 
             try {
                 $response = $this->httpClient
@@ -99,6 +111,10 @@ final readonly class RsFeedProvider implements JobProviderInterface
                 $jobs = $this->parseFeed($xml, $feedUrl);
 
                 foreach ($jobs as $job) {
+                    if ($this->collectionPolicy !== null && !$this->collectionPolicy->allows($job->url)) {
+                        continue;
+                    }
+
                     $results[$job->url] = $job;
                 }
             } catch (\Throwable $e) {
@@ -106,6 +122,7 @@ final readonly class RsFeedProvider implements JobProviderInterface
                     'feed_url' => $feedUrl,
                     'error' => $e->getMessage(),
                 ]);
+                $this->diagnostics?->record($this->name(), $e->getMessage());
             }
         }
 
@@ -146,6 +163,7 @@ final readonly class RsFeedProvider implements JobProviderInterface
             $this->logger->warning('FeedProvider invalid XML.', [
                 'feed_url' => $feedUrl,
             ]);
+            $this->diagnostics?->record($this->name(), 'XML invalide : ' . $feedUrl);
 
             return [];
         }
@@ -186,12 +204,18 @@ final readonly class RsFeedProvider implements JobProviderInterface
                 continue;
             }
 
+            $publishedAt = $this->parsePubDate((string) ($item->pubDate ?? ''));
+            $guid = trim((string) ($item->guid ?? ''));
+
             $jobs[] = new JobDto(
                 title: $title,
                 url: $url,
                 description: $description,
                 source: $source,
-                publishedAt: $this->parsePubDate((string) ($item->pubDate ?? '')),
+                publishedAt: $publishedAt,
+                externalId: $guid === '' ? null : $guid,
+                publicationDateSource: $publishedAt === null ? PublicationDateSource::Unknown : PublicationDateSource::Feed,
+                publicationDateConfidence: $publishedAt === null ? PublicationDateConfidence::Unknown : PublicationDateConfidence::Medium,
             );
         }
 
@@ -232,14 +256,25 @@ final readonly class RsFeedProvider implements JobProviderInterface
                 continue;
             }
 
-            $rawDate = trim((string) ($entry->published ?? $entry->updated ?? ''));
+            // Atom : `updated` n'est pas une date de publication, d'où une confiance moindre.
+            $rawPublished = trim((string) ($entry->published ?? ''));
+            $rawDate = $rawPublished !== '' ? $rawPublished : trim((string) ($entry->updated ?? ''));
+            $publishedAt = $this->parsePubDate($rawDate);
+            $id = trim((string) ($entry->id ?? ''));
 
             $jobs[] = new JobDto(
                 title: $title,
                 url: $url,
                 description: $description,
                 source: $source,
-                publishedAt: $this->parsePubDate($rawDate),
+                publishedAt: $publishedAt,
+                externalId: $id === '' ? null : $id,
+                publicationDateSource: $publishedAt === null ? PublicationDateSource::Unknown : PublicationDateSource::Feed,
+                publicationDateConfidence: match (true) {
+                    $publishedAt === null => PublicationDateConfidence::Unknown,
+                    $rawPublished !== '' => PublicationDateConfidence::Medium,
+                    default => PublicationDateConfidence::Low,
+                },
             );
         }
 

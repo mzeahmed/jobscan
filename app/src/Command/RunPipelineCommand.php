@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Entity\ProviderRun;
+use App\Analysis\AnalysisSummary;
 use App\Repository\JobRepository;
+use App\Monitoring\FetchDiagnostics;
+use App\Monitoring\ProviderRunStatus;
 use App\Processor\JobProcessingResult;
 use App\Processor\JobProcessingStatus;
 use App\Provider\JobProviderInterface;
 use App\Processor\JobProcessorInterface;
+use App\Repository\ProviderRunRepository;
 use Symfony\Component\Console\Command\Command;
+use App\Analysis\PendingAnalysisRunnerInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -30,6 +36,10 @@ final class RunPipelineCommand extends Command
         private readonly JobProcessorInterface $processor,
         private readonly JobRepository $jobRepository,
         private readonly string $environment,
+        private readonly PendingAnalysisRunnerInterface $analysisRunner,
+        private readonly ProviderRunRepository $providerRunRepository,
+        private readonly FetchDiagnostics $diagnostics,
+        private readonly int $analysisLimit = 50,
     ) {
         parent::__construct();
     }
@@ -40,7 +50,8 @@ final class RunPipelineCommand extends Command
             ->addOption('dry-run', null, InputOption::VALUE_NONE, 'Analyse les offres sans persistance ni notification.')
             ->addOption('reset', null, InputOption::VALUE_NONE, 'Vide la table des offres avant le pipeline (hors production).')
             ->addOption('provider', null, InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Provider à exécuter (remoteok, rss, searxng).')
-            ->addOption('skip-health-check', null, InputOption::VALUE_NONE, 'Ne vérifie pas la disponibilité des providers avant le run.');
+            ->addOption('skip-health-check', null, InputOption::VALUE_NONE, 'Ne vérifie pas la disponibilité des providers avant le run.')
+            ->addOption('no-analyze', null, InputOption::VALUE_NONE, "Collecte et persiste sans lancer l'analyse IA (voir app:jobs:analyze).");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -53,6 +64,7 @@ final class RunPipelineCommand extends Command
         $dryRun = (bool) $input->getOption('dry-run');
         $reset = (bool) $input->getOption('reset');
         $skipHealthCheck = (bool) $input->getOption('skip-health-check');
+        $noAnalyze = (bool) $input->getOption('no-analyze');
         /** @var list<string> $selectedProviders */
         $selectedProviders = array_map(strtolower(...), (array) $input->getOption('provider'));
         $providers = iterator_to_array($this->providers);
@@ -90,18 +102,22 @@ final class RunPipelineCommand extends Command
         }
 
         $fetched = 0;
-        $analyzedByAI = 0;
-        $analyzedByFallback = 0;
         $notified = 0;
         $counts = array_fill_keys(array_map(static fn (JobProcessingStatus $status): string => $status->value, JobProcessingStatus::cases()), 0);
+        $dryRunScored = 0;
+        $dryRunFallback = 0;
 
         foreach ($providers as $provider) {
             if ($selectedProviders !== [] && !\in_array($provider->name(), $selectedProviders, true)) {
                 continue;
             }
 
+            $providerStart = new \DateTimeImmutable();
+            $providerClock = microtime(true);
+
             if (!$skipHealthCheck && !$provider->isHealthy()) {
                 $io->warning(sprintf('Provider "%s" indisponible — ignoré pour ce run.', $provider->name()));
+                $this->recordRun($dryRun, $provider->name(), $providerStart, $providerClock, ProviderRunStatus::Failed, 0, 0, 0, 1, 'Sonde de disponibilité en échec.');
 
                 continue;
             }
@@ -109,8 +125,21 @@ final class RunPipelineCommand extends Command
             $name = new \ReflectionClass($provider)->getShortName();
             $io->section('Provider : ' . $name);
 
-            $jobs = $provider->fetch();
-            $io->writeln(sprintf('  → <info>%d</info> offre(s) récupérée(s)', \count($jobs)));
+            $errors = [];
+            try {
+                $jobs = $provider->fetch();
+            } catch (\Throwable $e) {
+                $jobs = [];
+                $errors[] = $e->getMessage();
+            }
+            $report = $this->diagnostics->drain($provider->name());
+            $errors = [...$errors, ...$report['errors']];
+
+            if ($report['disabled']) {
+                $io->writeln('  → <comment>source désactivée (non configurée)</comment>');
+            } else {
+                $io->writeln(sprintf('  → <info>%d</info> offre(s) récupérée(s)', \count($jobs)));
+            }
             $fetched += \count($jobs);
 
             try {
@@ -119,8 +148,11 @@ final class RunPipelineCommand extends Command
                 $results = array_fill(0, count($jobs), JobProcessingResult::failed($e->getMessage()));
             }
 
+            $providerNew = 0;
+            $providerDuplicates = 0;
             foreach ($results as $index => $result) {
                 if ($result->status === JobProcessingStatus::Failed) {
+                    $errors[] = $result->error ?? 'erreur inconnue';
                     $io->warning(sprintf(
                         'Échec du traitement de "%s" : %s',
                         $jobs[$index]->title ?? 'offre inconnue',
@@ -129,14 +161,46 @@ final class RunPipelineCommand extends Command
                 }
 
                 ++$counts[$result->status->value];
-                if ($result->score !== null) {
-                    $result->usedFallback ? ++$analyzedByFallback : ++$analyzedByAI;
+                if ($result->status === JobProcessingStatus::Saved) {
+                    ++$providerNew;
                 }
-                if ($result->notified) {
-                    ++$notified;
+                if ($result->status === JobProcessingStatus::Duplicate) {
+                    ++$providerDuplicates;
+                }
+                if ($result->status === JobProcessingStatus::DryRun && $result->score !== null) {
+                    $result->usedFallback ? ++$dryRunFallback : ++$dryRunScored;
                 }
             }
+
+            $this->recordRun(
+                $dryRun,
+                $provider->name(),
+                $providerStart,
+                $providerClock,
+                ProviderRunStatus::classify($report['disabled'], \count($jobs), $providerNew, \count($errors)),
+                \count($jobs),
+                $providerNew,
+                $providerDuplicates,
+                \count($errors),
+                $errors === [] ? null : end($errors),
+            );
         }
+
+        $analysis = new AnalysisSummary();
+        if (!$dryRun && !$noAnalyze) {
+            $io->section('Analyse des offres en attente');
+            $analysis = $this->analysisRunner->run($this->analysisLimit);
+            $notified = $analysis->notified;
+            $io->writeln(sprintf(
+                '  → <info>%d</info> offre(s) traitée(s) (%d IA, %d heuristique, %d en échec)',
+                $analysis->total(),
+                $analysis->analyzedByAi,
+                $analysis->analyzedByFallback,
+                $analysis->failed,
+            ));
+        }
+        $analyzedByAI = $analysis->analyzedByAi + $dryRunScored;
+        $analyzedByFallback = $analysis->analyzedByFallback + $dryRunFallback;
 
         $end = microtime(true);
         $time = $end - $start;
@@ -150,7 +214,8 @@ final class RunPipelineCommand extends Command
             ['Pré-score insuffisant', $counts[JobProcessingStatus::LowPrescore->value]],
             ['Analysées par IA', $analyzedByAI],
             ['Analysées par fallback', $analyzedByFallback],
-            ['Sauvegardées', $counts[JobProcessingStatus::Saved->value]],
+            ['Sauvegardées (analyse en attente)', $counts[JobProcessingStatus::Saved->value]],
+            ['Analyses en échec', $analysis->failed],
             ['Dry-run', $counts[JobProcessingStatus::DryRun->value]],
             ['Notifiées', $notified],
             ['Échecs', $counts[JobProcessingStatus::Failed->value]],
@@ -159,5 +224,38 @@ final class RunPipelineCommand extends Command
         $io->success(sprintf('Pipeline terminé en %.2f s.', $time));
 
         return Command::SUCCESS;
+    }
+
+    private function recordRun(
+        bool $dryRun,
+        string $provider,
+        \DateTimeImmutable $startedAt,
+        float $startClock,
+        ProviderRunStatus $status,
+        int $fetched,
+        int $new,
+        int $duplicates,
+        int $errors,
+        ?string $lastError,
+    ): void {
+        if ($dryRun) {
+            return;
+        }
+
+        try {
+            $this->providerRunRepository->save(new ProviderRun(
+                $provider,
+                $startedAt,
+                (int) round((microtime(true) - $startClock) * 1000),
+                $status,
+                $fetched,
+                $new,
+                $duplicates,
+                $errors,
+                $lastError,
+            ));
+        } catch (\Throwable) {
+            // Le monitoring ne doit jamais faire échouer la collecte.
+        }
     }
 }

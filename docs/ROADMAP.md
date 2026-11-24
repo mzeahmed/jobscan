@@ -14,7 +14,7 @@ Il remplace la navigation manuelle sur les job boards par un pipeline automatis�
 
 - Aucune dépendance à une API externe payante
 - Fonctionne entièrement sur la machine du développeur
-- Un seul fichier YAML pour reconfigurer pour n'importe quel profil technique
+- Reconfigurable pour n'importe quel profil technique sans toucher au code : variables d'environnement (`.env.local`) et `jobscan.yaml`
 - Pipeline en ligne de commande Symfony — aucun dashboard requis pour être utile
 
 ---
@@ -22,12 +22,12 @@ Il remplace la navigation manuelle sur les job boards par un pipeline automatis�
 ## Architecture
 
 ```
-Providers (RSS + SearXNG)
+Providers (RSS + RemoteOK + SearXNG)
     → JobProcessor (filtre + dédup)
-        → AIClient (LM Studio / LLM local)
-            → ScoringService
+        → AIClient (Ollama / LM Studio / Gemini)
+            → Scoring
                 → JobRepository (SQLite)
-                    → NotificationService (Telegram)
+                    → Notifier (Telegram)
 ```
 
 | Fichier | Rôle |
@@ -88,7 +88,7 @@ Providers (RSS + SearXNG)
 
 ## Phase 4 — Productivité développeur
 
-- [ ] Commande `app:jobs:purge` — #19
+- [x] Commande `app:jobs:purge` — #19
 - [x] Commande `app:jobs:stats` — #20
 - [x] Mode `--dry-run` sur le pipeline — #21
 - [x] Flag `--provider` pour filtrer les sources — #22
@@ -97,7 +97,7 @@ Providers (RSS + SearXNG)
 - [x] Seuil de notification configurable — #25
 - [x] Poids du scoring configurables via YAML — #26
 - [x] Export CSV / JSON — #27
-- [ ] Vue HTML paginée pour consulter et filtrer les offres — #34
+- [x] Vue HTML paginée pour consulter et filtrer les offres — #34
 
 ---
 
@@ -149,8 +149,9 @@ git clone https://github.com/mzeahmed/jobscan.git
 cd jobscan
 make setup
 cd app
+cp .env.example .env
 composer install
-cp .env .env.local
+php bin/console typescript:build
 cd ..
 make migrate
 ```

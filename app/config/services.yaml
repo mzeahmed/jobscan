@@ -29,6 +29,11 @@ services:
         arguments:
             $providers: !tagged_iterator app.job_provider
             $environment: '%kernel.environment%'
+            $analysisLimit: '%app.profile.analysis_batch_limit%'
+
+    App\Command\AnalyzeJobsCommand:
+        arguments:
+            $defaultLimit: '%app.profile.analysis_batch_limit%'
 
     App\Notification\TelegramNotifier:
         arguments:
@@ -119,6 +124,24 @@ services:
             $queryDelayMs: '%app.profile.searx_query_delay_ms%'
             $noiseFilter: '@App\Provider\SearxNoiseFilter'
         tags: [ 'app.job_provider' ]
+
+    App\Provider\CollectionPolicy:
+        arguments:
+            $blockedDomains: '%app.profile.collection_blocked_domains%'
+
+    App\Analysis\AnalysisRetryPolicy:
+        arguments:
+            $maxAttempts: '%app.profile.analysis_max_attempts%'
+            $initialDelayMinutes: '%app.profile.analysis_initial_delay_minutes%'
+            $multiplier: '%app.profile.analysis_retry_multiplier%'
+            $maxDelayMinutes: '%app.profile.analysis_max_delay_minutes%'
+
+    App\Scoring\FreshnessScorer:
+        arguments:
+            $bands: '%app.profile.freshness_bands%'
+            $olderScore: '%app.profile.freshness_older_score%'
+            $unknownScore: '%app.profile.freshness_unknown_score%'
+            $lowConfidenceCap: '%app.profile.freshness_low_confidence_cap%'
 
     App\Processor\JobProcessor:
         arguments:

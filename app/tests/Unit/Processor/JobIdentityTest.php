@@ -19,6 +19,20 @@ final class JobIdentityTest extends TestCase
         self::assertSame('https://example.com/jobs/42?a=1&b=2', $url);
     }
 
+    public function testKeepsParametersThatMayIdentifyTheOffer(): void
+    {
+        $identity = new JobIdentity();
+
+        self::assertSame(
+            'https://example.com/jobs?ref=1234&source=hq',
+            $identity->canonicalUrl('https://example.com/jobs?source=hq&ref=1234&utm_campaign=x'),
+        );
+        self::assertNotSame(
+            $identity->canonicalUrl('https://example.com/jobs?ref=1'),
+            $identity->canonicalUrl('https://example.com/jobs?ref=2'),
+        );
+    }
+
     public function testFingerprintUsesTitleCompanyAndLocation(): void
     {
         $identity = new JobIdentity();

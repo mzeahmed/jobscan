@@ -1,7 +1,6 @@
 .PHONY: help setup hosts build up down logs bash migrate run-pipeline llm-load llm-status alerts fix-perms test test-unit test-integration
 
 COMPOSE = docker compose -f docker-compose.yml
-COMPOSE_PROD = docker compose -f docker-compose.yml -f docker-compose.prod.yml
 
 # Le projet requiert PHP >= 8.4.1 : on prend php8.4 s'il existe, sinon le php par défaut.
 # Surchargeable : make run-pipeline PHP=php8.5

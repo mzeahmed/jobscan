@@ -10,6 +10,44 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-11-24
+
+#### Added
+
+- Persistance avant analyse : `JobProcessor` ne fait plus d'appel LLM ; les offres sont
+  enregistrées avec un statut d'analyse (`pending`, `done`, `fallback`, `failed`), un compteur
+  de tentatives, une dernière erreur et une prochaine tentative (backoff exponentiel).
+- `PendingAnalysisRunner` et commande `app:jobs:analyze` (`--limit`) : reprise des analyses en
+  attente, heuristiques ou en échec. `app:jobs:run --no-analyze` collecte sans analyser.
+- Modèle temporel : `firstSeenAt`, `lastSeenAt`, `analyzedAt`, `publicationDateSource` et
+  `publicationDateConfidence` sur `Job` ; enums `PublicationDateSource`, `PublicationDateConfidence`.
+- Table `job_source` : provenance multi-sources (URL, identifiant externe, date rapportée,
+  dates de détection) ; backfill d'une source par offre existante.
+- Table `provider_run` et `ProviderRunStatus` : suivi de chaque exécution de provider
+  (succès, sans nouveauté, partiel, échec, désactivé) ; `FetchDiagnostics` relève les erreurs
+  que les providers absorbent. Affiché par `app:jobs:stats`.
+- `FreshnessScorer` : score de fraîcheur configurable (`app.profile.freshness_*`).
+- `COLLECTION_BLOCKED_DOMAINS` : restriction de collecte distincte de l'exclusion métier.
+
+#### Changed
+
+- Déduplication : les doublons certains (URL, URL canonique, identifiant externe) mettent à
+  jour l'offre existante ; une empreinte titre/entreprise/lieu identique ne fait plus supprimer
+  l'offre, elle la signale comme doublon probable (jamais notifié). L'index `fingerprint` n'est
+  plus unique.
+- Les paramètres `ref` et `source` ne sont plus retirés des URLs canoniques.
+- Une offre n'est notifiée qu'une fois son analyse définitive.
+- `RunPipelineCommand` : l'analyse et la notification ont lieu après la collecte.
+- `.env.example` : `DEFAULT_LLM_PROVIDER=ollama`.
+
+#### Fixed
+
+- Installation depuis un clone neuf : `cp .env.example .env` avant `composer install`,
+  `typescript:build` avant PHPUnit (CI et `Dockerfile` corrigés).
+- Documentation alignée sur le code (clients LLM, classes, roadmap).
+- `makefile` : suppression de `COMPOSE_PROD`, qui référençait un fichier inexistant.
+- `AIClient` : l'indisponibilité du LLM est réinitialisée à chaque lot d'analyses.
+
 ### 2026-09-02
 
 #### Added

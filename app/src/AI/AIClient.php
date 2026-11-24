@@ -95,6 +95,17 @@ final class AIClient
         return $this->withDeterministicRecency($this->heuristicFallback($text), $publishedAt);
     }
 
+    /**
+     * Oublie l'indisponibilité mémorisée du provider IA.
+     *
+     * Le drapeau évite de marteler un LLM tombé pendant un lot ; il doit être remis à zéro
+     * entre deux lots pour qu'un processus de longue durée puisse détecter son retour.
+     */
+    public function resetProviderAvailability(): void
+    {
+        $this->providerUnavailable = false;
+    }
+
     public function lastAnalysisUsedFallback(): bool
     {
         return $this->lastAnalysisUsedFallback;

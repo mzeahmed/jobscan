@@ -13,6 +13,9 @@ WORKDIR /app
 
 COPY app /app
 
+# .env est ignoré par Git : sur un clone neuf, on part du modèle versionné.
+RUN [ -f .env ] || cp .env.example .env
+
 RUN APP_ENV=prod composer install --no-dev --optimize-autoloader
 
 RUN mkdir -p var && chmod -R 775 var

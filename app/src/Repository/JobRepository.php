@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Job;
+use App\Entity\JobSource;
+use App\DTO\AnalysisStatus;
 use App\DTO\JobListingFilters;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -40,21 +42,98 @@ class JobRepository extends ServiceEntityRepository
         $this->getEntityManager()->clear();
     }
 
-    public function existsByUrlOrCanonicalUrl(string $url, string $canonicalUrl): bool
+    /**
+     * Retrouve l'offre déjà connue pour une identité **certaine** : même URL, même URL
+     * canonique, ou même identifiant externe chez un même provider (y compris via les
+     * sources secondaires d'une offre).
+     */
+    public function findCertainDuplicate(string $url, string $canonicalUrl, string $provider, ?string $externalId): ?Job
     {
-        return (int) $this->createQueryBuilder('j')
-            ->select('COUNT(j.id)')
+        $sourceMatch = 's.canonicalUrl = :canonicalUrl';
+        if ($externalId !== null) {
+            $sourceMatch .= ' OR (s.provider = :provider AND s.externalId = :externalId)';
+        }
+
+        $query = $this->createQueryBuilder('j')
             ->where('j.url = :url')
             ->orWhere('j.canonicalUrl = :canonicalUrl')
+            ->orWhere(sprintf(
+                'j.id IN (SELECT IDENTITY(s.job) FROM %s s WHERE %s)',
+                JobSource::class,
+                $sourceMatch,
+            ))
             ->setParameter('url', $url)
-            ->setParameter('canonicalUrl', $canonicalUrl)
-            ->getQuery()
-            ->getSingleScalarResult() > 0;
+            ->setParameter('canonicalUrl', $canonicalUrl);
+
+        if ($externalId !== null) {
+            $query->setParameter('provider', $provider)->setParameter('externalId', $externalId);
+        }
+
+        return $query->orderBy('j.id', 'ASC')->setMaxResults(1)->getQuery()->getOneOrNullResult();
     }
 
-    public function existsByFingerprint(string $fingerprint): bool
+    /**
+     * Identifiant de la plus ancienne offre partageant l'empreinte titre + entreprise + lieu.
+     *
+     * Une empreinte identique est un indice de doublon probable, jamais une preuve.
+     */
+    public function findFirstIdByFingerprint(string $fingerprint): ?int
     {
-        return $this->count(['fingerprint' => $fingerprint]) > 0;
+        $id = $this->createQueryBuilder('j')
+            ->select('j.id')
+            ->where('j.fingerprint = :fingerprint')
+            ->setParameter('fingerprint', $fingerprint)
+            ->orderBy('j.id', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return is_array($id) ? (int) $id['id'] : null;
+    }
+
+    /**
+     * Offres dont l'analyse est à faire ou à retenter : en attente, analysées
+     * seulement par l'heuristique, ou en échec — tant que le nombre maximal de
+     * tentatives n'est pas atteint et que la prochaine tentative est échue.
+     * Les plus récemment détectées passent en premier.
+     *
+     * @return list<Job>
+     */
+    public function findDueForAnalysis(\DateTimeImmutable $now, int $maxAttempts, int $limit): array
+    {
+        return array_values($this->createQueryBuilder('j')
+            ->where('j.analysisStatus IN (:statuses)')
+            ->andWhere('j.analysisAttempts < :maxAttempts')
+            ->andWhere('j.nextAnalysisAttemptAt IS NULL OR j.nextAnalysisAttemptAt <= :now')
+            ->setParameter('statuses', [
+                AnalysisStatus::Pending->value,
+                AnalysisStatus::Fallback->value,
+                AnalysisStatus::Failed->value,
+            ])
+            ->setParameter('maxAttempts', $maxAttempts)
+            ->setParameter('now', $now)
+            ->orderBy('j.firstSeenAt', 'DESC')
+            ->setMaxResults(max(1, $limit))
+            ->getQuery()
+            ->getResult());
+    }
+
+    /** @return array<string, int> */
+    public function countByAnalysisStatus(): array
+    {
+        /** @var list<array{status: string, total: int|string}> $rows */
+        $rows = $this->createQueryBuilder('j')
+            ->select('j.analysisStatus AS status, COUNT(j.id) AS total')
+            ->groupBy('j.analysisStatus')
+            ->getQuery()
+            ->getArrayResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[$row['status']] = (int) $row['total'];
+        }
+
+        return $counts;
     }
 
     public function countAll(): int
@@ -70,6 +149,7 @@ class JobRepository extends ServiceEntityRepository
         $connection = $this->getEntityManager()->getConnection();
 
         return $connection->transactional(static function ($connection): int {
+            $connection->executeStatement('DELETE FROM job_source');
             $deleted = $connection->executeStatement('DELETE FROM job');
             if ($connection->getDatabasePlatform() instanceof SQLitePlatform) {
                 $connection->executeStatement("DELETE FROM sqlite_sequence WHERE name = 'job'");
@@ -255,6 +335,15 @@ class JobRepository extends ServiceEntityRepository
      */
     public function deleteCreatedBefore(\DateTimeImmutable $before): int
     {
+        // Les sources sont supprimées explicitement : SQLite n'applique pas ON DELETE CASCADE
+        // sans `PRAGMA foreign_keys`.
+        $this->getEntityManager()->createQueryBuilder()
+            ->delete(JobSource::class, 's')
+            ->where('s.job IN (SELECT j.id FROM ' . Job::class . ' j WHERE j.createdAt < :before)')
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->execute();
+
         return (int) $this->createQueryBuilder('j')
             ->delete()
             ->where('j.createdAt < :before')

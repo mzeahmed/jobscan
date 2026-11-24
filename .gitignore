@@ -32,3 +32,6 @@
 ###> traefik ###
 /certs/*.pem
 ###< traefik ###
+
+/docs/AUDIT-COPILOT.md
+/docs/ROADMAP.v2.md

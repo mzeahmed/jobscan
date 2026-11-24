@@ -19,15 +19,58 @@ dépendance payante n'est requise, mais le choix reste ouvert selon vos besoins.
 ## Architecture
 
 ```text
-Providers (RSS + SearXNG) → JobProcessor → AIClient (Ollama ou Gemini) → ScoringService → DB → Notification
+Providers (RSS + RemoteOK + SearXNG) → JobProcessor → DB (job + job_source, analyse « pending »)
+                                                      ↓
+                          app:jobs:analyze / fin de run : AIClient (Ollama, LM Studio, Gemini) → Scoring → Notifier (Telegram)
 ```
 
-1. **Providers** : récupèrent les offres depuis des flux RSS et/ou la recherche web via SearXNG
-2. **Processor** : filtre les doublons et les offres hors scope
-3. **Analyse IA** : `AIClient` délègue l'appel au moteur sélectionné par `DEFAULT_LLM_PROVIDER` (Ollama/LM Studio en local, ou Gemini) et extrait des données structurées
-4. **Scoring** : attribution d'un score /100 selon la stack, le remote, le type de contrat, l'urgence, etc.
-5. **Persistance** : sauvegarde en base SQLite
-6. **Notification** : envoi d'une alerte Telegram pour les meilleures opportunités
+1. **Providers** : récupèrent les offres depuis des flux RSS, RemoteOK et/ou la recherche web via SearXNG
+2. **Processor** : filtre, déduplique et **persiste l'offre avant toute analyse** — la collecte ne dépend jamais du LLM
+3. **Persistance** : SQLite ; une offre (`job`) peut avoir plusieurs sources (`job_source`)
+4. **Analyse IA** : reprise des offres en attente par `PendingAnalysisRunner` (fin de `app:jobs:run` ou `app:jobs:analyze`). `AIClient` délègue au moteur choisi par `DEFAULT_LLM_PROVIDER` et extrait des données structurées
+5. **Scoring** : attribution d'un score /100 selon la stack, le remote, le type de contrat, l'urgence, etc.
+6. **Notification** : alerte Telegram pour les meilleures opportunités, uniquement une fois l'analyse définitive
+
+### Fiabilité de la collecte
+
+**Statut d'analyse.** Chaque offre porte un statut : `pending` (jamais analysée), `done` (analysée par le LLM),
+`fallback` (analyse heuristique, LLM indisponible — sera retentée) ou `failed` (erreur — sera retentée).
+Les reprises suivent un backoff exponentiel (`app.profile.analysis_*` : 5 tentatives, 15 min initiales, plafond 24 h).
+Une analyse heuristique n'empêche jamais une analyse LLM ultérieure. Une offre non analysée de façon définitive n'est pas
+notifiée ; si le LLM reste indisponible jusqu'à épuisement des tentatives, l'analyse heuristique devient définitive.
+
+**Dates.** Quatre notions distinctes : `publishedAt` (publication réelle, parfois inconnue), `firstSeenAt` (première détection
+par Jobscan), `lastSeenAt` (dernière observation par un provider) et `analyzedAt`. `publicationDateSource` et
+`publicationDateConfidence` (`high`, `medium`, `low`, `unknown`) qualifient la date de publication. Une date inconnue reste
+inconnue, et une republication ne remplace jamais une date plus fiable ou plus ancienne à fiabilité égale.
+
+| Provider | Date de publication | Confiance |
+|---|---|---|
+| RemoteOK | champ `date` de l'API | `high` |
+| RSS / Atom | `pubDate` ou `published` | `medium` |
+| RSS / Atom | `updated` seulement (n'est pas une date de publication) | `low` |
+| SearXNG | `publishedDate` / `pubdate` | `medium` |
+| SearXNG | date devinée dans un extrait ou un titre | `low` |
+
+**Déduplication.** Un doublon est *certain* s'il partage une URL, une URL canonique ou un identifiant externe (même provider) :
+l'offre existante reçoit une nouvelle source et une nouvelle observation. Un doublon est *probable* s'il partage seulement titre,
+entreprise et lieu : l'offre est conservée, signalée (`probableDuplicateOfId`) et jamais notifiée, mais jamais fusionnée ni supprimée.
+Les paramètres `ref` et `source` ne sont plus retirés des URLs canoniques : ils peuvent identifier la ressource.
+
+**Restriction de collecte et exclusion métier.** `COLLECTION_BLOCKED_DOMAINS` empêche SearXNG et les flux RSS de récupérer des
+URLs de ces domaines (plateformes interdisant l'extraction automatisée). `EXCLUDED_PLATFORM_DOMAINS` écarte une offre quelle
+que soit sa provenance. Pour garder LinkedIn hors du scraping tout en acceptant ses alertes email futures, placez-le dans
+`COLLECTION_BLOCKED_DOMAINS` et non dans `EXCLUDED_PLATFORM_DOMAINS`.
+
+**Fraîcheur.** `FreshnessScorer` convertit l'ancienneté de la date de publication en score 0–100 selon le barème
+`app.profile.freshness_*` (hypothèse métier configurable : < 6 h = 100, < 24 h = 90, < 48 h = 75, < 96 h = 60, < 7 j = 40,
+< 14 j = 20, au-delà 5). Une date inconnue, de fiabilité inconnue ou située dans le futur reçoit `unknown_score` (25), jamais le
+maximum ; une date de fiabilité faible est plafonnée (`low_confidence_cap`, 50). Ce score sera combiné à la compatibilité
+dans une phase ultérieure.
+
+**Monitoring.** Chaque exécution d'un provider est tracée (table `provider_run`) avec son statut — `succeeded`, `no_new_jobs`,
+`partial`, `failed` ou `disabled` —, ses compteurs (récupérées, nouvelles, doublons, erreurs), sa durée et sa dernière erreur.
+Un provider en échec n'empêche pas les autres de s'exécuter. `app:jobs:stats` affiche la dernière exécution et le dernier succès.
 
 ---
 
@@ -68,14 +111,21 @@ pipx install pre-commit
 ```bash
 git clone https://github.com/mzeahmed/jobscan.git
 cd jobscan/app
+cp .env.example .env     # requis AVANT composer install (cache:clear lit .env)
 composer install
-cp .env .env.local
+php bin/console typescript:build   # assets TypeScript, requis pour rendre l'interface web et lancer PHPUnit
 ```
+
+`app/.env` et `app/.env.local` sont ignorés par Git : `.env.example` est le seul
+modèle versionné. Copiez-le en `.env`, puis placez vos valeurs propres à la machine
+(tokens, clés, URLs) dans `app/.env.local`, qui surcharge `.env`.
 
 Initialiser la base de données :
 
 ```bash
 make migrate
+# ou, sans Symfony CLI :
+php bin/console doctrine:migrations:migrate --no-interaction
 ```
 
 ---
@@ -124,8 +174,10 @@ FILTER_KEYWORDS=php,symfony,wordpress,backend,fullstack,api
 KNOWN_STACK=php,symfony,wordpress,mysql,postgresql,redis,docker,react,vue,api
 SEARX_QUERIES="php symfony remote job,php symfony freelance remote"
 JOB_LOCATIONS="Paris,Remote"
-# Domaines de plateformes à ignorer, séparés par des virgules
-EXCLUDED_PLATFORM_DOMAINS=linkedin.com
+# Domaines que SearXNG et les flux RSS ne doivent pas collecter (restriction de collecte)
+COLLECTION_BLOCKED_DOMAINS=linkedin.com
+# Domaines dont les offres sont écartées quelle que soit leur provenance (exclusion métier)
+EXCLUDED_PLATFORM_DOMAINS=
 ```
 
 > Le moteur LLM actif se choisit avec `DEFAULT_LLM_PROVIDER` (`ollama`, `lmstudio`
@@ -142,7 +194,8 @@ FILTER_KEYWORDS=php,symfony,wordpress,backend,fullstack,api
 KNOWN_STACK=php,symfony,wordpress,mysql,postgresql,redis,docker,react,vue,api,rabbitmq,laravel,typescript,javascript
 SEARX_QUERIES="php symfony remote job,php symfony freelance remote,wordpress php remote developer,backend php api remote job,développeur php,mission freelance php symfony remote"
 JOB_LOCATIONS="Marseille,Paris,Ile-de-France,Remote"
-EXCLUDED_PLATFORM_DOMAINS=linkedin.com,indeed.com
+COLLECTION_BLOCKED_DOMAINS=linkedin.com,indeed.com
+EXCLUDED_PLATFORM_DOMAINS=
 ```
 
 `app/config/packages/jobscan.yaml` les expose comme paramètres de service via le
@@ -156,7 +209,12 @@ toute valeur contenant elle-même un espace.
 | `app.profile.known_stack` | `KNOWN_STACK` | `AIClient` | Détecte la stack technique en fallback heuristique |
 | `app.profile.searx_queries` | `SEARX_QUERIES` | `SearxProvider` | Requêtes envoyées à SearXNG à chaque run |
 | `app.profile.job_locations` | `JOB_LOCATIONS` | `SearxProvider` | Localisations combinées aux requêtes non localisées |
-| `app.profile.excluded_platform_domains` | `EXCLUDED_PLATFORM_DOMAINS` | `JobProcessor` | Écarte les URL de ces domaines, y compris leurs sous-domaines, avant l'analyse IA |
+| `app.profile.excluded_platform_domains` | `EXCLUDED_PLATFORM_DOMAINS` | `JobProcessor` | Exclusion métier : écarte les offres de ces domaines (sous-domaines inclus), quelle que soit leur provenance |
+| `app.profile.collection_blocked_domains` | `COLLECTION_BLOCKED_DOMAINS` | `SearxProvider`, `RsFeedProvider` | Restriction de collecte : ces providers ne récupèrent pas les URLs de ces domaines |
+| `app.profile.analysis_max_attempts` | — (YAML) | `AnalysisRetryPolicy` | Tentatives d'analyse maximum par offre |
+| `app.profile.analysis_initial_delay_minutes` / `_retry_multiplier` / `_max_delay_minutes` | — (YAML) | `AnalysisRetryPolicy` | Backoff des reprises d'analyse |
+| `app.profile.analysis_batch_limit` | — (YAML) | `app:jobs:run`, `app:jobs:analyze` | Offres analysées par exécution |
+| `app.profile.freshness_bands` / `_older_score` / `_unknown_score` / `_low_confidence_cap` | — (YAML) | `FreshnessScorer` | Barème de fraîcheur |
 | `app.profile.searx_max_pages` | — (reste en YAML) | `SearxProvider` | Nombre maximal de pages récupérées par requête |
 | `app.profile.searx_query_delay_ms` | — (reste en YAML) | `SearxProvider` | Délai entre les lots concurrents (`0` le désactive) |
 | `app.profile.searx_blocked_patterns` | — (reste en YAML) | `SearxNoiseFilter` | Patterns qui écartent un résultat de recherche (docs, tutoriels…) |
@@ -378,7 +436,17 @@ Pour simuler un run sans écriture ni notification, ou limiter les sources :
 php bin/console app:jobs:run --dry-run
 php bin/console app:jobs:run --provider=remoteok --provider=searxng
 php bin/console app:jobs:run --skip-health-check
+php bin/console app:jobs:run --no-analyze   # collecte et persiste sans appeler le LLM
 php bin/console app:jobs:stats
+```
+
+### Reprendre les analyses
+
+Les offres persistées en attente, analysées par heuristique ou en échec sont reprises à la fin de `app:jobs:run`
+(`app.profile.analysis_batch_limit`) et à la demande :
+
+```bash
+php bin/console app:jobs:analyze --limit=100
 ```
 
 ### Maintenance et export des offres
@@ -510,9 +578,10 @@ systemctl status cron
 
 ## Analyse IA
 
-L'analyse est effectuée par `AIClient`, qui délègue l'appel au moteur sélectionné via
-`AI_PROVIDER` : `OpenAICompatibleProvider` (`POST {AI_API_BASE}/chat/completions` —
-**Ollama** par défaut, LM Studio en legacy) ou `GeminiProvider` (API Gemini de Google).
+L'analyse est effectuée par `AIClient`, qui délègue l'appel au client sélectionné par
+`DEFAULT_LLM_PROVIDER` (via `LLMClientFactory`) : `OllamaClient` ou `LMStudioClient`
+(API compatible OpenAI, `POST {BASE_URL}/chat/completions`) ou `GeminiClient`
+(API Gemini de Google).
 
 L'IA extrait notamment :
 
@@ -593,7 +662,7 @@ sqlite3 app/var/jobscan.db "SELECT id, title, score, source FROM job ORDER BY sc
 
 * **Ollama** est le provider IA recommandé par défaut (LM Studio conservé en legacy)
 * **SearXNG** est le moteur de recherche d'offres web
-* **RsFeedProvider** et **SearxProvider** sont actifs dans le pipeline
+* **RsFeedProvider**, **RemoteOkProvider** et **SearxProvider** sont actifs dans le pipeline
 * le pipeline fonctionne même sans IA grâce au fallback heuristique
 * aucune dépendance externe payante (pas d'API tierce, pas de clé requise)
 
@@ -612,8 +681,9 @@ Docker ou l'exécution locale.
 ```bash
 make setup        # configure les git hooks (.githooks/)
 cd app
+cp .env.example .env
 composer install
-cp .env .env.local
+php bin/console typescript:build
 cd ..
 make migrate
 ```

@@ -5,17 +5,20 @@ declare(strict_types=1);
 namespace App\Tests\Integration\Processor;
 
 use App\DTO\JobDto;
-use App\AI\AIClient;
 use App\Scoring\Scoring;
 use Doctrine\ORM\Events;
+use App\DTO\AnalysisStatus;
 use Psr\Log\LoggerInterface;
-use App\Notification\Notifier;
+use App\Analysis\JobAnalyzer;
 use App\Processor\JobIdentity;
 use App\Processor\JobProcessor;
 use App\Repository\JobRepository;
+use App\DTO\PublicationDateSource;
 use Doctrine\ORM\Tools\SchemaTool;
+use App\DTO\PublicationDateConfidence;
 use App\Processor\JobProcessingStatus;
-use App\AI\Provider\LLMClientInterface;
+use App\Repository\JobSourceRepository;
+use App\Tests\Support\MutableLlmClient;
 use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -86,31 +89,27 @@ final class JobProcessorTest extends KernelTestCase
         self::assertSame(0, $this->repository->countAll());
     }
 
-    public function testPersistsAndDeduplicatesJobsWithinTheSameBatch(): void
+    public function testPersistsBeforeAnalysisAndDeduplicatesJobsWithinTheSameBatch(): void
     {
         $first = $this->job(1, 'https://jobs.example/1?utm_source=test');
         $sameCanonicalUrl = $this->job(2, 'https://jobs.example/1');
-        $sameFingerprint = new JobDto(
-            'Développeur PHP 1',
-            'https://jobs.example/different',
-            'PHP remote',
-            'test',
-            company: 'Acme 1',
-            location: 'Paris',
-        );
 
-        $results = $this->processor()->processBatch([$first, $sameCanonicalUrl, $sameFingerprint]);
+        $results = $this->processor()->processBatch([$first, $sameCanonicalUrl]);
 
-        self::assertSame([
-            JobProcessingStatus::Saved,
-            JobProcessingStatus::Duplicate,
-            JobProcessingStatus::Duplicate,
-        ], array_map(static fn ($result) => $result->status, $results));
+        self::assertSame([JobProcessingStatus::Saved, JobProcessingStatus::Duplicate], array_map(
+            static fn ($result) => $result->status,
+            $results,
+        ));
         self::assertSame(1, $this->repository->countAll());
-        self::assertFalse($results[0]->notified, 'Une offre sous le seuil ne doit pas être notifiée.');
+        self::assertSame(0, $this->llm->calls, "L'ingestion ne doit jamais appeler le LLM.");
+
+        $job = $this->repository->findOneBy([]);
+        self::assertSame(AnalysisStatus::Pending, $job->getAnalysisStatus());
+        self::assertSame(0, $job->getScore());
+        self::assertFalse($results[0]->notified);
     }
 
-    public function testDryRunDoesNotPersistAnything(): void
+    public function testDryRunDoesNotPersistAnythingButPreviewsScores(): void
     {
         $results = $this->processor()->processBatch([$this->job(1), $this->job(2)], true);
 
@@ -118,18 +117,22 @@ final class JobProcessorTest extends KernelTestCase
             static fn ($result) => $result->status,
             $results,
         ));
+        self::assertNotNull($results[0]->score);
         self::assertSame(0, $this->repository->countAll());
     }
 
-    public function testUsesFallbackWhenLlmIsUnavailable(): void
+    public function testKeepsCollectingWhenTheLlmIsDown(): void
     {
-        $this->llm->responses = [null];
+        $this->llm->default = new \RuntimeException('LLM down');
 
-        $result = $this->processor()->process($this->job(1));
+        $results = $this->processor()->processBatch([$this->job(1), $this->job(2)]);
 
-        self::assertSame(JobProcessingStatus::Saved, $result->status);
-        self::assertTrue($result->usedFallback);
-        self::assertSame(1, $this->repository->countAll());
+        self::assertSame([JobProcessingStatus::Saved, JobProcessingStatus::Saved], array_map(
+            static fn ($result) => $result->status,
+            $results,
+        ));
+        self::assertSame(2, $this->repository->countAll());
+        self::assertSame(0, $this->llm->calls);
     }
 
     public function testFlushesAFullCollectionInConfiguredBatches(): void
@@ -156,21 +159,7 @@ final class JobProcessorTest extends KernelTestCase
         self::assertSame(3, $listener->flushes);
     }
 
-    public function testContinuesAfterAnIndividualProcessingFailure(): void
-    {
-        $this->llm->responses = [
-            new \RuntimeException('LLM failure'),
-            MutableLlmClient::SUCCESS_RESPONSE,
-        ];
-
-        $results = $this->processor()->processBatch([$this->job(1), $this->job(2)]);
-
-        self::assertSame(JobProcessingStatus::Failed, $results[0]->status);
-        self::assertSame(JobProcessingStatus::Saved, $results[1]->status);
-        self::assertSame(1, $this->repository->countAll());
-    }
-
-    public function testExcludesConfiguredPlatformDomainsBeforeAiAnalysis(): void
+    public function testExcludesConfiguredPlatformDomainsBeforePersistence(): void
     {
         $results = $this->processorWithExcludedDomains(['linkedin.com', 'indeed.com'])->processBatch([
             $this->job(1, 'https://www.linkedin.com/jobs/view/1'),
@@ -183,8 +172,139 @@ final class JobProcessorTest extends KernelTestCase
             JobProcessingStatus::Filtered,
             JobProcessingStatus::Saved,
         ], array_map(static fn ($result) => $result->status, $results));
-        self::assertSame(1, $this->llm->calls);
         self::assertSame(1, $this->repository->countAll());
+    }
+
+    public function testStoresTheSourceWithItsDateAndConfidence(): void
+    {
+        $published = new \DateTimeImmutable('-2 days');
+        $this->processor()->process(new JobDto(
+            'Développeur PHP',
+            'https://jobs.example/a?utm_source=x',
+            'PHP remote',
+            'remoteok',
+            $published,
+            'Acme',
+            'Paris',
+            externalId: '42',
+            publicationDateSource: PublicationDateSource::Api,
+            publicationDateConfidence: PublicationDateConfidence::High,
+        ));
+
+        $job = $this->repository->findOneBy([]);
+        self::assertSame(PublicationDateConfidence::High, $job->getPublicationDateConfidence());
+        self::assertSame(PublicationDateSource::Api, $job->getPublicationDateSource());
+        self::assertEquals($job->getCreatedAt(), $job->getFirstSeenAt());
+
+        $sources = $this->sources()->findByJob((int) $job->getId());
+        self::assertCount(1, $sources);
+        self::assertSame('remoteok', $sources[0]->getProvider());
+        self::assertSame('42', $sources[0]->getExternalId());
+        self::assertSame('https://jobs.example/a', $sources[0]->getCanonicalUrl());
+    }
+
+    public function testACertainDuplicateFromAnotherProviderAddsASourceAndKeepsTheMostReliableDate(): void
+    {
+        $guessed = new \DateTimeImmutable('-1 day');
+        $official = new \DateTimeImmutable('-3 days');
+        $processor = $this->processor();
+
+        $processor->process(new JobDto(
+            'Développeur PHP',
+            'https://jobs.example/offer',
+            'PHP remote',
+            'searxng',
+            $guessed,
+            'Acme',
+            'Paris',
+            publicationDateSource: PublicationDateSource::Text,
+            publicationDateConfidence: PublicationDateConfidence::Low,
+        ));
+        $result = $processor->process(new JobDto(
+            'Développeur PHP',
+            'https://jobs.example/offer?utm_campaign=mail',
+            'PHP remote',
+            'rss',
+            $official,
+            'Acme',
+            'Paris',
+            publicationDateSource: PublicationDateSource::Feed,
+            publicationDateConfidence: PublicationDateConfidence::Medium,
+        ));
+
+        self::assertSame(JobProcessingStatus::Duplicate, $result->status);
+        self::assertSame(1, $this->repository->countAll());
+
+        $job = $this->repository->findOneBy([]);
+        self::assertSame($official->format('Y-m-d'), $job->getPublishedAt()?->format('Y-m-d'));
+        self::assertSame(PublicationDateConfidence::Medium, $job->getPublicationDateConfidence());
+        self::assertSame('searxng', $job->getSource(), 'La source initiale reste celle de la première détection.');
+        self::assertCount(2, $this->sources()->findByJob((int) $job->getId()));
+    }
+
+    public function testARepublicationDoesNotResetTheFirstKnownPublicationDate(): void
+    {
+        $processor = $this->processor();
+        $original = new \DateTimeImmutable('-5 days');
+        $republished = new \DateTimeImmutable('-1 day');
+        $dto = static fn (\DateTimeImmutable $date): JobDto => new JobDto(
+            'Développeur PHP',
+            'https://jobs.example/offer',
+            'PHP remote',
+            'rss',
+            $date,
+            publicationDateSource: PublicationDateSource::Feed,
+            publicationDateConfidence: PublicationDateConfidence::Medium,
+        );
+
+        $processor->process($dto($original));
+        $processor->process($dto($republished));
+
+        $job = $this->repository->findOneBy([]);
+        self::assertSame($original->format('Y-m-d'), $job->getPublishedAt()?->format('Y-m-d'));
+        self::assertGreaterThanOrEqual($job->getFirstSeenAt(), $job->getLastSeenAt());
+        self::assertCount(1, $this->sources()->findByJob((int) $job->getId()));
+    }
+
+    public function testDetectsADuplicateFromTheExternalIdentifierEvenWhenTheUrlChanges(): void
+    {
+        $processor = $this->processor();
+        $dto = static fn (string $url): JobDto => new JobDto('Développeur PHP', $url, 'PHP remote', 'remoteok', externalId: '777');
+
+        $processor->process($dto('https://remoteok.test/jobs/777-a'));
+        $result = $processor->process($dto('https://remoteok.test/jobs/777-b'));
+
+        self::assertSame(JobProcessingStatus::Duplicate, $result->status);
+        self::assertSame(1, $this->repository->countAll());
+        self::assertCount(1, $this->sources()->findAll(), 'Une seule observation par provider et identifiant externe.');
+    }
+
+    public function testAProbableDuplicateIsKeptAndFlaggedNeverMerged(): void
+    {
+        $processor = $this->processor();
+        $dto = static fn (string $url, string $source): JobDto => new JobDto(
+            'Développeur PHP',
+            $url,
+            'PHP remote',
+            $source,
+            company: 'Acme',
+            location: 'Paris',
+        );
+
+        $processor->process($dto('https://a.example/1', 'rss'));
+        $result = $processor->process($dto('https://b.example/other', 'searxng'));
+
+        self::assertSame(JobProcessingStatus::Saved, $result->status);
+        self::assertSame(2, $this->repository->countAll());
+
+        $jobs = $this->repository->findBy([], ['id' => 'ASC']);
+        self::assertNull($jobs[0]->getProbableDuplicateOfId());
+        self::assertSame($jobs[0]->getId(), $jobs[1]->getProbableDuplicateOfId());
+    }
+
+    private function sources(): JobSourceRepository
+    {
+        return self::getContainer()->get(JobSourceRepository::class);
     }
 
     private function processor(): JobProcessor
@@ -199,9 +319,9 @@ final class JobProcessorTest extends KernelTestCase
 
         return new JobProcessor(
             $this->repository,
-            $container->get(AIClient::class),
+            $container->get(JobSourceRepository::class),
             $container->get(Scoring::class),
-            $container->get(Notifier::class),
+            $container->get(JobAnalyzer::class),
             $container->get(JobIdentity::class),
             $container->get(LoggerInterface::class),
             ['php', 'symfony', 'wordpress', 'backend', 'fullstack', 'api'],
@@ -219,26 +339,5 @@ final class JobProcessorTest extends KernelTestCase
             company: 'Acme ' . $index,
             location: 'Paris',
         );
-    }
-}
-
-final class MutableLlmClient implements LLMClientInterface
-{
-    public const string SUCCESS_RESPONSE = '{"stack":["php"],"contract_type":"unknown","freelance":false,"remote":false,"budget":"non précisé","seniority":"unknown"}';
-
-    /** @var list<string|null|\Throwable> */
-    public array $responses = [];
-    public int $calls = 0;
-
-    public function analyze(string $systemPrompt, string $userText): ?string
-    {
-        ++$this->calls;
-        $response = $this->responses === [] ? self::SUCCESS_RESPONSE : array_shift($this->responses);
-
-        if ($response instanceof \Throwable) {
-            throw $response;
-        }
-
-        return $response;
     }
 }

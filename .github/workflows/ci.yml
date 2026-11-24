@@ -53,5 +53,8 @@ jobs:
             -   name: Setup environment
                 run: cd app && cp .env.example .env
 
+            -   name: Build TypeScript assets
+                run: cd app && php bin/console typescript:build
+
             -   name: PHPUnit
                 run: cd app && ./vendor/bin/phpunit --no-coverage

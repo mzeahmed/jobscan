@@ -21,7 +21,11 @@ parameters:
     app.profile.searx_queries: '%env(csv:SEARX_QUERIES)%'
     app.profile.job_locations: '%env(csv:JOB_LOCATIONS)%'
     app.profile.empty_csv: ''
+    # Exclusion métier : offres écartées quelle que soit leur provenance (email compris).
     app.profile.excluded_platform_domains: '%env(csv:default:app.profile.empty_csv:EXCLUDED_PLATFORM_DOMAINS)%'
+    # Restriction de collecte : domaines que SearXNG et les flux RSS ne doivent pas récupérer
+    # (plateformes interdisant l'extraction automatisée), sans exclure leurs emails d'alerte.
+    app.profile.collection_blocked_domains: '%env(csv:default:app.profile.empty_csv:COLLECTION_BLOCKED_DOMAINS)%'
     app.profile.max_job_age_days: 30
     app.profile.recent_job_days: 14
     app.profile.ai_prescore_threshold: 10
@@ -30,6 +34,13 @@ parameters:
     app.profile.ai_initial_retry_delay_ms: 1000
     app.profile.ai_retry_multiplier: 2.0
     app.profile.persistence_batch_size: 20
+    # Reprise des analyses : tentatives max, délai initial puis exponentiel (plafonné),
+    # et nombre d'offres analysées à la fin de chaque run du pipeline.
+    app.profile.analysis_max_attempts: 5
+    app.profile.analysis_initial_delay_minutes: 15
+    app.profile.analysis_retry_multiplier: 2.0
+    app.profile.analysis_max_delay_minutes: 1440
+    app.profile.analysis_batch_limit: 50
     app.profile.notification_threshold: 60
     app.profile.telegram_max_attempts: 3
     app.profile.telegram_initial_retry_delay_ms: 250
@@ -89,6 +100,21 @@ parameters:
         - full stack
         - fullstack
         - full-stack
+
+    # Barème de fraîcheur (hypothèse métier, pas une vérité statistique).
+    # `max_hours` : borne supérieure exclue de la tranche, par âge croissant.
+    app.profile.freshness_bands:
+        - { max_hours: 6, score: 100 }
+        - { max_hours: 24, score: 90 }
+        - { max_hours: 48, score: 75 }
+        - { max_hours: 96, score: 60 }
+        - { max_hours: 168, score: 40 }
+        - { max_hours: 336, score: 20 }
+    app.profile.freshness_older_score: 5
+    # Date inconnue ou invraisemblable : jamais le score maximal.
+    app.profile.freshness_unknown_score: 25
+    # Plafond d'une date de confiance faible (extraite d'un texte libre, par exemple).
+    app.profile.freshness_low_confidence_cap: 50
 
     app.profile.scoring:
         prescore:

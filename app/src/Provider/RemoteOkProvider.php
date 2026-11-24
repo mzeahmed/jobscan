@@ -6,6 +6,9 @@ namespace App\Provider;
 
 use App\DTO\JobDto;
 use Psr\Log\LoggerInterface;
+use App\DTO\PublicationDateSource;
+use App\Monitoring\FetchDiagnostics;
+use App\DTO\PublicationDateConfidence;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final readonly class RemoteOkProvider implements JobProviderInterface
@@ -19,6 +22,7 @@ final readonly class RemoteOkProvider implements JobProviderInterface
         private HttpClientInterface $httpClient,
         private LoggerInterface $logger,
         private string $apiUrl,
+        private ?FetchDiagnostics $diagnostics = null,
     ) {
     }
 
@@ -57,6 +61,7 @@ final readonly class RemoteOkProvider implements JobProviderInterface
                 'api_url' => $this->apiUrl,
                 'error' => $e->getMessage(),
             ]);
+            $this->diagnostics?->record($this->name(), $e->getMessage());
 
             return [];
         }
@@ -73,14 +78,20 @@ final readonly class RemoteOkProvider implements JobProviderInterface
                 continue;
             }
 
+            $publishedAt = $this->parseDate($result['date'] ?? null);
+            $externalId = $result['id'] ?? null;
+
             $jobs[$url] = new JobDto(
                 title: $title,
                 url: $url,
                 description: $this->cleanText((string) ($result['description'] ?? '')),
                 source: 'remoteok',
-                publishedAt: $this->parseDate($result['date'] ?? null),
+                publishedAt: $publishedAt,
                 company: $this->optionalString($result['company'] ?? null),
                 location: $this->optionalString($result['location'] ?? null),
+                externalId: is_scalar($externalId) && (string) $externalId !== '' ? (string) $externalId : null,
+                publicationDateSource: $publishedAt === null ? PublicationDateSource::Unknown : PublicationDateSource::Api,
+                publicationDateConfidence: $publishedAt === null ? PublicationDateConfidence::Unknown : PublicationDateConfidence::High,
             );
         }
 

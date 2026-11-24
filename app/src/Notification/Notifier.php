@@ -28,6 +28,9 @@ final readonly class Notifier
      *
      * Conditions de blocage (silencieux) :
      *   - L'offre a déjà été notifiée (`notifiedAt` non null)
+     *   - Son analyse n'est pas définitive (en attente, en échec, ou heuristique encore à retenter) :
+     *     son score ne serait pas fiable
+     *   - Elle est signalée comme doublon probable d'une autre offre
      *   - Le score est inférieur au seuil de notification
      *
      * En cas de succès, marque l'offre comme notifiée et persiste le changement.
@@ -40,6 +43,10 @@ final readonly class Notifier
                 'notified_at' => $job->getNotifiedAt()->format('Y-m-d H:i:s'),
             ]);
 
+            return false;
+        }
+
+        if (!$job->isAnalysisFinal() || $job->getProbableDuplicateOfId() !== null) {
             return false;
         }
 

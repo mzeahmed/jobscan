@@ -6,7 +6,10 @@ namespace App\Provider;
 
 use App\DTO\JobDto;
 use Psr\Log\LoggerInterface;
+use App\DTO\PublicationDateSource;
+use App\Monitoring\FetchDiagnostics;
 use Psr\Cache\CacheItemPoolInterface;
+use App\DTO\PublicationDateConfidence;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
@@ -77,6 +80,8 @@ final readonly class SearxProvider implements JobProviderInterface
         private int $queryDelayMs = 500,
         private ?\Closure $sleeper = null,
         private ?SearxNoiseFilter $noiseFilter = null,
+        private ?CollectionPolicy $collectionPolicy = null,
+        private ?FetchDiagnostics $diagnostics = null,
     ) {
     }
 
@@ -108,7 +113,12 @@ final readonly class SearxProvider implements JobProviderInterface
                     continue;
                 }
 
-                $publishedAt = $this->extractPublishedDate($result);
+                if ($this->collectionPolicy !== null && !$this->collectionPolicy->allows($url)) {
+                    continue;
+                }
+
+                $extracted = $this->extractPublishedDate($result);
+                $publishedAt = $extracted['date'] ?? null;
                 $company = $this->optionalString($result['company'] ?? $result['author'] ?? null);
                 $location = $this->optionalString($result['location'] ?? null);
 
@@ -120,6 +130,8 @@ final readonly class SearxProvider implements JobProviderInterface
                     publishedAt: $publishedAt,
                     company: $company,
                     location: $location,
+                    publicationDateSource: $extracted === null ? PublicationDateSource::Unknown : $extracted['source'],
+                    publicationDateConfidence: $extracted === null ? PublicationDateConfidence::Unknown : $extracted['confidence'],
                 );
             }
         }
@@ -267,6 +279,7 @@ final readonly class SearxProvider implements JobProviderInterface
             'page' => $page,
             'error' => $error->getMessage(),
         ]);
+        $this->diagnostics?->record($this->name(), $error->getMessage());
     }
 
     /**
@@ -343,9 +356,13 @@ final readonly class SearxProvider implements JobProviderInterface
      * `publishedDate` → `pubdate` → `metadata` → `content` → `title`.
      * Un log debug est émis quand la date provient d'un champ de fallback.
      *
+     * Une date issue d'un champ structuré (`publishedDate`, `pubdate`) est de confiance
+     * moyenne ; une date devinée dans un texte libre est de confiance faible.
+     *
      * @param array<string, mixed> $result
+     * @return array{date: \DateTimeImmutable, source: PublicationDateSource, confidence: PublicationDateConfidence}|null
      */
-    private function extractPublishedDate(array $result): ?\DateTimeImmutable
+    private function extractPublishedDate(array $result): ?array
     {
         $candidates = [
             'publishedDate' => $result['publishedDate'] ?? null,
@@ -374,7 +391,13 @@ final readonly class SearxProvider implements JobProviderInterface
                 ]);
             }
 
-            return $date;
+            $structured = in_array($field, ['publishedDate', 'pubdate'], true);
+
+            return [
+                'date' => $date,
+                'source' => $structured ? PublicationDateSource::Search : PublicationDateSource::Text,
+                'confidence' => $structured ? PublicationDateConfidence::Medium : PublicationDateConfidence::Low,
+            ];
         }
 
         return null;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Repository\JobRepository;
+use App\Repository\ProviderRunRepository;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -17,8 +18,10 @@ use Symfony\Component\Console\Output\OutputInterface;
 )]
 final class JobStatsCommand extends Command
 {
-    public function __construct(private readonly JobRepository $jobRepository)
-    {
+    public function __construct(
+        private readonly JobRepository $jobRepository,
+        private readonly ProviderRunRepository $providerRunRepository,
+    ) {
         parent::__construct();
     }
 
@@ -42,6 +45,33 @@ final class JobStatsCommand extends Command
         }
         $io->section('Par source');
         $io->table(['Source', 'Total'], $sources);
+
+        $io->section("Statut d'analyse");
+        $analysis = [];
+        foreach ($this->jobRepository->countByAnalysisStatus() as $status => $total) {
+            $analysis[] = [$status, $total];
+        }
+        $io->table(['Statut', 'Total'], $analysis);
+
+        $io->section('Santé des providers (dernière exécution)');
+        $lastSuccess = $this->providerRunRepository->findLastSuccessByProvider();
+        $runs = [];
+        foreach ($this->providerRunRepository->findLatestByProvider() as $provider => $run) {
+            $runs[] = [
+                $provider,
+                $run->getStatus()->value,
+                $run->getStartedAt()->format('Y-m-d H:i'),
+                isset($lastSuccess[$provider]) ? $lastSuccess[$provider]->format('Y-m-d H:i') : '—',
+                sprintf('%d / %d / %d', $run->getFetchedCount(), $run->getNewCount(), $run->getDuplicateCount()),
+                $run->getErrorCount(),
+                sprintf('%.1f s', $run->getDurationMs() / 1000),
+                $run->getLastError() === null ? '' : mb_substr($run->getLastError(), 0, 60),
+            ];
+        }
+        $io->table(
+            ['Provider', 'Statut', 'Dernier run', 'Dernier succès', 'Récup. / nouv. / doublons', 'Erreurs', 'Durée', 'Dernière erreur'],
+            $runs,
+        );
 
         return Command::SUCCESS;
     }

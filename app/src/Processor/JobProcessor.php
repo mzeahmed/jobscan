@@ -6,39 +6,47 @@ namespace App\Processor;
 
 use App\DTO\JobDto;
 use App\Entity\Job;
-use App\AI\AIClient;
 use App\Scoring\Scoring;
+use App\Entity\JobSource;
 use Psr\Log\LoggerInterface;
-use App\Notification\Notifier;
+use App\Analysis\JobAnalyzer;
 use App\Repository\JobRepository;
+use App\Repository\JobSourceRepository;
 use Psr\Cache\InvalidArgumentException;
 
 /**
- * Orchestre le traitement d'une offre d'emploi depuis son ingestion jusqu'à sa persistance.
+ * Orchestre l'ingestion d'une offre d'emploi : filtres, déduplication et persistance.
+ *
+ * L'analyse IA et la notification ne font **pas** partie de ce service : une offre est
+ * persistée (statut d'analyse `pending`) avant toute analyse, afin que la collecte ne
+ * dépende jamais de la disponibilité du LLM. Les offres en attente sont analysées par
+ * `PendingAnalysisRunner`. Seul le mode dry-run analyse en mémoire, pour prévisualiser
+ * les scores sans rien écrire.
  *
  * Pipeline appliqué dans l'ordre :
- *   1. Filtre par mots-clés (titre + description)
- *   2. Rejet des offres sans URL
- *   3. Filtre d'ancienneté (si la date de publication est disponible)
- *   4. Déduplication par URL canonique
- *   5. Déduplication par empreinte titre, entreprise et localisation
- *   6. Pré-score heuristique — les offres sous le seuil n'atteignent pas l'IA
- *   7. Analyse IA (provider compatible OpenAI) + calcul du score final
- *   8. Persistance en base de données
- *   9. Notification Telegram si le score dépasse le seuil de notification
+ *   1. Exclusion métier de plateforme
+ *   2. Filtre par mots-clés (titre + description)
+ *   3. Rejet des offres sans URL
+ *   4. Filtre d'ancienneté (si la date de publication est disponible)
+ *   5. Doublon **certain** (URL, URL canonique ou identifiant externe) : l'offre existante
+ *      est mise à jour (dernière observation, date de publication la plus fiable, source)
+ *   6. Pré-score heuristique — les offres sous le seuil ne sont pas conservées
+ *   7. Doublon **probable** (même empreinte titre/entreprise/lieu) : l'offre est conservée
+ *      et simplement signalée, jamais fusionnée
+ *   8. Persistance (offre + source)
  */
 final readonly class JobProcessor implements JobProcessorInterface
 {
     /**
      * @param list<string> $filterKeywords Mots-clés requis (config `app.profile.filter_keywords`)
-     * @param list<string> $excludedPlatformDomains Domaines exclus (config `app.profile.excluded_platform_domains`)
+     * @param list<string> $excludedPlatformDomains Exclusions métier (config `app.profile.excluded_platform_domains`)
      * @param int $maxJobAgeDays Âge maximum (config `app.profile.max_job_age_days`)
      */
     public function __construct(
         private JobRepository $jobRepository,
-        private AIClient $AIClient,
+        private JobSourceRepository $jobSourceRepository,
         private Scoring $scoringService,
-        private Notifier $notificationService,
+        private JobAnalyzer $analyzer,
         private JobIdentity $jobIdentity,
         private LoggerInterface $logger,
         private array $filterKeywords = [],
@@ -51,9 +59,6 @@ final readonly class JobProcessor implements JobProcessorInterface
 
     /**
      * Traite une offre d'emploi et l'enregistre si elle passe tous les filtres.
-     *
-     * Chaque étape du pipeline peut court-circuiter le traitement : une offre rejetée
-     * à n'importe quelle étape est silencieusement ignorée (log debug uniquement).
      *
      * @throws InvalidArgumentException si le cache IA est inaccessible
      */
@@ -70,22 +75,21 @@ final readonly class JobProcessor implements JobProcessorInterface
     {
         $jobDtos = is_array($jobs) ? array_values($jobs) : array_values(iterator_to_array($jobs));
         $results = [];
-        $pending = [];
         $pendingCanonicalUrls = [];
-        $pendingFingerprints = [];
+        $savedIndexes = [];
+        $pendingWrites = 0;
         $aborted = false;
 
         foreach ($jobDtos as $index => $dto) {
             try {
-                $prepared = $this->prepare($dto, $dryRun, $pendingCanonicalUrls, $pendingFingerprints);
+                $prepared = $this->prepare($dto, $dryRun, $pendingCanonicalUrls);
                 $results[$index] = $prepared['result'];
 
-                if ($prepared['job'] !== null) {
-                    $pending[] = [
-                        'index' => $index,
-                        'job' => $prepared['job'],
-                        'used_fallback' => $prepared['result']->usedFallback,
-                    ];
+                if ($prepared['persisted']) {
+                    $savedIndexes[] = $index;
+                }
+                if ($prepared['persisted'] || $prepared['touched']) {
+                    ++$pendingWrites;
                 }
             } catch (\Throwable $e) {
                 $results[$index] = JobProcessingResult::failed($e->getMessage());
@@ -95,19 +99,25 @@ final readonly class JobProcessor implements JobProcessorInterface
                 ]);
             }
 
-            if (count($pending) >= max(1, $this->batchSize)
-                && !$this->flushPending($pending, $results, $pendingCanonicalUrls, $pendingFingerprints)
-            ) {
+            if ($pendingWrites < max(1, $this->batchSize)) {
+                continue;
+            }
+
+            if (!$this->flushBatch($pendingCanonicalUrls)) {
                 $aborted = true;
+                $this->markAsFailed($results, $savedIndexes, 'Persistance du lot en échec.');
                 for ($remaining = $index + 1, $count = count($jobDtos); $remaining < $count; ++$remaining) {
                     $results[$remaining] = JobProcessingResult::failed('Traitement interrompu après un échec de persistance.');
                 }
                 break;
             }
+
+            $savedIndexes = [];
+            $pendingWrites = 0;
         }
 
-        if (!$dryRun && !$aborted && $pending !== []) {
-            $this->flushPending($pending, $results, $pendingCanonicalUrls, $pendingFingerprints);
+        if (!$dryRun && !$aborted && $pendingWrites > 0 && !$this->flushBatch($pendingCanonicalUrls)) {
+            $this->markAsFailed($results, $savedIndexes, 'Persistance du lot en échec.');
         }
 
         ksort($results);
@@ -117,20 +127,24 @@ final readonly class JobProcessor implements JobProcessorInterface
 
     /**
      * @param array<string, true> $pendingCanonicalUrls
-     * @param array<string, true> $pendingFingerprints
      *
-     * @return array{result: JobProcessingResult, job: ?Job}
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @return array{result: JobProcessingResult, persisted: bool, touched: bool}
      */
-    private function prepare(JobDto $dto, bool $dryRun, array &$pendingCanonicalUrls, array &$pendingFingerprints): array
+    private function prepare(JobDto $dto, bool $dryRun, array &$pendingCanonicalUrls): array
     {
-        if ($this->isFromExcludedPlatform($dto->url)) {
+        $rejected = static fn (JobProcessingStatus $status): array => [
+            'result' => new JobProcessingResult($status),
+            'persisted' => false,
+            'touched' => false,
+        ];
+
+        if (DomainFilter::matches($dto->url, $this->excludedPlatformDomains)) {
             $this->logger->debug('Offre ignorée : plateforme exclue.', [
                 'url' => $dto->url,
                 'title' => $dto->title,
             ]);
 
-            return ['result' => new JobProcessingResult(JobProcessingStatus::Filtered), 'job' => null];
+            return $rejected(JobProcessingStatus::Filtered);
         }
 
         $title = strtolower($dto->title);
@@ -138,13 +152,13 @@ final readonly class JobProcessor implements JobProcessorInterface
         $matches = array_any($this->filterKeywords, fn ($keyword) => str_contains($title, (string) $keyword) || str_contains($desc, (string) $keyword));
 
         if (!$matches) {
-            return ['result' => new JobProcessingResult(JobProcessingStatus::Filtered), 'job' => null];
+            return $rejected(JobProcessingStatus::Filtered);
         }
 
         if ($dto->url === '') {
             $this->logger->debug('Offre ignorée : URL vide.', ['title' => $dto->title]);
 
-            return ['result' => new JobProcessingResult(JobProcessingStatus::Filtered), 'job' => null];
+            return $rejected(JobProcessingStatus::Filtered);
         }
 
         $now = new \DateTimeImmutable();
@@ -158,163 +172,125 @@ final readonly class JobProcessor implements JobProcessorInterface
                     'title' => $dto->title,
                 ]);
 
-                return ['result' => new JobProcessingResult(JobProcessingStatus::TooOld), 'job' => null];
+                return $rejected(JobProcessingStatus::TooOld);
             }
         }
 
         $canonicalUrl = $this->jobIdentity->canonicalUrl($dto->url);
-        if (isset($pendingCanonicalUrls[$canonicalUrl])
-            || $this->jobRepository->existsByUrlOrCanonicalUrl($dto->url, $canonicalUrl)
-        ) {
-            $this->logger->debug('Doublon ignoré (URL canonique) : {url}', ['url' => $canonicalUrl]);
+        if (isset($pendingCanonicalUrls[$canonicalUrl])) {
+            $this->logger->debug('Doublon ignoré (URL canonique, même lot) : {url}', ['url' => $canonicalUrl]);
 
-            return ['result' => new JobProcessingResult(JobProcessingStatus::Duplicate), 'job' => null];
+            return $rejected(JobProcessingStatus::Duplicate);
+        }
+
+        $existing = $this->jobRepository->findCertainDuplicate($dto->url, $canonicalUrl, $dto->source, $dto->externalId);
+        if ($existing !== null) {
+            $this->logger->debug('Doublon certain : {url}', ['url' => $canonicalUrl]);
+
+            if ($dryRun) {
+                return $rejected(JobProcessingStatus::Duplicate);
+            }
+
+            $this->registerSighting($existing, $dto, $canonicalUrl, $now);
+            $pendingCanonicalUrls[$canonicalUrl] = true;
+
+            return [
+                'result' => new JobProcessingResult(JobProcessingStatus::Duplicate),
+                'persisted' => false,
+                'touched' => true,
+            ];
+        }
+
+        if ($this->scoringService->preScore($dto) < $this->aiPrescoreThreshold) {
+            $this->logger->debug('Pré-score insuffisant, offre non conservée.', ['title' => $dto->title]);
+
+            return $rejected(JobProcessingStatus::LowPrescore);
         }
 
         $fingerprint = $this->jobIdentity->fingerprint($dto);
-        if ($fingerprint !== null
-            && (isset($pendingFingerprints[$fingerprint]) || $this->jobRepository->existsByFingerprint($fingerprint))
-        ) {
-            $this->logger->debug('Doublon ignoré (empreinte métier) : {title}', ['title' => $dto->title]);
-
-            return ['result' => new JobProcessingResult(JobProcessingStatus::Duplicate), 'job' => null];
-        }
-
-        $preScore = $this->scoringService->preScore($dto);
-
-        if ($preScore < $this->aiPrescoreThreshold) {
-            $this->logger->debug('Pré-score insuffisant ({score}), analyse IA ignorée.', [
-                'score' => $preScore,
-                'title' => $dto->title,
-            ]);
-
-            return ['result' => new JobProcessingResult(JobProcessingStatus::LowPrescore), 'job' => null];
-        }
-
-        $aiData = $this->AIClient->analyze($dto->description, $dto->publishedAt);
-        ['score' => $score, 'breakdown' => $breakdown] = $this->scoringService->compute($dto, $aiData);
-
         $job = Job::fromDTO($dto);
         $job->setIdentity($canonicalUrl, $fingerprint);
-        $job->setScore($score);
-        $job->setAnalysis($aiData, $breakdown);
 
-        $pendingCanonicalUrls[$canonicalUrl] = true;
-        if ($fingerprint !== null) {
-            $pendingFingerprints[$fingerprint] = true;
+        $probableDuplicateId = $fingerprint === null ? null : $this->jobRepository->findFirstIdByFingerprint($fingerprint);
+        if ($probableDuplicateId !== null) {
+            $job->markProbableDuplicateOf($probableDuplicateId);
+            $this->logger->info('Doublon probable (même titre, entreprise et lieu) conservé : {title}', [
+                'title' => $dto->title,
+                'duplicate_of' => $probableDuplicateId,
+            ]);
         }
 
+        $pendingCanonicalUrls[$canonicalUrl] = true;
+
         if ($dryRun) {
+            $outcome = $this->analyzer->analyze($job, $now);
+
             return [
-                'result' => new JobProcessingResult(
-                    JobProcessingStatus::DryRun,
-                    $score,
-                    $this->AIClient->lastAnalysisUsedFallback(),
-                ),
-                'job' => null,
+                'result' => $outcome->succeeded
+                    ? new JobProcessingResult(JobProcessingStatus::DryRun, $outcome->score, $outcome->usedFallback)
+                    : JobProcessingResult::failed((string) $outcome->error),
+                'persisted' => false,
+                'touched' => false,
             ];
         }
 
         $this->jobRepository->save($job, false);
+        $this->jobSourceRepository->save(new JobSource($job, $dto, $canonicalUrl, $now));
 
         return [
-            'result' => new JobProcessingResult(
-                JobProcessingStatus::Saved,
-                $score,
-                $this->AIClient->lastAnalysisUsedFallback(),
-            ),
-            'job' => $job,
+            'result' => new JobProcessingResult(JobProcessingStatus::Saved),
+            'persisted' => true,
+            'touched' => false,
         ];
     }
 
-    private function isFromExcludedPlatform(string $url): bool
+    /**
+     * Enregistre une nouvelle observation d'une offre déjà connue : dernière vue, date
+     * de publication la plus fiable, et source si cette URL ou ce provider est nouveau.
+     */
+    private function registerSighting(Job $existing, JobDto $dto, string $canonicalUrl, \DateTimeImmutable $now): void
     {
-        $host = parse_url($url, PHP_URL_HOST);
-        if (!is_string($host) || $host === '') {
-            return false;
+        $existing->registerSighting($dto, $now);
+
+        $source = $this->jobSourceRepository->findByIdentity($canonicalUrl, $dto->source, $dto->externalId);
+        if ($source === null) {
+            $this->jobSourceRepository->save(new JobSource($existing, $dto, $canonicalUrl, $now));
+
+            return;
         }
 
-        $host = strtolower(rtrim($host, '.'));
-
-        foreach ($this->excludedPlatformDomains as $domain) {
-            $domain = strtolower(ltrim(rtrim(trim($domain), '.'), '.'));
-            if ($domain !== '' && ($host === $domain || str_ends_with($host, '.' . $domain))) {
-                return true;
-            }
-        }
-
-        return false;
+        $source->registerSighting($dto, $now);
     }
 
     /**
-     * @param list<array{index: int, job: Job, used_fallback: bool}> $pending
-     * @param array<int, JobProcessingResult> $results
      * @param array<string, true> $pendingCanonicalUrls
-     * @param array<string, true> $pendingFingerprints
      */
-    private function flushPending(array &$pending, array &$results, array &$pendingCanonicalUrls, array &$pendingFingerprints): bool
+    private function flushBatch(array &$pendingCanonicalUrls): bool
     {
         try {
             $this->jobRepository->flush();
         } catch (\Throwable $e) {
-            foreach ($pending as $entry) {
-                $results[$entry['index']] = JobProcessingResult::failed($e->getMessage());
-            }
-
-            $this->logger->error('Échec de la persistance d’un lot d’offres.', [
-                'batch_size' => count($pending),
-                'error' => $e->getMessage(),
-            ]);
-            $this->resetPending($pending, $pendingCanonicalUrls, $pendingFingerprints);
+            $this->logger->error('Échec de la persistance d’un lot d’offres.', ['error' => $e->getMessage()]);
+            $this->jobRepository->clear();
+            $pendingCanonicalUrls = [];
 
             return false;
         }
 
-        $hasNotifications = false;
-        foreach ($pending as $entry) {
-            $job = $entry['job'];
-            $notified = $this->notificationService->notify($job);
-            $hasNotifications = $hasNotifications || $notified;
-            $results[$entry['index']] = new JobProcessingResult(
-                JobProcessingStatus::Saved,
-                $job->getScore(),
-                $entry['used_fallback'],
-                $notified,
-            );
-
-            $this->logger->info('Job sauvegardé : {title} (score: {score}, source: {source}) — {breakdown}', [
-                'title' => $job->getTitle(),
-                'score' => $job->getScore(),
-                'source' => $job->getSource(),
-                'breakdown' => implode(', ', $job->getScoreBreakdown()) ?: 'aucun critère',
-            ]);
-        }
-
-        if ($hasNotifications) {
-            try {
-                $this->jobRepository->flush();
-            } catch (\Throwable $e) {
-                $this->logger->error('Les statuts de notification n’ont pas pu être persistés.', [
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        $this->resetPending($pending, $pendingCanonicalUrls, $pendingFingerprints);
+        $this->jobRepository->clear();
+        $pendingCanonicalUrls = [];
 
         return true;
     }
 
     /**
-     * @param list<array{index: int, job: Job, used_fallback: bool}> $pending
-     * @param array<string, true> $pendingCanonicalUrls
-     * @param array<string, true> $pendingFingerprints
+     * @param array<int, JobProcessingResult> $results
+     * @param list<int> $indexes
      */
-    private function resetPending(array &$pending, array &$pendingCanonicalUrls, array &$pendingFingerprints): void
+    private function markAsFailed(array &$results, array $indexes, string $error): void
     {
-        $this->jobRepository->clear();
-        $pending = [];
-        $pendingCanonicalUrls = [];
-        $pendingFingerprints = [];
+        foreach ($indexes as $index) {
+            $results[$index] = JobProcessingResult::failed($error);
+        }
     }
 }
