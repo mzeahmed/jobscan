@@ -698,6 +698,8 @@ offre. Jobscan n'envoie rien : il enregistre ce que vous déclarez. Ces offres �
 
 L'**interface web** (offres et candidatures) est protégée par un compte unique, un jeton CSRF sur chaque écriture et une limitation des tentatives ; elle reste fermée tant que `app:ui:hash-password` n'a pas été utilisé. Voir [docs/UI.md](docs/UI.md).
 
+`app:analytics:report` et la page **Analytics** montrent, sur vos seules données, ce qui fonctionne : réponses par source, CV, profil et canal, rendement des sources. Des comptages, pas des preuves (pourcentage à partir de 5 candidatures) ; voir [docs/ANALYTICS.md](docs/ANALYTICS.md).
+
 `app:cv:list` et `app:cv:recommend` gèrent vos versions de CV (fichiers locaux, jamais lus ni transmis) ; voir [docs/CV.md](docs/CV.md).
 
 `app:assistant:draft` prépare un brouillon de message de candidature à partir de vos seuls faits déclarés (rien n'est envoyé ni enregistré ; LLM optionnel, local par défaut) ; voir [docs/ASSISTANT.md](docs/ASSISTANT.md).

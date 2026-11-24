@@ -30,6 +30,12 @@
                 Candidatures
             </a>
 
+            <a href="{{ path('app_analytics') }}"
+               class="sidebar__item {{ app.request.attributes.get('_route') == 'app_analytics' ? 'sidebar__item--active' : '' }}">
+                <i class="fa-solid fa-chart-column fa-fw sidebar__item-icon" aria-hidden="true"></i>
+                Analytics
+            </a>
+
             <a href="#" class="sidebar__item">
                 <i class="fa-solid fa-rss fa-fw sidebar__item-icon" aria-hidden="true"></i>
                 Sources

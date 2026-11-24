@@ -10,6 +10,14 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-10
+
+#### Added
+
+- Analytics : `app:analytics:report` (`--since=30d|12w|all`, `--format=json`) et page `/analytics` : parcours des candidatures envoyées lu dans l'historique (réponses, entretiens, propositions, délai médian
+  de première réponse), répartitions par source, version de CV, profil de recherche et canal, rendement des sources (collectées, compatibles, notifiées, suivies, postulées ; doublons exclus). Un pourcentage
+  n'apparaît qu'à partir de 5 candidatures. Calcul local, sans nouvelle table. `docs/ANALYTICS.md`.
+
 ### 2026-12-09
 
 #### Added

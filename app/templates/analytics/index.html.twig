@@ -1,0 +1,81 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Analytics{% endblock %}
+
+{% block body %}
+    {% set f = report.funnel %}
+    <section class="page">
+        <div class="page__header">
+            <h1 class="page__title">Analytics</h1>
+            <p class="page__subtitle">Calculé localement sur vos données. Des comptages, pas des preuves : les offres visées diffèrent d'un CV, d'un canal ou d'une source à l'autre.</p>
+        </div>
+
+        <nav class="status-filter" aria-label="Période">
+            {% for key, label in windows %}
+                <a class="btn btn--sm {{ choice == key ? 'btn--primary' : 'btn--ghost' }}" href="{{ path('app_analytics', {since: key}) }}">{{ label }}</a>
+            {% endfor %}
+        </nav>
+
+        <h2>Parcours des candidatures envoyées</h2>
+        {% if f.sent == 0 %}
+            <p class="empty">Aucune candidature envoyée sur la période.</p>
+        {% else %}
+            <table class="table">
+                <tbody>
+                    <tr><th>Envoyées</th><td>{{ f.sent }}</td></tr>
+                    <tr><th>Réponses (entretien, test, proposition ou refus)</th><td>{{ rate(f.responded, f.sent) }}</td></tr>
+                    <tr><th>Ont atteint un entretien ou un test</th><td>{{ rate(f.interviews, f.sent) }}</td></tr>
+                    <tr><th>Ont atteint une proposition</th><td>{{ rate(f.offers, f.sent) }}</td></tr>
+                    <tr><th>Acceptées</th><td>{{ f.accepted }}</td></tr>
+                    <tr><th>Refusées (statut actuel)</th><td>{{ f.rejected }}</td></tr>
+                    <tr><th>Sans réponse (statut actuel)</th><td>{{ f.noResponse }}</td></tr>
+                    <tr><th>Délai médian de première réponse</th><td>{{ f.medianDaysToResponse is null ? '—' : f.medianDaysToResponse|number_format(1, ',') ~ ' jour(s)' }}</td></tr>
+                </tbody>
+            </table>
+        {% endif %}
+
+        {% for dimension, title in titles %}
+            {% set rows = report.breakdowns[dimension] %}
+            {% if rows is not empty %}
+                <h2>{{ title }}</h2>
+                <table class="table">
+                    <thead><tr><th></th><th>Envoyées</th><th>Réponses</th><th>Entretiens</th><th>Propositions</th></tr></thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr>
+                                <td>{{ row.label }}</td>
+                                <td>{{ row.sent }}</td>
+                                <td>{{ rate(row.responded, row.sent) }}</td>
+                                <td>{{ rate(row.interviews, row.sent) }}</td>
+                                <td>{{ rate(row.offers, row.sent) }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endif %}
+        {% endfor %}
+
+        <h2>Rendement des sources (offres collectées, hors doublons)</h2>
+        {% if report.sourcing is empty %}
+            <p class="empty">Aucune offre collectée sur la période.</p>
+        {% else %}
+            <table class="table">
+                <thead><tr><th>Source</th><th>Collectées</th><th>Compatibles</th><th>Notifiées</th><th>Suivies</th><th>Postulées</th></tr></thead>
+                <tbody>
+                    {% for row in report.sourcing %}
+                        <tr>
+                            <td>{{ row.source }}</td>
+                            <td>{{ row.collected }}</td>
+                            <td>{{ rate(row.compatible, row.collected) }}</td>
+                            <td>{{ row.notified }}</td>
+                            <td>{{ row.tracked }}</td>
+                            <td>{{ row.applied }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        <p class="empty">Un pourcentage n'apparaît qu'à partir de {{ constant('App\\Analytics\\Rate::MIN_SAMPLE') }} éléments : en dessous, seul le décompte est affiché.</p>
+    </section>
+{% endblock %}
