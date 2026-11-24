@@ -10,6 +10,16 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-11
+
+#### Added
+
+- Monitoring avancé : `app:health:check` (`--format=json`, `--strict`, `--alert`) contrôle base, migrations, chaque source d'offres, file d'analyses, part d'analyses de repli (LLM), notifications et
+  rappels en retard, disque, profils ; sans appel réseau ni LLM ; seuils `app.health.*`. Alerte Telegram une seule fois par changement d'état (empreinte dans `var/health.state`, mémorisée seulement si Telegram
+  a reçu le message). Un contrôle qui plante est signalé lisiblement sans empêcher les autres.
+- Rapports : `app:report:weekly` (`--days`, `--output`, `--telegram`) : collecte, candidatures de la période, relances à faire, cinq meilleures offres à trier, santé ; résumé Telegram sans donnée de recruteur.
+- Planification Docker : contrôle de santé toutes les heures avec alerte, rapport le dimanche à 18 h 30. `docs/MONITORING.md`.
+
 ### 2026-12-10
 
 #### Added

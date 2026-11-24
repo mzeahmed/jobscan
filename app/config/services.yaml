@@ -61,6 +61,28 @@ services:
             $maxAttempts: '%app.profile.telegram_max_attempts%'
             $initialRetryDelayMs: '%app.profile.telegram_initial_retry_delay_ms%'
 
+    App\Health\HealthThresholds:
+        arguments:
+            $providerStaleHours: '%app.health.provider_stale_hours%'
+            $providerFailureStreak: '%app.health.provider_failure_streak%'
+            $analysisPendingWarning: '%app.health.analysis_pending_warning%'
+            $analysisOldestHours: '%app.health.analysis_oldest_hours%'
+            $fallbackSharePercent: '%app.health.fallback_share_percent%'
+            $notificationLagHours: '%app.health.notification_lag_hours%'
+            $reminderLagHours: '%app.health.reminder_lag_hours%'
+            $diskWarningPercent: '%app.health.disk_warning_percent%'
+            $diskCriticalPercent: '%app.health.disk_critical_percent%'
+            $priorityThreshold: '%app.notifications.priority_threshold%'
+            $maxAgeDays: '%app.notifications.max_age_days%'
+
+    App\Health\HealthService:
+        arguments:
+            $projectDir: '%kernel.project_dir%'
+
+    App\Health\HealthStateStore:
+        arguments:
+            $file: '%kernel.project_dir%/var/health.state'
+
     App\Telegram\TelegramBot:
         arguments:
             $botToken: '%telegram.bot_token%'

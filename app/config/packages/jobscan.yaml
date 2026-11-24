@@ -15,6 +15,16 @@ jobscan:
             model: '%env(GEMINI_MODEL)%'
 
 parameters:
+    # Contrôles de santé (app:health:check) : seuils d'avertissement et d'état critique.
+    app.health.provider_stale_hours: 12
+    app.health.provider_failure_streak: 3
+    app.health.analysis_pending_warning: 50
+    app.health.analysis_oldest_hours: 24
+    app.health.fallback_share_percent: 30
+    app.health.notification_lag_hours: 6
+    app.health.reminder_lag_hours: 6
+    app.health.disk_warning_percent: 10
+    app.health.disk_critical_percent: 5
     app.telegram.empty: ''
     app.trusted_proxies_default: ''
     # Interface web : compte unique. Sans JOBSCAN_UI_PASSWORD_HASH, personne ne peut se connecter (voir docs/UI.md).

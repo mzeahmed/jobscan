@@ -40,6 +40,8 @@ L'image est construite en plusieurs étapes (`dev`, `build`, `prod`) : dépendan
 | `app:jobs:analyze` (reprise des analyses en attente ou en échec) | toutes les heures |
 | `app:reminders:send` (relances dues) | toutes les heures |
 | `app:notifications:digest` (récapitulatif et rattrapage) | tous les jours à 18 h |
+| `app:health:check --alert` (alerte Telegram au changement d'état) | toutes les heures |
+| `app:report:weekly --telegram` | le dimanche à 18 h 30 |
 | `app:jobs:purge` | **désactivée** : à décommenter en connaissance de cause |
 
 Chaque tâche prend un `flock` : une exécution encore en cours n'est jamais doublée. Fuseau : `TZ` (Europe/Paris par défaut). Pour changer les horaires, modifiez le fichier et reconstruisez (`make prod-up-workers`).

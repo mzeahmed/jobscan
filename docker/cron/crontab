@@ -14,6 +14,12 @@
 # Récapitulatif quotidien des offres secondaires, et rattrapage des notifications manquées.
 0 18 * * *    flock -n /tmp/digest.lock php /app/bin/console app:notifications:digest --no-interaction
 
+# Contrôle de santé : alerte Telegram seulement quand l'état change (jamais en boucle).
+10 * * * *    flock -n /tmp/health.lock php /app/bin/console app:health:check --alert --no-interaction
+
+# Rapport hebdomadaire (silencieux) : dimanche à 18 h 30.
+30 18 * * 0   flock -n /tmp/report.lock php /app/bin/console app:report:weekly --telegram --no-interaction
+
 # Purge : volontairement désactivée. Elle épargne les offres suivies, sauvegardées, ignorées ou archivées,
 # mais supprime les autres : à activer en connaissance de cause.
 # 0 4 * * 0   flock -n /tmp/purge.lock php /app/bin/console app:jobs:purge --older-than=60d --no-interaction
