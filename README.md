@@ -694,6 +694,8 @@ offre. Jobscan n'envoie rien : il enregistre ce que vous déclarez. Ces offres �
 
 `app:cv:list` et `app:cv:recommend` gèrent vos versions de CV (fichiers locaux, jamais lus ni transmis) ; voir [docs/CV.md](docs/CV.md).
 
+`app:assistant:draft` prépare un brouillon de message de candidature à partir de vos seuls faits déclarés (rien n'est envoyé ni enregistré ; LLM optionnel, local par défaut) ; voir [docs/ASSISTANT.md](docs/ASSISTANT.md).
+
 ---
 
 ## Commandes utiles

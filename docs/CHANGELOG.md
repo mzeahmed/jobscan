@@ -10,6 +10,15 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-04
+
+#### Added
+
+- Application Assistant : `app:assistant:draft` prépare un brouillon de message de candidature à partir des seuls faits déclarés dans le profil et rencontrés par l'offre. Brouillon déterministe par
+  défaut ; `--llm` fait rédiger le texte par le LLM, qui n'est retenu qu'après contrôle (chiffres, compétences, liens, consignes), sinon repli sans LLM avec la raison.
+- Confidentialité : un moteur LLM distant ne reçoit aucune donnée du profil sans `ASSISTANT_ALLOW_REMOTE_LLM=true` ; jamais nom, email, téléphone, salaire, fichier de CV ni texte brut de l'annonce.
+  Reconnaissance des moteurs locaux (localhost, réseau privé, hôte Docker) ; une adresse publique est « distante ». `docs/ASSISTANT.md`.
+
 ### 2026-12-03
 
 #### Added

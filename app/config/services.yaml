@@ -121,6 +121,22 @@ services:
         arguments:
             $taskPrompt: '%app.ai_system_prompt%'
 
+    App\Assistant\LlmDraftWriter:
+        arguments:
+            $client: '@llm.client'
+
+    App\Assistant\PrivacyGate:
+        arguments:
+            $provider: '%jobscan.llm.provider%'
+            $baseUrls:
+                ollama: '%jobscan.llm.ollama.base_url%'
+                lmstudio: '%jobscan.llm.lmstudio.base_url%'
+            $allowRemote: '%env(bool:default:app.assistant.allow_remote_default:ASSISTANT_ALLOW_REMOTE_LLM)%'
+
+    App\Assistant\ApplicationAssistant:
+        arguments:
+            $knownStack: '%app.profile.known_stack%'
+
     App\AI\AIClient:
         arguments:
             $provider: '@llm.client'

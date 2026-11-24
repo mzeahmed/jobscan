@@ -15,6 +15,8 @@ jobscan:
             model: '%env(GEMINI_MODEL)%'
 
 parameters:
+    # Autorisation d'envoyer des faits du profil à un LLM distant : désactivée tant que ASSISTANT_ALLOW_REMOTE_LLM n'est pas à true.
+    app.assistant.allow_remote_default: ''
     # Profil métier centralisé : recherche, filtrage, scoring et seuils.
     app.profile.filter_keywords: '%env(csv:FILTER_KEYWORDS)%'
     app.profile.known_stack: '%env(csv:KNOWN_STACK)%'

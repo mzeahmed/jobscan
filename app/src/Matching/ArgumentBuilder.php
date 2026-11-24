@@ -15,6 +15,13 @@ use App\Profile\Model\CandidateProfile;
  */
 final readonly class ArgumentBuilder
 {
+    /** Débuts des arguments : l'assistant de candidature s'en sert pour les reformuler, sans rien ajouter. */
+    public const string PREFIX_REQUIRED = 'Compétences exigées déclarées : ';
+    public const string PREFIX_NICE = 'Compétences appréciées ou citées déclarées : ';
+    public const string PREFIX_EXPERIENCE = 'Expérience pertinente : ';
+    public const string PREFIX_PROJECT = 'Projet pertinent : ';
+    public const string PREFIX_LANGUAGE = 'Langue exigée couverte : ';
+
     private const int MAX_EXPERIENCES = 3;
     private const int MAX_PROJECTS = 2;
 
@@ -32,10 +39,10 @@ final readonly class ArgumentBuilder
         $arguments = [];
 
         if ($comparison->matchedRequired !== []) {
-            $arguments[] = 'Compétences exigées déclarées : ' . implode(', ', array_map($this->describe(...), $comparison->matchedRequired)) . '.';
+            $arguments[] = self::PREFIX_REQUIRED . implode(', ', array_map($this->describe(...), $comparison->matchedRequired)) . '.';
         }
         if ($comparison->matchedNice !== []) {
-            $arguments[] = 'Compétences appréciées ou citées déclarées : ' . implode(', ', array_map($this->describe(...), $comparison->matchedNice)) . '.';
+            $arguments[] = self::PREFIX_NICE . implode(', ', array_map($this->describe(...), $comparison->matchedNice)) . '.';
         }
 
         $jobSkills = [];
@@ -44,15 +51,15 @@ final readonly class ArgumentBuilder
         }
 
         foreach ($this->relevant($candidate->experiences, $jobSkills, self::MAX_EXPERIENCES) as [$experience, $shared]) {
-            $arguments[] = sprintf('Expérience pertinente : %s chez %s (%s).', $experience->title, $experience->company, implode(', ', $shared));
+            $arguments[] = sprintf(self::PREFIX_EXPERIENCE . '%s chez %s (%s).', $experience->title, $experience->company, implode(', ', $shared));
         }
         foreach ($this->relevant($candidate->projects, $jobSkills, self::MAX_PROJECTS) as [$project, $shared]) {
-            $arguments[] = sprintf('Projet pertinent : %s (%s).', $project->name, implode(', ', $shared));
+            $arguments[] = sprintf(self::PREFIX_PROJECT . '%s (%s).', $project->name, implode(', ', $shared));
         }
 
         $languages = $this->coveredLanguages($candidate, $facts);
         if ($languages !== []) {
-            $arguments[] = 'Langue exigée couverte : ' . implode(', ', $languages) . '.';
+            $arguments[] = self::PREFIX_LANGUAGE . implode(', ', $languages) . '.';
         }
 
         foreach ($criteria as $criterion) {
