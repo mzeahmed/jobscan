@@ -24,6 +24,9 @@ x-app: &app
         # Profil candidat : données personnelles, montées en lecture seule, jamais dans l'image.
         JOBSCAN_PROFILE_DIR: /profile
         TZ: ${TZ:-Europe/Paris}
+        # php-fpm ne reçoit que les requêtes de nginx, lui-même publié sur 127.0.0.1 seulement : on lui fait confiance pour relayer
+        # X-Forwarded-Proto/Host/Port de VOTRE proxy HTTPS (sans cela les redirections sortent en http:// et le cookie n'est pas « secure »).
+        TRUSTED_PROXIES: ${JOBSCAN_TRUSTED_PROXIES:-REMOTE_ADDR}
     volumes:
         - var:/app/var
         - ${JOBSCAN_PROFILE_DIR:-./app/config/profile/local}:/profile:ro

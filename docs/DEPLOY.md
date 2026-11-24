@@ -50,7 +50,7 @@ Pourquoi supercronic et non Symfony Scheduler : voir [SCHEDULER.md](SCHEDULER.md
 
 - **Aucun secret dans une image.** (Avant ce lot, le `.dockerignore` n'excluait ni `app/.env` ni `app/.env.local` : le `COPY` du Dockerfile les embarquait.)
 - Services applicatifs : racine en **lecture seule**, **aucune capacité Linux**, `no-new-privileges`, `/tmp` en `tmpfs`, utilisateur sans privilège.
-- Le web n'écoute que sur **`127.0.0.1`** (`JOBSCAN_HTTP_PORT`, 8088 par défaut) : placez devant lui votre proxy HTTPS. N'exposez pas l'interface en clair sur Internet ; renseignez `TRUSTED_PROXIES` avec l'adresse exacte du proxy (voir [UI.md](UI.md)).
+- Le web n'écoute que sur **`127.0.0.1`** (`JOBSCAN_HTTP_PORT`, 8088 par défaut) : placez devant lui votre proxy HTTPS. N'exposez pas l'interface en clair sur Internet ; `TRUSTED_PROXIES` vaut `REMOTE_ADDR` par défaut dans cette pile (php-fpm ne reçoit que les requêtes de nginx, publié sur `127.0.0.1`) pour que les redirections et le cookie de session suivent le HTTPS de **votre** proxy ; `JOBSCAN_TRUSTED_PROXIES` permet de le changer (voir [UI.md](UI.md)).
 - Le tableau de bord Traefik de la pile de développement (`insecure: true`, sans authentification) n'est plus publié que sur `127.0.0.1:9080` (il l'était sur toutes les interfaces).
 
 ## Développement : fin des fichiers appartenant à root

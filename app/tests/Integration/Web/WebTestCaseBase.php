@@ -48,8 +48,39 @@ abstract class WebTestCaseBase extends WebTestCase
         $this->boot();
     }
 
+    /** Redémarre l'application avec une variable d'environnement de plus (restaurée après le test). */
+    protected function restartWithEnvironment(string $name, string $value, ?string $remoteAddress = null): void
+    {
+        $this->restore[$name] = [$_SERVER[$name] ?? null, $_ENV[$name] ?? null];
+        $_SERVER[$name] = $_ENV[$name] = $value;
+        if ($remoteAddress !== null) {
+            // Sous php-fpm, `REMOTE_ADDR` est dans $_SERVER dès le démarrage : Symfony s'en sert pour résoudre le proxy « REMOTE_ADDR ».
+            $this->restore['REMOTE_ADDR'] = [$_SERVER['REMOTE_ADDR'] ?? null, $_ENV['REMOTE_ADDR'] ?? null];
+            $_SERVER['REMOTE_ADDR'] = $remoteAddress;
+        }
+        static::ensureKernelShutdown();
+        $this->boot();
+    }
+
+    /** @var array<string, array{mixed, mixed}> */
+    private array $restore = [];
+
     protected function tearDown(): void
     {
+        foreach ($this->restore as $name => [$server, $env]) {
+            if ($server === null) {
+                unset($_SERVER[$name]);
+            } else {
+                $_SERVER[$name] = $server;
+            }
+            if ($env === null) {
+                unset($_ENV[$name]);
+            } else {
+                $_ENV[$name] = $env;
+            }
+        }
+        \Symfony\Component\HttpFoundation\Request::setTrustedProxies([], 0);
+
         $_SERVER['JOBSCAN_UI_PASSWORD_HASH'] = $_ENV['JOBSCAN_UI_PASSWORD_HASH'] = $this->originalHash;
         $this->entityManager->close();
         parent::tearDown();

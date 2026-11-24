@@ -10,6 +10,14 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-13
+
+#### Fixed
+
+- Derrière Traefik (pile de développement), les redirections de l'application sortaient en `http://` (connexion, déconnexion, `/job` → `/login`), ce qui menait à une erreur 404 sur le port HTTPS 8443. `TRUSTED_PROXIES=REMOTE_ADDR` est désormais
+  fixé dans `docker-compose.yml` (et, par défaut, dans `docker-compose.prod.yml`) : l'application relaie le schéma, l'hôte et le port de Traefik, et le cookie de session est « secure ». Tests de non-régression ; comportement par défaut
+  inchangé hors Docker (les en-têtes `X-Forwarded-*` restent ignorés sans proxy de confiance).
+
 ### 2026-12-12
 
 #### Added

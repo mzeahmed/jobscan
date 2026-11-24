@@ -534,7 +534,7 @@ tail -f app/var/alerts.log
 ### Avec Docker
 
 La stack Docker inclut Traefik en reverse proxy HTTPS, qui expose l'application et
-SearXNG sur des domaines locaux (`jobscan.local`, `searxng.local`).
+SearXNG sur des domaines locaux (`jobscan.local`, `searxng.local`). Ouvrez toujours **`https://`** : le port `8443` est un port HTTPS (une URL `http://jobscan.local:8443` donne « 404 page not found »).
 
 > **Pourquoi `:8443` dans les URLs ?**
 > Traefik écoute sur les ports hôte `8443` (HTTPS) et `9080` (dashboard) plutôt que

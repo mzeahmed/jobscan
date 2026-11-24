@@ -34,6 +34,9 @@ services:
         environment:
             HOME: /tmp
             COMPOSER_HOME: /tmp/composer
+            # php-fpm ne reçoit les requêtes que de nginx (jamais d'Internet) : on lui fait confiance pour relayer
+            # X-Forwarded-Proto/Host/Port de Traefik. Sans cela, les redirections de l'application sortent en http://.
+            TRUSTED_PROXIES: REMOTE_ADDR
             APP_ENV: dev
             DATABASE_URL: "sqlite:///%kernel.project_dir%/var/jobscan.db"
             SEARXNG_URL: http://searxng:8080

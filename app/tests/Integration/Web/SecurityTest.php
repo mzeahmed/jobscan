@@ -144,4 +144,40 @@ final class SecurityTest extends WebTestCaseBase
         $this->client->request('GET', '/applications');
         self::assertResponseRedirects('http://localhost/login');
     }
+
+    // --- Derrière un proxy (Traefik → nginx → php-fpm) -----------------------------------------------
+
+    /** @return array<string, string> */
+    private static function viaProxy(string $from = '172.18.0.9'): array
+    {
+        return ['REMOTE_ADDR' => $from, 'HTTP_HOST' => 'jobscan.local:8443', 'HTTP_X_FORWARDED_PROTO' => 'https', 'HTTP_X_FORWARDED_HOST' => 'jobscan.local:8443', 'HTTP_X_FORWARDED_PORT' => '8443'];
+    }
+
+    public function testForwardedHeadersAreIgnoredByDefault(): void
+    {
+        $this->client->request('GET', '/job', server: self::viaProxy());
+
+        $location = (string) $this->client->getResponse()->headers->get('Location');
+        self::assertStringStartsWith('http://', $location, 'Sans proxy de confiance, un en-tête X-Forwarded-Proto ne change rien : personne ne peut le falsifier.');
+    }
+
+    public function testRedirectsKeepHttpsBehindATrustedProxy(): void
+    {
+        $this->restartWithEnvironment('TRUSTED_PROXIES', 'REMOTE_ADDR', '172.18.0.9');
+
+        $this->client->request('GET', '/job', server: self::viaProxy());
+
+        self::assertSame('https://jobscan.local:8443/login', $this->client->getResponse()->headers->get('Location'), 'Régression : l\'application renvoyait vers http:// derrière Traefik.');
+    }
+
+    public function testOnlyTheConfiguredProxyIsTrusted(): void
+    {
+        $this->restartWithEnvironment('TRUSTED_PROXIES', '172.18.0.0/16');
+
+        $this->client->request('GET', '/job', server: self::viaProxy('172.18.0.9'));
+        self::assertStringStartsWith('https://', (string) $this->client->getResponse()->headers->get('Location'));
+
+        $this->client->request('GET', '/job', server: self::viaProxy('203.0.113.7'));
+        self::assertStringStartsWith('http://', (string) $this->client->getResponse()->headers->get('Location'), 'Un client extérieur au réseau du proxy ne peut pas imposer son schéma.');
+    }
 }
