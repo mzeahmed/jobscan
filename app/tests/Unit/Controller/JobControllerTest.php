@@ -9,6 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\BrowserKit\AbstractBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Security\Core\User\InMemoryUser;
 
 final class JobControllerTest extends WebTestCase
 {
@@ -18,6 +19,7 @@ final class JobControllerTest extends WebTestCase
     protected function setUp(): void
     {
         $this->client = static::createClient();
+        $this->client->loginUser(new InMemoryUser('admin', (string) $_SERVER['JOBSCAN_UI_PASSWORD_HASH'], ['ROLE_USER']));
         $this->entityManager = self::getContainer()->get(EntityManagerInterface::class);
 
         $schemaTool = new SchemaTool($this->entityManager);

@@ -39,7 +39,7 @@ final class JobDecideCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $id = ApplicationCommandSupport::id($input->getArgument('job'));
+        $id = \App\Tracking\InputReader::id($input->getArgument('job'));
         $job = $id === null ? null : $this->jobs->find($id);
         if ($job === null) {
             $io->error('Offre introuvable.');

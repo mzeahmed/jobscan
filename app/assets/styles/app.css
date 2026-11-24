@@ -1256,3 +1256,22 @@ body.home-page .main-content {
 body.home-page .app-shell {
     min-height: 100vh;
 }
+
+/* ===== Interface de suivi : connexion, messages, tableaux, formulaires ===== */
+.login { max-width: 22rem; margin: 10vh auto; display: grid; gap: 1rem; }
+.login__title { text-align: center; letter-spacing: .1em; }
+.login__form, .stack { display: grid; gap: .75rem; }
+.flash { margin: .75rem 1.5rem; padding: .6rem .9rem; border-radius: .5rem; border: 1px solid transparent; }
+.flash--success { background: #e8f6ee; border-color: #9bd3b0; color: #14532d; }
+.flash--error { background: #fdecec; border-color: #f0a8a8; color: #7f1d1d; }
+.page { padding: 1.5rem; display: grid; gap: 1rem; }
+.page__subtitle { color: #6b7280; }
+.status-filter { display: flex; flex-wrap: wrap; gap: .5rem; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid #e5e7eb; }
+.history { padding-left: 1.2rem; display: grid; gap: .35rem; }
+.history__note { color: #6b7280; }
+.empty { color: #6b7280; }
+.job-card__actions { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
+.job-card__actions form { margin: 0; }
+textarea.filter-input { width: 100%; resize: vertical; font: inherit; }

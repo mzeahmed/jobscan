@@ -48,7 +48,7 @@ final class ApplicationTrackCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $id = ApplicationCommandSupport::id($input->getArgument('job'));
+        $id = \App\Tracking\InputReader::id($input->getArgument('job'));
         $job = $id === null ? null : $this->jobs->find($id);
         if ($job === null) {
             $io->error('Offre introuvable.');
@@ -56,7 +56,7 @@ final class ApplicationTrackCommand extends Command
             return Command::FAILURE;
         }
 
-        $channelValue = ApplicationCommandSupport::optionalString($input->getOption('channel'));
+        $channelValue = \App\Tracking\InputReader::optionalString($input->getOption('channel'));
         $channel = $channelValue === null ? null : ApplicationChannel::tryFrom($channelValue);
         if ($channelValue !== null && $channel === null) {
             $io->error(sprintf('Canal inconnu : « %s ».', $channelValue));
@@ -68,8 +68,8 @@ final class ApplicationTrackCommand extends Command
             $application = $this->manager->start(
                 $job,
                 new \DateTimeImmutable(),
-                ApplicationCommandSupport::optionalString($input->getOption('search-profile')),
-                ApplicationCommandSupport::optionalString($input->getOption('cv')),
+                \App\Tracking\InputReader::optionalString($input->getOption('search-profile')),
+                \App\Tracking\InputReader::optionalString($input->getOption('cv')),
             );
         } catch (InvalidApplicationException $e) {
             $io->error($e->getMessage());
@@ -77,10 +77,10 @@ final class ApplicationTrackCommand extends Command
             return Command::FAILURE;
         }
 
-        $application->setRecruiterName(ApplicationCommandSupport::optionalString($input->getOption('recruiter')));
-        $application->setRecruiterContact(ApplicationCommandSupport::optionalString($input->getOption('contact')));
+        $application->setRecruiterName(\App\Tracking\InputReader::optionalString($input->getOption('recruiter')));
+        $application->setRecruiterContact(\App\Tracking\InputReader::optionalString($input->getOption('contact')));
         $application->setChannel($channel);
-        $application->setNotes(ApplicationCommandSupport::optionalString($input->getOption('note')));
+        $application->setNotes(\App\Tracking\InputReader::optionalString($input->getOption('note')));
         $this->entityManager->flush();
 
         if ($application->getCvVersionId() === null) {

@@ -97,4 +97,39 @@ class ApplicationRepository extends ServiceEntityRepository
 
         return $stats;
     }
+
+    /**
+     * Pour une page d'offres : identifiant de la candidature de chaque offre qui en a une.
+     *
+     * @param iterable<Job> $jobs
+     *
+     * @return array<int, int> Identifiant d'offre → identifiant de candidature
+     */
+    public function idsByJobs(iterable $jobs): array
+    {
+        $ids = [];
+        foreach ($jobs as $job) {
+            if ($job->getId() !== null) {
+                $ids[] = $job->getId();
+            }
+        }
+        if ($ids === []) {
+            return [];
+        }
+
+        /** @var list<array{job: int|string, id: int|string}> $rows */
+        $rows = $this->createQueryBuilder('a')
+            ->select('IDENTITY(a.job) AS job, a.id AS id')
+            ->where('a.job IN (:jobs)')
+            ->setParameter('jobs', $ids)
+            ->getQuery()
+            ->getArrayResult();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $map[(int) $row['job']] = (int) $row['id'];
+        }
+
+        return $map;
+    }
 }

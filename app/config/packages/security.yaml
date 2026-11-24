@@ -1,0 +1,48 @@
+# Interface web : compte unique local, identifiants dans l'environnement (jamais dans le dépôt).
+# Tout est refusé tant qu'aucun mot de passe n'est configuré (JOBSCAN_UI_PASSWORD_HASH, voir docs/UI.md).
+security:
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+
+    providers:
+        ui_user:
+            id: App\Security\UiUserProvider
+
+    firewalls:
+        dev:
+            pattern: ^/(_profiler|_wdt)/
+            security: false
+        main:
+            lazy: true
+            provider: ui_user
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                enable_csrf: true
+                default_target_path: app_applications
+            logout:
+                path: app_logout
+                target: app_login
+                enable_csrf: true
+            login_throttling:
+                max_attempts: 5
+                interval: '15 minutes'
+
+    access_control:
+        - { path: ^/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/assets/, roles: PUBLIC_ACCESS }
+        - { path: ^/, roles: ROLE_USER }
+
+when@test:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: 'auto'
+                cost: 4
+                time_cost: 3
+                memory_cost: 10
+        firewalls:
+            main:
+                login_throttling:
+                    # Stockage en mémoire, propre à chaque démarrage du noyau : le cache de test est réinitialisé entre deux requêtes.
+                    storage_service: limiter.test_storage

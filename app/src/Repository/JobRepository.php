@@ -340,6 +340,12 @@ class JobRepository extends ServiceEntityRepository
     {
         $query = $this->createQueryBuilder('j');
 
+        match ($filters->state) {
+            'all' => null,
+            'saved', 'ignored', 'archived' => $query->andWhere('j.userState = :userState')->setParameter('userState', $filters->state),
+            default => $query->andWhere("j.userState IS NULL OR j.userState = 'saved'"),
+        };
+
         if ($filters->location !== null) {
             $query->andWhere('LOWER(j.location) LIKE LOWER(:location)')
                 ->setParameter('location', '%' . $filters->location . '%');

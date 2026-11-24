@@ -45,7 +45,7 @@ final class ApplicationStatusCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $id = ApplicationCommandSupport::id($input->getArgument('application'));
+        $id = \App\Tracking\InputReader::id($input->getArgument('application'));
         $application = $id === null ? null : $this->applications->find($id);
         if ($application === null) {
             $io->error('Candidature introuvable.');
@@ -62,10 +62,10 @@ final class ApplicationStatusCommand extends Command
 
         $now = new \DateTimeImmutable();
         try {
-            $at = ApplicationCommandSupport::date($input->getOption('at'), $now);
-            $followUp = $input->getOption('follow-up') === null ? null : ApplicationCommandSupport::date($input->getOption('follow-up'), $now->modify('+10 years'));
+            $at = \App\Tracking\InputReader::date($input->getOption('at'), $now);
+            $followUp = $input->getOption('follow-up') === null ? null : \App\Tracking\InputReader::anyDate((string) $input->getOption('follow-up'));
             $from = $application->getStatus();
-            $this->manager->changeStatus($application, $status, $at, ApplicationCommandSupport::optionalString($input->getOption('note')));
+            $this->manager->changeStatus($application, $status, $at, \App\Tracking\InputReader::optionalString($input->getOption('note')));
             if ($followUp !== null) {
                 $application->setFollowUpAt($followUp);
             }
@@ -75,7 +75,7 @@ final class ApplicationStatusCommand extends Command
             return Command::FAILURE;
         }
 
-        $message = ApplicationCommandSupport::optionalString($input->getOption('message'));
+        $message = \App\Tracking\InputReader::optionalString($input->getOption('message'));
         if ($message !== null) {
             $application->setMessageSent($message);
         }

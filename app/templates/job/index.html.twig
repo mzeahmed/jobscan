@@ -55,6 +55,16 @@
                     </select>
                 </label>
                 <label class="filter-field">
+                    <span>Décision</span>
+                    <select class="select" name="state">
+                        <option value="">Actives</option>
+                        <option value="saved" {{ filters.state == 'saved' ? 'selected' }}>Sauvegardées</option>
+                        <option value="ignored" {{ filters.state == 'ignored' ? 'selected' }}>Ignorées</option>
+                        <option value="archived" {{ filters.state == 'archived' ? 'selected' }}>Archivées</option>
+                        <option value="all" {{ filters.state == 'all' ? 'selected' }}>Toutes</option>
+                    </select>
+                </label>
+                <label class="filter-field">
                     <span>Freelance</span>
                     <select class="select" name="freelance">
                         <option value="">Tous</option>
@@ -156,7 +166,7 @@
                             {# Titre + méta #}
                             <div class="job-card__title-block">
                                 <h2 class="job-card__title">
-                                    <a href="{{ job.url }}"
+                                    <a href="{{ job.url|safe_url }}"
                                        target="_blank"
                                        rel="noopener noreferrer"
                                        title="{{ job.title }}">
@@ -209,8 +219,37 @@
                                 {% if isNew %}
                                     <span class="badge badge--new">Nouveau</span>
                                 {% endif %}
+                                {% if job.userState %}
+                                    <span class="badge badge--contract">{{ job.userState.label }}</span>
+                                {% endif %}
                             </div>
-                            <a href="{{ job.url }}"
+                            <div class="job-card__actions">
+                                {% if applicationsByJob[job.id] is defined %}
+                                    <a class="btn btn--ghost btn--sm" href="{{ path('app_application_show', {id: applicationsByJob[job.id]}) }}">Candidature</a>
+                                {% else %}
+                                    <form method="post" action="{{ path('app_job_track', {id: job.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('job_track_' ~ job.id) }}">
+                                        <button class="btn btn--ghost btn--sm" type="submit">Suivre</button>
+                                    </form>
+                                {% endif %}
+                                {% for state, label in {saved: 'Sauvegarder', ignored: 'Ignorer', archived: 'Archiver'} %}
+                                    {% if not job.userState or job.userState.value != state %}
+                                        <form method="post" action="{{ path('app_job_decide', {id: job.id}) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('job_decide_' ~ job.id) }}">
+                                            <input type="hidden" name="state" value="{{ state }}">
+                                            <button class="btn btn--ghost btn--sm" type="submit">{{ label }}</button>
+                                        </form>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if job.userState %}
+                                    <form method="post" action="{{ path('app_job_decide', {id: job.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('job_decide_' ~ job.id) }}">
+                                        <input type="hidden" name="state" value="none">
+                                        <button class="btn btn--ghost btn--sm" type="submit">Retirer</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                            <a href="{{ job.url|safe_url }}"
                                target="_blank"
                                rel="noopener noreferrer"
                                class="btn btn--primary btn--sm"

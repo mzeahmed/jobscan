@@ -40,7 +40,7 @@ final class AssistantDraftCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $id = ApplicationCommandSupport::id($input->getArgument('job'));
+        $id = \App\Tracking\InputReader::id($input->getArgument('job'));
         $job = $id === null ? null : $this->jobs->find($id);
         if ($job === null) {
             $io->error('Offre introuvable.');
@@ -49,7 +49,7 @@ final class AssistantDraftCommand extends Command
         }
 
         try {
-            $draft = $this->assistant->draft($job, ApplicationCommandSupport::optionalString($input->getOption('search-profile')), (bool) $input->getOption('llm'));
+            $draft = $this->assistant->draft($job, \App\Tracking\InputReader::optionalString($input->getOption('search-profile')), (bool) $input->getOption('llm'));
         } catch (AssistantException | InvalidProfileException $e) {
             $io->error($e->getMessage());
 

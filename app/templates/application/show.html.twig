@@ -1,0 +1,81 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ application.job.title }}{% endblock %}
+
+{% block body %}
+    {% set job = application.job %}
+    <section class="page">
+        <div class="page__header">
+            <a href="{{ path('app_applications') }}" class="btn btn--ghost btn--sm">← Candidatures</a>
+            <h1 class="page__title">{{ job.title }}</h1>
+            <p class="page__subtitle">
+                {{ job.company ?? 'Entreprise non précisée' }}{% if job.location %} · {{ job.location }}{% endif %}
+                · <span class="badge badge--source">{{ application.status.label }}</span>
+                · <a href="{{ job.url|safe_url }}" target="_blank" rel="noopener noreferrer nofollow">Voir l'offre</a>
+            </p>
+        </div>
+
+        <h2>Changer le statut</h2>
+        {% if transitions is empty %}
+            <p class="empty">« {{ application.status.label }} » est un statut final.</p>
+        {% else %}
+            <form method="post" action="{{ path('app_application_status', {id: application.id}) }}" class="filter-bar">
+                <div class="filter-fields">
+                    <label class="filter-field">
+                        <span>Nouveau statut</span>
+                        <select class="select" name="status" required>
+                            {% for status in transitions %}<option value="{{ status.value }}">{{ status.label }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label class="filter-field">
+                        <span>Date (aujourd'hui par défaut)</span>
+                        <input class="filter-input" type="date" name="at" max="{{ 'now'|date('Y-m-d') }}">
+                    </label>
+                    <label class="filter-field filter-field--location">
+                        <span>Note</span>
+                        <input class="filter-input" type="text" name="note" maxlength="500">
+                    </label>
+                </div>
+                <input type="hidden" name="_token" value="{{ csrf_token('application_status_' ~ application.id) }}">
+                <button class="btn btn--primary" type="submit">Enregistrer le statut</button>
+            </form>
+        {% endif %}
+
+        <h2>Informations</h2>
+        <form method="post" action="{{ path('app_application_details', {id: application.id}) }}" class="stack">
+            <label class="filter-field"><span>Recruteur</span>
+                <input class="filter-input" type="text" name="recruiter_name" maxlength="255" value="{{ application.recruiterName }}"></label>
+            <label class="filter-field"><span>Contact du recruteur</span>
+                <input class="filter-input" type="text" name="recruiter_contact" maxlength="255" value="{{ application.recruiterContact }}"></label>
+            <label class="filter-field"><span>Canal</span>
+                <select class="select" name="channel">
+                    <option value="">—</option>
+                    {% for channel in channels %}<option value="{{ channel.value }}" {{ application.channel == channel ? 'selected' }}>{{ channel.label }}</option>{% endfor %}
+                </select></label>
+            <label class="filter-field"><span>Version de CV</span>
+                <select class="select" name="cv">
+                    <option value="">—</option>
+                    {% for cv in cvs %}<option value="{{ cv.id }}" {{ application.cvVersionId == cv.id ? 'selected' }}>{{ cv.label }}</option>{% endfor %}
+                </select></label>
+            <label class="filter-field"><span>Relance prévue</span>
+                <input class="filter-input" type="date" name="follow_up" value="{{ application.followUpAt ? application.followUpAt|date('Y-m-d') }}"></label>
+            <label class="filter-field"><span>Message envoyé</span>
+                <textarea class="filter-input" name="message_sent" rows="8" maxlength="20000">{{ application.messageSent }}</textarea></label>
+            <label class="filter-field"><span>Notes</span>
+                <textarea class="filter-input" name="notes" rows="5" maxlength="20000">{{ application.notes }}</textarea></label>
+            <input type="hidden" name="_token" value="{{ csrf_token('application_details_' ~ application.id) }}">
+            <button class="btn btn--primary" type="submit">Enregistrer</button>
+        </form>
+
+        <h2>Historique</h2>
+        <ol class="history">
+            {% for change in history %}
+                <li>
+                    {{ change.changedAt|date('d/m/Y H:i') }} —
+                    {% if change.fromStatus %}{{ change.fromStatus.label }} → {% endif %}<strong>{{ change.toStatus.label }}</strong>
+                    {% if change.note %}<span class="history__note"> · {{ change.note }}</span>{% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    </section>
+{% endblock %}

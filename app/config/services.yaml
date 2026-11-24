@@ -121,6 +121,11 @@ services:
         arguments:
             $taskPrompt: '%app.ai_system_prompt%'
 
+    App\Security\UiUserProvider:
+        arguments:
+            $username: '%env(default:app.ui.default_user:JOBSCAN_UI_USER)%'
+            $passwordHash: '%env(default:app.ui.default_hash:JOBSCAN_UI_PASSWORD_HASH)%'
+
     App\Assistant\LlmDraftWriter:
         arguments:
             $client: '@llm.client'
@@ -285,3 +290,8 @@ services:
     App\Scoring\Scoring:
         arguments:
             $scoringConfig: '%app.profile.scoring%'
+
+when@test:
+    services:
+        limiter.test_storage:
+            class: Symfony\Component\RateLimiter\Storage\InMemoryStorage

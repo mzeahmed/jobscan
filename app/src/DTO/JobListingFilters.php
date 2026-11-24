@@ -20,6 +20,8 @@ final readonly class JobListingFilters
         public ?int $ageInDays = null,
         public ?bool $notified = null,
         public string $sort = 'date',
+        /** `active` (hors ignorées et archivées), `saved`, `ignored`, `archived` ou `all`. */
+        public string $state = 'active',
     ) {
     }
 }

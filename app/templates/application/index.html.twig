@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Candidatures{% endblock %}
+
+{% block body %}
+    <section class="page">
+        <div class="page__header">
+            <h1 class="page__title">Candidatures</h1>
+            <p class="page__subtitle">Ce que vous avez déclaré : Jobscan n'envoie rien à un recruteur.</p>
+        </div>
+
+        <nav class="status-filter" aria-label="Filtrer par statut">
+            <a class="btn btn--sm {{ filter is null ? 'btn--primary' : 'btn--ghost' }}" href="{{ path('app_applications') }}">Toutes</a>
+            {% for status in statuses %}
+                {% if counts[status.value] is defined %}
+                    <a class="btn btn--sm {{ filter == status ? 'btn--primary' : 'btn--ghost' }}" href="{{ path('app_applications', {status: status.value}) }}">
+                        {{ status.label }} ({{ counts[status.value] }})
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </nav>
+
+        {% if applications is empty %}
+            <p class="empty">Aucune candidature. Ouvrez-en une depuis la liste des offres (« Suivre »).</p>
+        {% else %}
+            <table class="table">
+                <thead>
+                    <tr><th>Statut</th><th>Poste</th><th>Entreprise</th><th>Postulé le</th><th>Relance</th><th>CV</th></tr>
+                </thead>
+                <tbody>
+                    {% for application in applications %}
+                        <tr>
+                            <td><span class="badge badge--source">{{ application.status.label }}</span></td>
+                            <td><a href="{{ path('app_application_show', {id: application.id}) }}">{{ application.job.title }}</a></td>
+                            <td>{{ application.job.company ?? '—' }}</td>
+                            <td>{{ application.appliedAt ? application.appliedAt|date('d/m/Y') : '—' }}</td>
+                            <td>{{ application.followUpAt ? application.followUpAt|date('d/m/Y') : '—' }}</td>
+                            <td>{{ application.cvVersionLabel ?? '—' }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </section>
+{% endblock %}

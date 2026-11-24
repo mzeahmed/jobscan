@@ -30,10 +30,17 @@
 
         <div class="topbar__divider" aria-hidden="true"></div>
 
-        <button class="btn btn--ghost btn--sm" type="button" onclick="window.location.reload()">
+        <a class="btn btn--ghost btn--sm" href="{{ app.request.requestUri }}">
             <i class="fa-solid fa-rotate" aria-hidden="true"></i>
             Actualiser
-        </button>
+        </a>
+
+        <div class="topbar__divider" aria-hidden="true"></div>
+
+        <a class="btn btn--ghost btn--sm" href="{{ logout_path() }}">
+            <i class="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+            Déconnexion
+        </a>
     </div>
 
 </header>

@@ -15,6 +15,10 @@ jobscan:
             model: '%env(GEMINI_MODEL)%'
 
 parameters:
+    app.trusted_proxies_default: ''
+    # Interface web : compte unique. Sans JOBSCAN_UI_PASSWORD_HASH, personne ne peut se connecter (voir docs/UI.md).
+    app.ui.default_user: admin
+    app.ui.default_hash: ''
     # Autorisation d'envoyer des faits du profil à un LLM distant : désactivée tant que ASSISTANT_ALLOW_REMOTE_LLM n'est pas à true.
     app.assistant.allow_remote_default: ''
     # Profil métier centralisé : recherche, filtrage, scoring et seuils.

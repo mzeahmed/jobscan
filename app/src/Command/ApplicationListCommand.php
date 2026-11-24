@@ -37,7 +37,7 @@ final class ApplicationListCommand extends Command
         $io->title('JOBSCAN — Candidatures');
 
         $statuses = null;
-        $filter = ApplicationCommandSupport::optionalString($input->getOption('status'));
+        $filter = \App\Tracking\InputReader::optionalString($input->getOption('status'));
         if ($filter !== null) {
             $status = ApplicationStatus::tryFrom($filter);
             if ($status === null) {
@@ -48,7 +48,7 @@ final class ApplicationListCommand extends Command
             $statuses = [$status];
         }
 
-        $limit = ApplicationCommandSupport::id($input->getOption('limit'));
+        $limit = \App\Tracking\InputReader::id($input->getOption('limit'));
         if ($limit === null) {
             $io->error('--limit doit être un entier positif.');
 

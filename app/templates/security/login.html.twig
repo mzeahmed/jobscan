@@ -1,0 +1,34 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion{% endblock %}
+{% block sidebar %}{% endblock %}
+{% block topbar %}{% endblock %}
+{% block body_class %}login-page{% endblock %}
+
+{% block body %}
+    <main class="login">
+        <h1 class="login__title">JOBSCAN</h1>
+
+        {% if not configured %}
+            <p class="flash flash--error" role="alert">
+                L'interface n'est pas configurée : aucun mot de passe n'est défini.
+                Lancez <code>php bin/console app:ui:hash-password</code> et ajoutez le résultat à <code>.env.local</code> (voir docs/UI.md).
+            </p>
+        {% elseif error %}
+            <p class="flash flash--error" role="alert">Identifiants invalides ou trop de tentatives : réessayez plus tard.</p>
+        {% endif %}
+
+        <form method="post" action="{{ path('app_login') }}" class="login__form">
+            <label class="filter-field">
+                <span>Identifiant</span>
+                <input class="filter-input" type="text" name="_username" value="{{ last_username }}" autocomplete="username" required autofocus>
+            </label>
+            <label class="filter-field">
+                <span>Mot de passe</span>
+                <input class="filter-input" type="password" name="_password" autocomplete="current-password" required>
+            </label>
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+            <button class="btn btn--primary" type="submit">Se connecter</button>
+        </form>
+    </main>
+{% endblock %}

@@ -24,6 +24,12 @@
                 {{ sidebar_job_badge|default('')|raw }}
             </a>
 
+            <a href="{{ path('app_applications') }}"
+               class="sidebar__item {{ app.request.attributes.get('_route') starts with 'app_application' ? 'sidebar__item--active' : '' }}">
+                <i class="fa-solid fa-paper-plane fa-fw sidebar__item-icon" aria-hidden="true"></i>
+                Candidatures
+            </a>
+
             <a href="#" class="sidebar__item">
                 <i class="fa-solid fa-rss fa-fw sidebar__item-icon" aria-hidden="true"></i>
                 Sources

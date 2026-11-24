@@ -32,13 +32,19 @@
                     {% include 'partials/_topbar.html.twig' %}
                 {% endblock %}
 
+                {% for type, messages in app.flashes %}
+                    {% for message in messages %}
+                        <p class="flash flash--{{ type }}" role="{{ type == 'error' ? 'alert' : 'status' }}">{{ message }}</p>
+                    {% endfor %}
+                {% endfor %}
+
                 {# Page content #}
                 {% block body %}{% endblock %}
             </div>
         </div>
 
         {% block javascripts %}
-            {% block importmap %}{{ importmap('app') }}{% endblock %}
+            {% block importmap %}{{ importmap('app', {nonce: csp_nonce()}) }}{% endblock %}
         {% endblock %}
     </body>
 </html>

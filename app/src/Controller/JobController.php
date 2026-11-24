@@ -8,6 +8,7 @@ use App\DTO\Seniority;
 use App\DTO\ContractType;
 use App\DTO\JobListingFilters;
 use App\Repository\JobRepository;
+use App\Repository\ApplicationRepository;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -18,7 +19,8 @@ final class JobController extends AbstractController
     private const int ITEMS_PER_PAGE = 10;
 
     public function __construct(
-        private readonly JobRepository $jobRepository
+        private readonly JobRepository $jobRepository,
+        private readonly ApplicationRepository $applicationRepository,
     ) {
     }
 
@@ -53,6 +55,7 @@ final class JobController extends AbstractController
             'totalJobs' => $totalJobs,
             'filters' => $filters,
             'sources' => $this->jobRepository->findSources(),
+            'applicationsByJob' => $this->applicationRepository->idsByJobs($jobs),
             'filterParams' => array_filter($request->query->all(), static fn ($key): bool => $key !== 'page', ARRAY_FILTER_USE_KEY),
         ]);
     }
@@ -83,6 +86,7 @@ final class JobController extends AbstractController
                 'yes' => true, 'no' => false, default => null
             },
             sort: $choice('sort', ['date', 'score']) ?? 'date',
+            state: $choice('state', ['saved', 'ignored', 'archived', 'all']) ?? 'active',
         );
     }
 }

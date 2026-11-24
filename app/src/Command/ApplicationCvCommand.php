@@ -39,7 +39,7 @@ final class ApplicationCvCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $id = ApplicationCommandSupport::id($input->getArgument('application'));
+        $id = \App\Tracking\InputReader::id($input->getArgument('application'));
         $application = $id === null ? null : $this->applications->find($id);
         if ($application === null) {
             $io->error('Candidature introuvable.');

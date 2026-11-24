@@ -10,6 +10,25 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-05
+
+#### Added
+
+- Interface de suivi sécurisée : `/applications` (liste filtrable, compteurs) et détail d'une candidature (statut avec transitions autorisées, recruteur, contact, canal, CV, relance, message envoyé, notes, historique) ;
+  sur `/job` : suivre, sauvegarder, ignorer, archiver une offre, filtre « Décision ». Écritures en POST uniquement, avec les mêmes règles de validation que les commandes.
+- Sécurité : `symfony/security-bundle` et `symfony/rate-limiter` ; compte unique configuré par hash (`app:ui:hash-password`, `JOBSCAN_UI_PASSWORD_HASH`) ; jeton CSRF par action et par objet ;
+  limitation à 5 tentatives de connexion par 15 minutes ; cookie de session `HttpOnly`/`SameSite=Lax`/`Secure` ; CSP à nonce, `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `no-store` ;
+  `TRUSTED_PROXIES` optionnel derrière un proxy inverse. `docs/UI.md`.
+
+#### Changed
+
+- **`/job` exige désormais une connexion** (il était public). Tant qu'aucun mot de passe n'est configuré, personne ne peut se connecter.
+- Les offres ignorées et archivées sont masquées de la liste par défaut.
+
+#### Fixed
+
+- Une URL d'annonce `javascript:` était insérée telle quelle dans un `href` de la liste des offres : seules les URL `http(s)` sont désormais cliquables.
+
 ### 2026-12-04
 
 #### Added
