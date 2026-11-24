@@ -1,0 +1,107 @@
+# =============================================================================
+#  PROFIL CANDIDAT — FICHIER D'EXEMPLE (valeurs fictives, à remplacer)
+#
+#  Copiez ce fichier en `config/profile/local/candidate.yaml` (ou `php bin/console app:profile:init`)
+#  puis remplacez TOUTES les valeurs par les vôtres.
+#
+#  Ne déclarez que ce que vous maîtrisez réellement : Jobscan n'invente rien et n'ajoute aucune
+#  compétence, expérience, certification ni chiffre. Les compétences ci-dessous sont des EXEMPLES.
+#
+#  Le dossier `config/profile/local/` est ignoré par Git et exclu des images Docker : il contient
+#  des données personnelles. Ne le versionnez ni ne le partagez.
+# =============================================================================
+
+identity:
+  full_name: Prénom Nom
+  headline: Développeur back-end
+  email: prenom.nom@example.com
+  phone: "+33 6 00 00 00 00"
+
+# Intitulés de poste recherchés
+target_titles:
+  - Développeur back-end PHP
+  - Développeur Symfony
+
+# Compétences. Forme courte (`- PHP`) ou détaillée. `level` : beginner | intermediate | advanced | expert.
+# `years` : années d'expérience, à ne renseigner que si vous les connaissez.
+skills:
+  - name: PHP
+    level: expert
+    years: 8
+  - name: Symfony
+    level: advanced
+    years: 5
+  - name: Docker
+    level: intermediate
+  - Linux
+
+# Compétences exclues ou non maîtrisées : une offre qui les exige sera écartée.
+excluded_skills:
+  - COBOL
+
+experiences:
+  - company: Exemple SAS
+    title: Développeur back-end
+    start: "2019-03"        # AAAA-MM
+    end: "2024-06"          # omettre si l'expérience est en cours
+    summary: Développement d'une plateforme de gestion de commandes.
+    achievements:           # uniquement des faits que vous pouvez soutenir, chiffres compris
+      - Migration de l'application vers une nouvelle version majeure du framework.
+    skills: [PHP, Symfony]
+
+projects:
+  - name: Mon projet personnel
+    summary: Outil en ligne de commande d'agrégation d'offres.
+    url: https://example.com/mon-projet
+    skills: [PHP, Docker]
+
+# Réalisations transverses
+achievements:
+  - Animation de formations internes sur les tests automatisés.
+
+certifications:
+  - name: Certification exemple
+    issuer: Organisme exemple
+    year: 2022
+
+languages:
+  - name: Français
+    level: natif
+  - name: Anglais
+    level: B2
+
+location:
+  cities: [Marseille]
+  mobility: regional        # local | regional | national | international
+  max_distance_km: 50
+
+# Modes de travail acceptés (vide : aucune préférence)
+remote_modes: [remote, hybrid]
+
+# Types de contrat recherchés (vide : aucune préférence) : freelance | cdi
+contracts: [cdi, freelance]
+
+# Prétentions : taux journalier (freelance) ou salaire annuel brut (cdi)
+salary:
+  - contract: freelance
+    period: daily
+    min: 500
+  - contract: cdi
+    period: annual
+    min: 45000
+    max: 55000
+    currency: EUR
+
+availability:
+  from: "2026-01-05"        # AAAA-MM-JJ
+  notice_days: 30
+  comment: Disponible après préavis.
+
+# Versions de CV (fichiers locaux, jamais transmis sans autorisation). Référencées par `cv:` dans
+# les profils de recherche.
+cvs:
+  - id: backend-php
+    label: CV Backend PHP
+    path: ~/documents/cv/cv-backend-php.pdf
+  - id: devops
+    label: CV DevOps

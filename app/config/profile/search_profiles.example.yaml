@@ -1,0 +1,40 @@
+# =============================================================================
+#  PROFILS DE RECHERCHE — FICHIER D'EXEMPLE (valeurs fictives, à remplacer)
+#
+#  Copiez ce fichier en `config/profile/local/search_profiles.yaml` puis adaptez-le.
+#
+#  Un profil de recherche est une stratégie indépendante. Une même offre peut correspondre à
+#  plusieurs profils sans être dupliquée. Les compétences citées ici devraient être déclarées dans
+#  `candidate.yaml` : une compétence ciblée mais non déclarée ne sera pas comptée comme maîtrisée.
+# =============================================================================
+
+search_profiles:
+  # L'identifiant (clé) : minuscules, chiffres, « - » ou « _ ».
+  backend-php-symfony:
+    name: Backend PHP / Symfony
+    enabled: true
+    keywords: [php, symfony, api]
+    titles: ["Développeur back-end", "Développeur Symfony"]
+    primary_skills: [PHP, Symfony]       # compétences prioritaires
+    secondary_skills: [Docker, Linux]    # compétences appréciées
+    locations: [Marseille, Remote]       # vide : lieux du candidat
+    contracts: [cdi]                     # vide : contrats du candidat
+    remote_modes: [remote, hybrid]       # vide : modes du candidat
+    excluded_keywords: [stage, alternance]   # éliminatoires
+    excluded_titles: ["Chef de projet"]
+    excluded_skills: []
+    min_match_score: 60                  # seuil minimal de compatibilité (0-100)
+    cv: backend-php                      # version de CV associée (voir `cvs` de candidate.yaml)
+    # Poids relatifs des critères (optionnel). Absents : valeurs par défaut de `app.profile.match_weights`.
+    weights:
+      required_skills: 50
+      title: 10
+
+  devops:
+    name: DevOps
+    enabled: false                       # désactivé : conservé mais ignoré
+    keywords: [devops, ci/cd, docker]
+    titles: ["Ingénieur DevOps"]
+    primary_skills: [Docker, Linux]
+    contracts: [freelance, cdi]
+    cv: devops

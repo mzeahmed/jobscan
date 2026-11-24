@@ -7,3 +7,5 @@ docker-compose.override.yml
 docker-compose.prod.yml
 docker/
 traefik/
+# Profil candidat : données personnelles, jamais dans une image
+app/config/profile/local/*

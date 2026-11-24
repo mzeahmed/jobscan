@@ -21,6 +21,24 @@ parameters:
     app.profile.searx_queries: '%env(csv:SEARX_QUERIES)%'
     app.profile.job_locations: '%env(csv:JOB_LOCATIONS)%'
     app.profile.empty_csv: ''
+    # Profil candidat et profils de recherche : fichiers YAML locaux (données personnelles, gitignorés).
+    # Dossier surchargeable par JOBSCAN_PROFILE_DIR (volume Docker, par exemple).
+    app.profile.default_directory: '%kernel.project_dir%/config/profile/local'
+    app.profile.directory: '%env(default:app.profile.default_directory:JOBSCAN_PROFILE_DIR)%'
+    # Seuil minimal de compatibilité d'un profil de recherche qui n'en définit pas.
+    app.profile.default_min_match_score: 50
+    # Poids relatifs par défaut des critères du score de compatibilité (surchargeables par profil).
+    app.profile.match_weights:
+        required_skills: 40
+        nice_skills: 15
+        title: 15
+        location: 10
+        remote: 5
+        contract: 5
+        salary: 5
+        seniority: 3
+        languages: 1
+        availability: 1
     # Exclusion métier : offres écartées quelle que soit leur provenance (email compris).
     app.profile.excluded_platform_domains: '%env(csv:default:app.profile.empty_csv:EXCLUDED_PLATFORM_DOMAINS)%'
     # Restriction de collecte : domaines que SearXNG et les flux RSS ne doivent pas récupérer

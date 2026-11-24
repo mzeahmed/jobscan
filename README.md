@@ -337,6 +337,21 @@ Une réponse JSON contenant un tableau `results` confirme que SearXNG est opéra
 
 ---
 
+## Profil candidat et profils de recherche
+
+Votre profil (compétences, expériences, préférences) et vos stratégies de recherche se décrivent dans deux fichiers YAML
+**locaux**, ignorés par Git et exclus des images Docker :
+
+```bash
+php bin/console app:profile:init       # crée config/profile/local/candidate.yaml et search_profiles.yaml (exemples fictifs)
+php bin/console app:profile:validate   # contrôle sans jamais afficher le contenu
+```
+
+Jobscan n'invente aucune compétence : seule ce que vous déclarez compte. Ce chargement est la première brique du
+matching par profil ; il n'est pas encore branché sur le scoring. Voir [docs/PROFILE.md](docs/PROFILE.md).
+
+---
+
 ## Moteur d'analyse IA
 
 JOBSCAN analyse les offres via un moteur LLM choisi par `DEFAULT_LLM_PROVIDER` :

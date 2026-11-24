@@ -42,6 +42,14 @@ services:
             $environment: '%kernel.environment%'
             $analysisLimit: '%app.profile.analysis_batch_limit%'
 
+    App\Command\ValidateProfileCommand:
+        arguments:
+            $examplesDirectory: '%kernel.project_dir%/config/profile'
+
+    App\Command\InitProfileCommand:
+        arguments:
+            $examplesDirectory: '%kernel.project_dir%/config/profile'
+
     App\Command\AnalyzeJobsCommand:
         arguments:
             $defaultLimit: '%app.profile.analysis_batch_limit%'
@@ -199,6 +207,12 @@ services:
             $queryDelayMs: '%app.profile.searx_query_delay_ms%'
             $noiseFilter: '@App\Provider\SearxNoiseFilter'
         tags: [ 'app.job_provider' ]
+
+    App\Profile\ProfileLoader:
+        arguments:
+            $directory: '%app.profile.directory%'
+            $defaultWeights: '%app.profile.match_weights%'
+            $defaultMinMatchScore: '%app.profile.default_min_match_score%'
 
     App\Provider\CollectionPolicy:
         arguments:

@@ -1,0 +1,3 @@
+# Données personnelles : ce dossier est ignoré par Git (sauf ce fichier) et exclu des images Docker.
+*
+!.gitignore

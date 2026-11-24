@@ -10,6 +10,23 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-11-28
+
+#### Added
+
+- Profil candidat et profils de recherche : fichiers YAML locaux `candidate.yaml` et `search_profiles.yaml`
+  (dossier `config/profile/local/`, ignoré par Git et exclu des images Docker, surchargeable par
+  `JOBSCAN_PROFILE_DIR`), objets immuables (`CandidateProfile`, `SearchProfile`, `Skill`, `ScoringWeights`…),
+  validation par schémas Symfony Config (clés inconnues rejetées) et contrôles croisés (compétence à la fois
+  déclarée et exclue, CV inexistant, doublons…). Une compétence n'est jamais supposée : niveau et années
+  restent inconnus tant qu'ils ne sont pas renseignés.
+- Commandes `app:profile:init` (crée les fichiers depuis les exemples sans jamais écraser, en `0600`) et
+  `app:profile:validate` (résumé sans contenu personnel, avertissement si les fichiers sont identiques aux exemples).
+- Pondérations par défaut des critères de compatibilité (`app.profile.match_weights`) et seuil par défaut
+  (`app.profile.default_min_match_score`), surchargeables par profil de recherche.
+- Fichiers d'exemple fictifs versionnés et `docs/PROFILE.md`. Le profil n'est pas encore utilisé par le
+  scoring (lots 2.2 et 2.3).
+
 ### 2026-11-27
 
 #### Added
