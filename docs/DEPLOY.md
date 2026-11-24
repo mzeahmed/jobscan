@@ -32,7 +32,7 @@ L'image est construite en plusieurs étapes (`dev`, `build`, `prod`) : dépendan
 
 ## Planification (`cron`)
 
-`docker/cron/crontab` (copié dans l'image) :
+`.docker/cron/crontab` (copié dans l'image) :
 
 | Tâche | Fréquence |
 |---|---|

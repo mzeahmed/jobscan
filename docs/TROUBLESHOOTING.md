@@ -145,7 +145,7 @@ logs (`make logs`).
 `app` n'est pas encore inscrit dans le DNS interne de Docker à ce moment-là (ordre
 de démarrage), la résolution échoue et nginx refuse de démarrer.
 
-**Solution** : déjà en place dans `docker/nginx/default.conf` — le nom `app` est
+**Solution** : déjà en place dans `.docker/nginx/default.conf` — le nom `app` est
 résolu via une variable (`set $upstream_app app:9000;` + `resolver 127.0.0.11
 valid=10s;`) plutôt qu'en dur dans `fastcgi_pass`, ce qui reporte la résolution DNS
 à la requête plutôt qu'au démarrage. Si l'erreur revient après une modification de

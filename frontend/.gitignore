@@ -1,0 +1,19 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+playwright-report
+test-results
+.playwright
+
+# Éditeurs
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.sw?

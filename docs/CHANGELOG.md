@@ -10,6 +10,13 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-16
+
+#### Added
+
+- Front 0 : squelette React (`frontend/`, voir `docs/API.md`) — Vite, TypeScript strict, ESLint/Prettier, design-system, routeur protégé, client HTTP avec rafraîchissement de jeton, écrans Connexion/Accueil, 20 tests Playwright (CSP stricte, jeton en mémoire).
+- Conteneurisation du front sur le modèle de Coelbook : service `frontend` (Vite) dans `docker-compose.yml`, domaine `app.jobscan.local` (nginx + Traefik), cibles `make front-check|front-e2e|front-bash`.
+
 ### 2026-12-15
 
 #### Added

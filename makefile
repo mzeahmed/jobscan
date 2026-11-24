@@ -1,4 +1,4 @@
-.PHONY: help setup hosts build up down logs bash migrate run-pipeline llm-load llm-status alerts fix-perms test test-unit test-integration prod-up prod-up-workers prod-down prod-logs prod-ps
+.PHONY: help setup hosts build up down logs bash migrate run-pipeline llm-load llm-status alerts fix-perms test test-unit test-integration prod-up prod-up-workers prod-down prod-logs prod-ps front-check front-e2e front-bash
 
 COMPOSE = docker compose -f docker-compose.yml
 COMPOSE_PROD = docker compose -f docker-compose.prod.yml
@@ -18,7 +18,7 @@ LMSTUDIO_MODEL_ID ?= qwen3:8b
 RESET ?= 0
 PIPELINE_ARGS ?=
 
-DOMAINS = jobscan.local searxng.local
+DOMAINS = jobscan.local app.jobscan.local searxng.local
 
 RED=\033[0;31m
 GREEN=\033[0;32m
@@ -78,6 +78,15 @@ down: ## Stop les conteneurs — Exemple : make down
 	@echo "$(GREEN)Conteneurs arrêtés$(NO_COLOR)"
 
 restart: down up ## Redémarre les conteneurs — Exemple : make restart
+
+front-check: ## Front React : types, lint, format et build — Exemple : make front-check
+	cd frontend && npm run typecheck && npm run lint && npm run format:check && npm run build
+
+front-e2e: ## Front React : tests de bout en bout (build de production, API simulée) — Exemple : make front-e2e
+	cd frontend && npm run e2e
+
+front-bash: ## Accède au conteneur du front — Exemple : make front-bash
+	docker exec -it jobscan_frontend sh
 
 prod-up: ## Déploiement autonome : web seul — Exemple : make prod-up
 	$(COMPOSE_PROD) up -d --build

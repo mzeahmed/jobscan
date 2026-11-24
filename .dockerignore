@@ -14,11 +14,18 @@ app/node_modules
 app/.phpunit.cache
 app/tests
 
+# Front React : dépendances et sorties de build (le contexte `.` ne doit pas les envoyer au démon).
+frontend/node_modules
+frontend/dist
+frontend/playwright-report
+frontend/test-results
+frontend/.env*.local
+
 # Définition de l'infrastructure : inutile dans le contexte de build (sauf ce que les Dockerfile copient).
 docker-compose*.yml
 traefik/
 certs/
-docker/*
-!docker/php
-!docker/nginx
-!docker/cron
+.docker/*
+!.docker/php
+!.docker/nginx
+!.docker/cron

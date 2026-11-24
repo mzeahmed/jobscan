@@ -55,9 +55,9 @@ FROM base AS prod
 
 RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin app
 
-COPY docker/php/opcache-prod.ini /usr/local/etc/php/conf.d/zz-opcache-prod.ini
-COPY docker/php/entrypoint.sh /usr/local/bin/jobscan-entrypoint
-COPY docker/cron/crontab /etc/jobscan/crontab
+COPY .docker/php/opcache-prod.ini /usr/local/etc/php/conf.d/zz-opcache-prod.ini
+COPY .docker/php/entrypoint.sh /usr/local/bin/jobscan-entrypoint
+COPY .docker/cron/crontab /etc/jobscan/crontab
 RUN chmod +x /usr/local/bin/jobscan-entrypoint
 
 COPY --from=build --chown=app:app /app /app

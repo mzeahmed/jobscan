@@ -54,8 +54,18 @@ Seuls `/health`, `/health/ready` et `/api/v1/` sont publics (`access_control`) ;
 - [ ] **API 1** — authentification : login, refresh rotatif, logout, me ; pare-feu `^/api` sans état ; table `refresh_token`
 - [ ] **API 2** — lecture : offres (filtres, pagination), candidatures, analytics
 - [ ] **API 3** — écriture : suivre, décider, statut, détails
-- [ ] **Front 0** — squelette `frontend/` (Vite, React 19, TypeScript strict, ESLint, Prettier, Playwright), design-system, routeur, client HTTP, authentification, Docker et Traefik
+- [x] **Front 0** — squelette `frontend/` (Vite, React 19, TypeScript strict, ESLint, Prettier, Playwright), design-system, routeur, client HTTP, authentification, Docker et Traefik
 - [ ] **Front 1 à 3** — Offres, Candidatures, Analytics
 - [ ] **Final** — retrait de l'interface Twig, documentation
 
 Choix retenus : `/api/v1` sur **la même origine** (Traefik route le chemin vers Symfony et le reste vers le front : ni CORS ni nouveau certificat), JWT via `firebase/php-jwt`, i18n `i18next` en français seul au départ, interface Twig conservée jusqu'au dernier lot.
+
+## Front (`frontend/`)
+
+Front 0 livré : React 19, TypeScript strict, Vite, TanStack Query, react-router, i18next (français), design-system `js-*` (variables reprises de l'interface Twig), client HTTP `symfonyClient` (rafraîchissement du jeton en vol unique, verrou Web Locks entre onglets).
+Commandes : `make front-check` (types, lint, format, build) et `make front-e2e` (Playwright, build de production avec CSP stricte, API simulée).
+
+- **Développement** : `make up` lance le conteneur `frontend` (Vite). Accès `https://app.jobscan.local:8443` (nginx route `/api` et `/health` vers Symfony, le reste vers Vite — une seule origine, donc ni CORS ni cookie inter-site) ou directement `http://localhost:5173`. `make hosts` ajoute `app.jobscan.local`.
+- **Production** : pas d'image dédiée pour l'instant ; le build statique sera servi par nginx au lot « Final ».
+- **Contrat d'authentification attendu (API 1)** : `POST /auth/login {username,password}` et `POST /auth/refresh` (cookie HttpOnly) renvoient `{user:{id,username,roles}, access_token, token_type, expires_in}` ; `POST /auth/logout` répond 204.
+- **Limite connue** : la connexion n'est testée que contre une API simulée tant que l'API 1 n'existe pas.

@@ -1,0 +1,70 @@
+/* Variables de design de Jobscan : reprises de l'interface Twig actuelle (app/assets/styles/app.css) pour que
+   les deux interfaces se ressemblent pendant la migration. */
+:root {
+  /* Marque */
+  --c-primary: #2563eb;
+  --c-primary-hover: #1d4ed8;
+  --c-primary-subtle: #eff6ff;
+  --c-primary-border: rgba(37, 99, 235, 0.12);
+  --c-secondary: #06b6d4;
+
+  /* Surfaces */
+  --c-bg: #f8fafc;
+  --c-card: #ffffff;
+  --c-dark: #0f172a;
+
+  /* Texte */
+  --c-text: #0f172a;
+  --c-text-muted: #64748b;
+  --c-text-faint: #94a3b8;
+
+  /* Sémantique */
+  --c-success: #16a34a;
+  --c-success-subtle: #f0fdf4;
+  --c-success-border: rgba(22, 163, 74, 0.15);
+  --c-warning: #f59e0b;
+  --c-warning-subtle: #fffbeb;
+  --c-warning-border: rgba(245, 158, 11, 0.15);
+  --c-danger: #dc2626;
+  --c-danger-subtle: #fef2f2;
+  --c-danger-border: rgba(220, 38, 38, 0.15);
+
+  /* Bordures */
+  --c-border: #e2e8f0;
+  --c-border-subtle: #f1f5f9;
+
+  /* Barre latérale */
+  --c-sidebar-text: #94a3b8;
+  --c-sidebar-active: #ffffff;
+  --c-sidebar-active-bg: rgba(255, 255, 255, 0.08);
+  --c-sidebar-hover-bg: rgba(255, 255, 255, 0.05);
+  --c-sidebar-border: rgba(255, 255, 255, 0.06);
+
+  /* Espacements */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-12: 48px;
+
+  /* Rayons */
+  --r-card: 16px;
+  --r-input: 12px;
+  --r-badge: 6px;
+  --r-sm: 8px;
+
+  /* Ombres */
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.15);
+
+  /* Typographie */
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Mise en page */
+  --sidebar-w: 240px;
+  --topbar-h: 64px;
+}

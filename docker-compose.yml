@@ -22,7 +22,7 @@ services:
     app:
         build:
             context: .
-            dockerfile: docker/php/Dockerfile
+            dockerfile: .docker/php/Dockerfile
             target: dev
         container_name: jobscan_app
         working_dir: /app
@@ -54,18 +54,41 @@ services:
         container_name: jobscan_nginx
         volumes:
             - ./app:/app
-            - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+            - ./.docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
         depends_on:
             - app
         networks:
             - frontend
             - application
 
+    # Front React (développement) : serveur Vite. nginx est la porte d'entrée (`app.jobscan.local`) et lui relaie `/` ;
+    # `/api` et `/health` vont à Symfony. Le navigateur ne voit donc qu'une origine : ni CORS, ni cookie inter-site.
+    # Accès direct, sans nom de domaine ni certificat : http://localhost:5173 (Vite relaie alors /api à nginx).
+    frontend:
+        build:
+            context: ./.docker/frontend
+        container_name: jobscan_frontend
+        working_dir: /app
+        # Sous VOTRE identifiant (HOST_UID/HOST_GID exportés par le makefile) : rien n'appartient à root dans ./frontend.
+        user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+        volumes:
+            - ./frontend:/app
+        environment:
+            HOME: /tmp
+            # Relais de /api et /health par le serveur Vite quand on l'ouvre directement : nginx, sur le réseau interne.
+            API_PROXY_TARGET: http://nginx:80
+        ports:
+            - "127.0.0.1:${FRONTEND_PORT:-5173}:5173"
+        depends_on:
+            - nginx
+        networks:
+            - application
+
     searxng:
         image: searxng/searxng
         container_name: jobscan_searxng
         volumes:
-            - ./docker/searxng/settings.yml:/etc/searxng/settings.yml
+            - ./.docker/searxng/settings.yml:/etc/searxng/settings.yml
         environment:
             SEARXNG_BASE_URL: http://searxng.local
         networks:

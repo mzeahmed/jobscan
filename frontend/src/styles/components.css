@@ -1,0 +1,276 @@
+/* Primitives du design-system. Préfixe `js-` ; aucun style en ligne (CSP), tout passe par ces classes. */
+
+/* --- Bouton --- */
+.js-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--r-input);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    color 0.12s;
+}
+
+.js-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.js-btn-primary {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: #fff;
+}
+
+.js-btn-primary:hover:not(:disabled) {
+  background: var(--c-primary-hover);
+  border-color: var(--c-primary-hover);
+}
+
+.js-btn-secondary {
+  background: var(--c-primary-subtle);
+  border-color: var(--c-primary-border);
+  color: var(--c-primary);
+}
+
+.js-btn-secondary:hover:not(:disabled) {
+  background: #dbeafe;
+}
+
+.js-btn-ghost {
+  background: var(--c-card);
+  border-color: var(--c-border);
+  color: var(--c-text-muted);
+}
+
+.js-btn-ghost:hover:not(:disabled) {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  color: var(--c-text);
+}
+
+.js-btn-danger {
+  background: var(--c-danger);
+  border-color: var(--c-danger);
+  color: #fff;
+}
+
+.js-btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.js-btn-block {
+  width: 100%;
+}
+
+/* --- Carte --- */
+.js-card {
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-card);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
+}
+
+.js-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 16px var(--sp-6);
+  border-bottom: 1px solid var(--c-border-subtle);
+}
+
+.js-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.js-card-body {
+  padding: var(--sp-6);
+}
+
+/* --- Pastille --- */
+.js-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-border-subtle);
+  color: var(--c-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.js-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.js-badge-success {
+  background: var(--c-success-subtle);
+  border-color: var(--c-success-border);
+  color: #15803d;
+}
+
+.js-badge-warning {
+  background: var(--c-warning-subtle);
+  border-color: var(--c-warning-border);
+  color: #b45309;
+}
+
+.js-badge-danger {
+  background: var(--c-danger-subtle);
+  border-color: var(--c-danger-border);
+  color: #b91c1c;
+}
+
+.js-badge-info {
+  background: var(--c-primary-subtle);
+  border-color: var(--c-primary-border);
+  color: var(--c-primary);
+}
+
+/* --- Message en ligne --- */
+.js-inline-alert {
+  padding: 12px 16px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-input);
+  background: var(--c-card);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.js-inline-alert-info {
+  background: var(--c-primary-subtle);
+  border-color: var(--c-primary-border);
+  color: #1e40af;
+}
+
+.js-inline-alert-success {
+  background: var(--c-success-subtle);
+  border-color: var(--c-success-border);
+  color: #166534;
+}
+
+.js-inline-alert-warning {
+  background: var(--c-warning-subtle);
+  border-color: var(--c-warning-border);
+  color: #92400e;
+}
+
+.js-inline-alert-danger {
+  background: var(--c-danger-subtle);
+  border-color: var(--c-danger-border);
+  color: #991b1b;
+}
+
+/* --- Champ de formulaire --- */
+.js-field {
+  display: grid;
+  gap: 5px;
+}
+
+.js-field-label {
+  color: var(--c-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.js-input {
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-input);
+  background: var(--c-card);
+}
+
+.js-input:focus {
+  outline: none;
+  border-color: var(--c-primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.js-input[aria-invalid='true'] {
+  border-color: var(--c-danger);
+}
+
+.js-field-error {
+  color: #b91c1c;
+  font-size: 12.5px;
+}
+
+/* --- État vide --- */
+.js-empty-state {
+  padding: var(--sp-12) var(--sp-8);
+  border: 1px dashed var(--c-border);
+  border-radius: var(--r-card);
+  background: var(--c-card);
+  text-align: center;
+}
+
+.js-empty-state-icon {
+  margin: 0 auto var(--sp-4);
+  color: var(--c-text-faint);
+  font-size: 40px;
+}
+
+.js-empty-state-title {
+  margin-bottom: var(--sp-2);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.js-empty-state-text {
+  color: var(--c-text-muted);
+  font-size: 14px;
+}
+
+.js-empty-state-action {
+  margin-top: var(--sp-4);
+}
+
+/* --- Squelette de chargement --- */
+.js-skeleton {
+  display: block;
+  height: 14px;
+  border-radius: var(--r-badge);
+  background: linear-gradient(90deg, var(--c-border-subtle) 25%, var(--c-border) 50%, var(--c-border-subtle) 75%);
+  background-size: 200% 100%;
+  animation: js-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.js-skeleton-short {
+  width: 40%;
+}
+
+.js-skeleton-block {
+  height: 64px;
+}
+
+@keyframes js-skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+
+  to {
+    background-position: -200% 0;
+  }
+}

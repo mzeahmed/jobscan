@@ -333,7 +333,7 @@ curl "https://searxng.local:8443/search?q=php+symfony+remote&format=json"
 
 Une réponse JSON contenant un tableau `results` confirme que SearXNG est opérationnel.
 
-> **Note** : SearXNG doit avoir `format: json` activé dans `docker/searxng/settings.yml` pour retourner des réponses JSON.
+> **Note** : SearXNG doit avoir `format: json` activé dans `.docker/searxng/settings.yml` pour retourner des réponses JSON.
 
 ---
 
