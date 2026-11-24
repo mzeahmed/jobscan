@@ -89,11 +89,4 @@ final class AshbyProvider extends AbstractAtsProvider
             publicationDateConfidence: $publishedAt === null ? PublicationDateConfidence::Unknown : PublicationDateConfidence::Medium,
         );
     }
-
-    private function labelled(string $label, mixed $value): ?string
-    {
-        $text = $this->optionalText($value);
-
-        return $text === null ? null : sprintf('%s : %s.', $label, $text);
-    }
 }

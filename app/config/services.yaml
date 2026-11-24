@@ -238,6 +238,27 @@ services:
             $minRequestIntervalMs: '%app.profile.ats_min_request_interval_ms%'
         tags: ['app.job_provider']
 
+    App\Provider\Ats\RecruiteeProvider:
+        arguments:
+            $boards: '%env(csv:default:app.profile.empty_csv:RECRUITEE_BOARDS)%'
+            $minRequestIntervalMs: '%app.profile.ats_min_request_interval_ms%'
+        tags: ['app.job_provider']
+
+    App\Provider\Ats\WorkableProvider:
+        arguments:
+            $boards: '%env(csv:default:app.profile.empty_csv:WORKABLE_BOARDS)%'
+            $minRequestIntervalMs: '%app.profile.ats_min_request_interval_ms%'
+        tags: ['app.job_provider']
+
+    App\Provider\Ats\SmartRecruitersProvider:
+        arguments:
+            $boards: '%env(csv:default:app.profile.empty_csv:SMARTRECRUITERS_BOARDS)%'
+            $minRequestIntervalMs: '%app.profile.ats_min_request_interval_ms%'
+            $pageSize: '%app.profile.smartrecruiters_page_size%'
+            $maxPages: '%app.profile.smartrecruiters_max_pages%'
+            $maxDetails: '%app.profile.smartrecruiters_max_details%'
+        tags: ['app.job_provider']
+
     App\Provider\SearxNoiseFilter:
         arguments:
             $blockedPatterns: '%app.profile.searx_blocked_patterns%'

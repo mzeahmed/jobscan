@@ -139,13 +139,6 @@ final class LeverProvider extends AbstractAtsProvider
         return $parts;
     }
 
-    private function labelled(string $label, mixed $value): ?string
-    {
-        $text = $this->optionalText($value);
-
-        return $text === null ? null : sprintf('%s : %s.', $label, $text);
-    }
-
     private function workplace(mixed $value): ?string
     {
         return is_string($value) && $value !== '' && $value !== 'unspecified' ? sprintf('Mode de travail : %s.', $value) : null;

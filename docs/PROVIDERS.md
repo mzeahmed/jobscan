@@ -78,15 +78,22 @@ Réglages dans `jobscan.yaml` : `app.profile.france_travail_max_pages` (3), `_pa
   `http(s)` sont rejetées.
 - **Secrets** : ni le secret client ni le jeton ne sont journalisés ; ils ne vont que dans `.env.local`.
 
-## ATS — Greenhouse, Lever, Ashby
+## ATS — Greenhouse, Lever, Ashby, Recruitee, Workable, SmartRecruiters
 
-Trois providers lisent les **API publiques de publication d'offres** des job boards d'entreprises : aucune clé, aucun
+Six providers lisent les **API publiques de publication d'offres** des job boards d'entreprises : aucune clé, aucun
 scraping, hôtes fixes. Un provider est actif dès qu'au moins un board est configuré ; une liste vide le désactive (le run
 l'enregistre « désactivé »).
 
 > **Statut** : la documentation officielle de chacune a été lue lors de l'écriture, mais les providers n'ont été testés
 > qu'avec des réponses simulées (fixtures anonymisées respectant les champs documentés), pas sur de vrais boards. Lancez
 > d'abord `php bin/console app:jobs:run --dry-run --provider=greenhouse` (ou `lever`, `ashby`) sur un board connu.
+>
+> **Recruitee, Workable et SmartRecruiters** : contrairement aux trois précédents, la **forme des réponses a été relevée sur de
+> vraies API publiques** lors de l'écriture (un board réel de chaque, appelé en lecture seule), et les providers ont ensuite été
+> exécutés contre ces boards (offres, titres, URL, dates et descriptions cohérents). Les fixtures de test en reprennent les champs avec
+> des valeurs fictives. En revanche, **Recruitee et Workable** ne sont décrits dans aucune documentation d'éditeur que j'aie pu lire
+> (endpoints des sites carrières et du widget) : leurs champs peuvent changer sans préavis. Seul SmartRecruiters publie une API de
+> postings documentée. Aucun n'a été éprouvé sur la durée, ni sur de gros boards.
 
 ### Configuration (`app/.env.local`)
 
@@ -95,10 +102,14 @@ GREENHOUSE_BOARDS="exemple=Exemple SAS,autre-entreprise"
 LEVER_BOARDS="exemple=Exemple SAS"
 LEVER_REGION=global          # ou eu
 ASHBY_BOARDS="Exemple=Exemple SAS"
+RECRUITEE_BOARDS="exemple=Exemple SAS"
+WORKABLE_BOARDS="exemple=Exemple SAS"
+SMARTRECRUITERS_BOARDS="Exemple=Exemple SAS"
 ```
 
-Chaque entrée est `identifiant` ou `identifiant=Nom de l'entreprise`. Le nom est celui que vous saisissez : les API ne le
-fournissent pas toutes, et Jobscan ne le déduit **jamais** de l'identifiant (entreprise inconnue sinon). L'identifiant n'accepte que
+Chaque entrée est `identifiant` ou `identifiant=Nom de l'entreprise`. Le nom est celui que vous saisissez : Jobscan ne le déduit **jamais**
+de l'identifiant. Pour Recruitee, Workable et SmartRecruiters, dont la réponse contient le nom de l'entreprise, il sert de repli
+quand vous n'en saisissez pas (votre saisie l'emporte). L'identifiant n'accepte que
 lettres, chiffres, `.`, `_` et `-` (il est inséré dans l'URL : toute autre valeur est ignorée avec un avertissement).
 
 | ATS | Où trouver l'identifiant | Endpoint |
@@ -106,9 +117,12 @@ lettres, chiffres, `.`, `_` et `-` (il est inséré dans l'URL : toute autre val
 | Greenhouse | `boards.greenhouse.io/{identifiant}` (« Job Board URL token ») | `GET boards-api.greenhouse.io/v1/boards/{id}/jobs?content=true` |
 | Lever | `jobs.lever.co/{identifiant}` (`jobs.eu.lever.co` → `LEVER_REGION=eu`) | `GET api.lever.co/v0/postings/{id}?mode=json&skip=&limit=` |
 | Ashby | `jobs.ashbyhq.com/{identifiant}` | `GET api.ashbyhq.com/posting-api/job-board/{id}?includeCompensation=true` |
+| Recruitee | sous-domaine : `{identifiant}.recruitee.com` (ou le site carrières de l'entreprise, souvent `careers.…`, hébergé par Recruitee) | `GET {id}.recruitee.com/api/offers/` |
+| Workable | `apply.workable.com/{identifiant}` | `GET apply.workable.com/api/v1/widget/accounts/{id}?details=true` |
+| SmartRecruiters | `jobs.smartrecruiters.com/{identifiant}` (casse à respecter) | `GET api.smartrecruiters.com/v1/companies/{id}/postings?limit=&offset=`, puis `…/postings/{offre}` |
 
 Documentation : [Greenhouse](https://developers.greenhouse.io/job-board.html), [Lever](https://github.com/lever/postings-api),
-[Ashby](https://developers.ashbyhq.com/docs/public-job-posting-api).
+[Ashby](https://developers.ashbyhq.com/docs/public-job-posting-api), [SmartRecruiters](https://developers.smartrecruiters.com/docs/posting-api).
 
 ### Dates de publication
 
@@ -117,6 +131,9 @@ Documentation : [Greenhouse](https://developers.greenhouse.io/job-board.html), [
 | Greenhouse | `updated_at` seulement dans la liste (`first_published` n'est que dans le détail) | **inconnue** : une mise à jour n'est pas une publication |
 | Lever | `createdAt` absent de la documentation | **inconnue** (à confirmer sur une vraie réponse) |
 | Ashby | `publishedAt`, documenté comme dernière publication | `medium` |
+| Recruitee | `published_at` (date et heure) | `medium` : une republication n'est pas distinguable |
+| Workable | `published_on` (jour seulement) | `medium` ; vide → **inconnue** |
+| SmartRecruiters | `releasedDate` (mise en ligne) | `medium` |
 
 Un board contient souvent des offres anciennes : sans date fiable, elles ne sont pas écartées par le filtre d'ancienneté ;
 seuls les filtres par mots-clés et le pré-score les trient.
@@ -132,6 +149,15 @@ seuls les filtres par mots-clés et le pré-score les trient.
   documenté) jusqu'à une page vide, une page sans nouvelle offre, ou `app.profile.lever_max_pages`.
 - **Fiabilité** : 429 et 5xx sont retentés (trois essais, backoff, `Retry-After` respecté, plafonné à 10 s) ; les autres 4xx (board
   inconnu) non. Un board en échec n'empêche pas les autres : le run est « partiel » dans `app:jobs:stats`.
+- **SmartRecruiters : la liste n'a pas de description.** Elle demande une requête par offre ; pour borner le coût, seules les
+  `app.profile.smartrecruiters_max_details` (30) premières offres de chaque board reçoivent leur détail à chaque exécution. Les
+  suivantes sont importées avec les seules informations de la liste (intitulé, lieu, contrat, niveau, département) : **leur analyse
+  sera pauvre** (« inconnu » n'est pas « incompatible »), et une offre déjà importée n'est pas complétée plus tard. Après trois échecs
+  de détail consécutifs, Jobscan cesse de solliciter l'API pour ce board. Les URL de détail sont construites localement : le champ
+  `ref` de la réponse n'est jamais suivi.
+- **Recruitee** : l'identifiant devient un nom d'hôte, il doit donc être une étiquette DNS valide (lettres, chiffres, tirets : pas de `.`
+  ni `_`), sinon le board est refusé et signalé. Les offres qui ne sont pas au statut « published » sont ignorées.
+- **Workable** : `telecommuting: false` est la valeur par défaut, pas « sur site » : seul `true` est repris (« télétravail possible »).
 - **Débit** : 200 ms minimum entre deux requêtes (`app.profile.ats_min_request_interval_ms`). Aucun quota n'est documenté.
 - **Collecte incrémentale** : non applicable, aucune de ces API n'offre de filtre par date. Les offres déjà connues sont écartées par la
   déduplication ; une collecte toutes les 15 minutes reste raisonnable pour quelques boards.

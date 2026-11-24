@@ -1,0 +1,42 @@
+{
+  "offset": 0,
+  "limit": 100,
+  "totalFound": 4,
+  "content": [
+    {
+      "id": "744000100001",
+      "name": "Développeur PHP Symfony",
+      "uuid": "11111111-1111-4111-8111-111111111111",
+      "refNumber": "REF-1",
+      "company": {"identifier": "Exemple", "name": "Exemple SAS"},
+      "releasedDate": "2026-11-19T10:00:00.000Z",
+      "location": {"city": "Marseille", "region": "PACA", "country": "fr", "remote": false, "hybrid": true, "fullLocation": "Marseille, PACA, France"},
+      "industry": {"id": "computer_software", "label": "Computer Software"},
+      "department": {"id": "1", "label": "Engineering"},
+      "function": {"id": "information_technology", "label": "Information Technology"},
+      "typeOfEmployment": {"id": "permanent", "label": "Full-time"},
+      "experienceLevel": {"id": "mid_senior_level", "label": "Mid-Senior Level"},
+      "ref": "https://evil.test/ssrf-ne-jamais-suivre"
+    },
+    {
+      "id": "744000100002",
+      "name": "Ingénieur DevOps",
+      "company": {"identifier": "Exemple", "name": "Exemple SAS"},
+      "releasedDate": "2026-11-10T08:00:00.000Z",
+      "location": {"city": "Remote", "country": "fr", "remote": true, "hybrid": false, "fullLocation": "Remote, France"},
+      "department": {"label": "Infrastructure"},
+      "typeOfEmployment": {"label": "Contract"},
+      "ref": "https://evil.test/autre"
+    },
+    {
+      "id": "744000100003",
+      "name": "",
+      "company": {"identifier": "Exemple", "name": "Exemple SAS"}
+    },
+    {
+      "id": "../../etc/passwd",
+      "name": "Identifiant piégé",
+      "company": {"identifier": "Exemple", "name": "Exemple SAS"}
+    }
+  ]
+}

@@ -12,7 +12,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
- * Socle des providers d'ATS (Greenhouse, Lever, Ashby) : API publiques de job boards, sans clé,
+ * Socle des providers d'ATS (Greenhouse, Lever, Ashby, Recruitee, Workable, SmartRecruiters) : API publiques de job boards, sans clé,
  * interrogées pour une liste configurable de boards d'entreprises.
  *
  * Aucun scraping : uniquement les API publiques documentées par chaque éditeur, sur des hôtes
@@ -215,6 +215,23 @@ abstract class AbstractAtsProvider implements JobProviderInterface
         $text = implode(' ', array_filter($parts, static fn (?string $part): bool => $part !== null && $part !== ''));
 
         return mb_substr($text, 0, self::MAX_DESCRIPTION_LENGTH);
+    }
+
+    /** « Étiquette : valeur. » pour une information structurée de l'API, ou `null` si elle est absente. */
+    protected function labelled(string $label, mixed $value): ?string
+    {
+        $text = $this->optionalText($value);
+
+        return $text === null ? null : sprintf('%s : %s.', $label, $text);
+    }
+
+    /**
+     * Un identifiant de board inséré dans un **nom d'hôte** (`{id}.exemple.com`) doit être une étiquette DNS valide :
+     * sans `.` ni `_`, pour ne jamais sortir du domaine de l'éditeur.
+     */
+    protected function isHostLabel(string $token): bool
+    {
+        return preg_match('/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$/', $token) === 1;
     }
 
     protected function isHttpUrl(mixed $url): bool

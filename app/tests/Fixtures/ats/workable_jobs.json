@@ -1,0 +1,51 @@
+{
+  "name": "Exemple SAS (Workable)",
+  "description": "<p>Présentation de l'entreprise.</p>",
+  "jobs": [
+    {
+      "title": "Développeur back-end PHP",
+      "shortcode": "AB12CD34EF",
+      "code": "",
+      "employment_type": "Full-time",
+      "telecommuting": false,
+      "department": "Engineering",
+      "url": "https://apply.workable.com/j/AB12CD34EF",
+      "shortlink": "https://apply.workable.com/j/AB12CD34EF",
+      "application_url": "https://apply.workable.com/j/AB12CD34EF/apply",
+      "published_on": "2026-11-18",
+      "created_at": "2026-11-18",
+      "country": "France",
+      "city": "Marseille",
+      "state": "Provence-Alpes-Côte d'Azur",
+      "education": "",
+      "experience": "Mid-Senior level",
+      "function": "Engineering",
+      "industry": "Computer Software",
+      "locations": [{"country": "France", "countryCode": "FR", "city": "Marseille", "region": "Provence-Alpes-Côte d'Azur", "hidden": false}],
+      "description": "<p>Vous développez des API en <strong>Symfony</strong>.</p><ul><li>PHP 8</li><li>PostgreSQL</li></ul>"
+    },
+    {
+      "title": "Product Designer",
+      "shortcode": "ZZ99YY88XX",
+      "employment_type": "Contract",
+      "telecommuting": true,
+      "department": "",
+      "url": "https://apply.workable.com/j/ZZ99YY88XX",
+      "published_on": "",
+      "country": "",
+      "city": "",
+      "state": "",
+      "description": "<p>Design produit.</p>"
+    },
+    {
+      "title": "Sans code",
+      "url": "https://apply.workable.com/j/NOCODE",
+      "description": "<p>Pas de shortcode.</p>"
+    },
+    {
+      "title": "Lien piégé",
+      "shortcode": "EVIL",
+      "url": "javascript:alert(1)"
+    }
+  ]
+}

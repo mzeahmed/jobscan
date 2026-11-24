@@ -10,6 +10,18 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-08
+
+#### Added
+
+- Providers ATS **Recruitee**, **Workable** et **SmartRecruiters** (`RECRUITEE_BOARDS`, `WORKABLE_BOARDS`, `SMARTRECRUITERS_BOARDS`), désactivés tant qu'aucun board n'est configuré. Forme des réponses relevée sur de vraies API
+  publiques puis providers exécutés contre elles (lecture seule). Recruitee et Workable ne sont pas documentés par leur éditeur ; SmartRecruiters ne fournit la description que par offre (plafonnée par
+  `app.profile.smartrecruiters_max_details`, 30 par board). Dates de publication de confiance moyenne ; nom d'entreprise de l'API en repli de celui configuré. Voir `docs/PROVIDERS.md`.
+
+#### Changed
+
+- `labelled()` remonté dans `AbstractAtsProvider` (supprimé des copies d'Ashby et Lever).
+
 ### 2026-12-07
 
 #### Added

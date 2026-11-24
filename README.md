@@ -280,10 +280,10 @@ Offres des emails d'alerte (LinkedIn, Indeed, HelloWork, Apec, France Travail, W
 IMAP dédiée. Un email n'est marqué traité qu'après ingestion réussie ; la boîte n'est jamais modifiée. **Désactivé par défaut,
 parsers non validés sur de vrais emails** : voir [docs/EMAIL.md](docs/EMAIL.md).
 
-### GreenhouseProvider, LeverProvider, AshbyProvider
+### Greenhouse, Lever, Ashby, Recruitee, Workable, SmartRecruiters
 
-Offres des job boards d'entreprises via les API publiques de Greenhouse, Lever et Ashby, pour une liste de boards que vous
-configurez (`GREENHOUSE_BOARDS`, `LEVER_BOARDS`, `ASHBY_BOARDS`). Sans clé, sans scraping ; inactifs tant qu'aucun board n'est
+Offres des job boards d'entreprises via les API publiques de Greenhouse, Lever, Ashby, Recruitee, Workable et SmartRecruiters, pour une liste de boards que vous
+configurez (`GREENHOUSE_BOARDS`, `LEVER_BOARDS`, `ASHBY_BOARDS`, `RECRUITEE_BOARDS`, `WORKABLE_BOARDS`, `SMARTRECRUITERS_BOARDS`). Sans clé, sans scraping ; inactifs tant qu'aucun board n'est
 configuré. Dates de publication inconnues pour Greenhouse et Lever. Voir [docs/PROVIDERS.md](docs/PROVIDERS.md).
 
 Les providers sont complémentaires. Il est possible d'en ajouter d'autres en implémentant `JobProviderInterface`.

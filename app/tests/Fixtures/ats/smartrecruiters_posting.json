@@ -1,0 +1,15 @@
+{
+  "id": "744000100001",
+  "name": "Développeur PHP Symfony",
+  "company": {"identifier": "Exemple", "name": "Exemple SAS"},
+  "postingUrl": "https://jobs.smartrecruiters.com/Exemple/744000100001-developpeur-php-symfony",
+  "applyUrl": "https://jobs.smartrecruiters.com/Exemple/744000100001-developpeur-php-symfony?oga=true",
+  "jobAd": {
+    "sections": {
+      "companyDescription": {"title": "Company Description", "text": "<p>Exemple SAS est une entreprise fictive.</p>"},
+      "jobDescription": {"title": "Job Description", "text": "<p>Vous développez des API <strong>Symfony</strong>.</p><ul><li>Docker</li></ul>"},
+      "qualifications": {"title": "Qualifications", "text": "<ul><li>5 ans de PHP</li></ul>"},
+      "additionalInformation": {"title": "Additional Information", "text": "<p>Télétravail partiel.</p>"}
+    }
+  }
+}
