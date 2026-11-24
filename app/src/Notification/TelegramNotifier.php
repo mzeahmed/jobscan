@@ -40,8 +40,9 @@ final readonly class TelegramNotifier
      *
      * @param bool $silent Notification sans son ni vibration (le message reste visible dans le chat)
      * @param bool $linkPreview Aperçu des liens ; à désactiver pour un message qui en contient beaucoup
+     * @param array<string, mixed>|null $replyMarkup Clavier en ligne (boutons) à joindre au message
      */
-    public function send(string $message, bool $silent = false, bool $linkPreview = true): bool
+    public function send(string $message, bool $silent = false, bool $linkPreview = true, ?array $replyMarkup = null): bool
     {
         $attempts = 0;
 
@@ -55,13 +56,14 @@ final readonly class TelegramNotifier
                     self::API_URL,
                     $this->botToken
                 ), [
-                    'json' => [
+                    'json' => array_filter([
                         'chat_id' => $this->chatId,
                         'text' => $message,
                         'parse_mode' => 'HTML',
                         'disable_notification' => $silent,
                         'link_preview_options' => ['is_disabled' => !$linkPreview],
-                    ],
+                        'reply_markup' => $replyMarkup,
+                    ], static fn (mixed $value): bool => $value !== null),
                     'timeout' => 15,
                 ]);
 
@@ -88,7 +90,7 @@ final readonly class TelegramNotifier
             } catch (\Throwable $e) {
                 $this->logger->warning('Erreur Telegram.', [
                     'attempt' => $attempt,
-                    'error' => $e->getMessage(),
+                    'error' => str_replace($this->botToken, '[token]', $e->getMessage()),
                 ]);
             }
 

@@ -7,6 +7,7 @@ namespace App\Notification;
 use App\Entity\Job;
 use App\Entity\JobMatch;
 use Psr\Log\LoggerInterface;
+use App\Telegram\JobKeyboard;
 use App\Entity\NotificationLog;
 use App\Profile\ProfileRegistry;
 use App\Repository\JobMatchRepository;
@@ -100,7 +101,7 @@ final readonly class MatchNotifier
         $job = $match->getJob();
         $message = $this->formatter->immediate($match, $level, $this->profileName($match->getSearchProfileId()), $this->cvLabel($match->getCvId()), $now);
 
-        if (!$this->telegram->send($message, $this->policy->isSilent($level))) {
+        if (!$this->telegram->send($message, $this->policy->isSilent($level), true, JobKeyboard::forJob($job))) {
             $this->logger->warning('Notification non marquée : envoi Telegram en échec.', ['title' => $job->getTitle()]);
 
             return false;

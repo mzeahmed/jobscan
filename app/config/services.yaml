@@ -61,6 +61,19 @@ services:
             $maxAttempts: '%app.profile.telegram_max_attempts%'
             $initialRetryDelayMs: '%app.profile.telegram_initial_retry_delay_ms%'
 
+    App\Telegram\TelegramBot:
+        arguments:
+            $botToken: '%telegram.bot_token%'
+
+    App\Telegram\UpdateAuthorizer:
+        arguments:
+            $chatId: '%telegram.chat_id%'
+            $allowedUserIds: '%env(default:app.telegram.empty:TELEGRAM_ALLOWED_USER_IDS)%'
+
+    App\Telegram\OffsetStore:
+        arguments:
+            $file: '%kernel.project_dir%/var/telegram.offset'
+
     App\Notification\NotificationPolicy:
         arguments:
             $priorityThreshold: '%app.notifications.priority_threshold%'

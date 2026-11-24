@@ -101,6 +101,25 @@ final readonly class TelegramMessageFormatter
         return new DigestMessage(implode("\n", $lines), $included);
     }
 
+    /**
+     * Fiche courte d'une offre, pour les listes à la demande (`/offres`).
+     */
+    public function card(JobMatch $match, \DateTimeImmutable $now): string
+    {
+        $job = $match->getJob();
+        $lines = [sprintf('<b>%s</b>', TelegramHtml::escape($this->cut((string) $job->getTitle(), 200)))];
+
+        $where = array_filter([$this->cut((string) $job->getCompany(), 80), $this->cut((string) $job->getLocation(), 80)], static fn (string $part): bool => $part !== '');
+        if ($where !== []) {
+            $lines[] = TelegramHtml::escape(implode(' · ', $where));
+        }
+        $lines[] = $this->publication($job, $now);
+        $lines[] = sprintf('Compatibilité <b>%d</b> · Fraîcheur <b>%d</b> · Priorité <b>%d</b>', $match->getMatchScore(), $match->getFreshnessScore(), $match->getPriorityScore());
+        $lines[] = TelegramHtml::link((string) $job->getUrl(), 'Voir l\'offre');
+
+        return implode("\n", $lines);
+    }
+
     private function immediateMessage(JobMatch $match, NotificationLevel $level, string $profileName, ?string $cvLabel, \DateTimeImmutable $now, bool $withReasons): string
     {
         $job = $match->getJob();

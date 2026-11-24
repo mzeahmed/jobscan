@@ -10,6 +10,18 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-06
+
+#### Added
+
+- Telegram interactif : boutons sur les notifications immédiates (Suivre, Garder, Ignorer, Annuler, J'ai postulé) et commandes `/offres`, `/candidatures`, `/aide`. `app:telegram:poll` (`--once`, `--max-seconds`)
+  interroge Telegram : aucun port exposé. Position de lecture mémorisée (`var/telegram.offset`). `docs/TELEGRAM.md`.
+- Sécurité : seul le chat configuré peut agir (chat privé : son titulaire ; groupe : liste `TELEGRAM_ALLOWED_USER_IDS` obligatoire), mises à jour étrangères ignorées sans réponse, données des boutons validées strictement.
+
+#### Fixed
+
+- Le jeton du bot Telegram pouvait apparaître dans les journaux (message d'erreur réseau contenant l'URL de l'API) : il est désormais masqué.
+
 ### 2026-12-05
 
 #### Added

@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Job;
 use App\Entity\JobMatch;
+use App\Entity\Application;
 use App\Matching\MatchVerdict;
 use App\Entity\NotificationLog;
 use Doctrine\Persistence\ManagerRegistry;
@@ -53,9 +54,11 @@ class JobMatchRepository extends ServiceEntityRepository
      * Sans `$searchProfileId`, chaque offre n'apparaît que pour son meilleur profil (priorité maximale
      * parmi les profils où elle est compatible).
      *
+     * @param bool $undecidedOnly Écarte les offres déjà décidées, candidatées ou en doublon
+     *
      * @return list<JobMatch>
      */
-    public function findTop(int $limit, ?string $searchProfileId = null, bool $eligibleOnly = true): array
+    public function findTop(int $limit, ?string $searchProfileId = null, bool $eligibleOnly = true, bool $undecidedOnly = false): array
     {
         $query = $this->createQueryBuilder('m')
             ->addSelect('j')
@@ -64,6 +67,13 @@ class JobMatchRepository extends ServiceEntityRepository
             ->addOrderBy('m.matchScore', 'DESC')
             ->addOrderBy('j.firstSeenAt', 'DESC')
             ->setMaxResults(max(1, $limit));
+
+        if ($undecidedOnly) {
+            // Ni décision de l'utilisateur, ni candidature, ni doublon probable : ce qu'il reste à trier.
+            $query->andWhere('j.userState IS NULL')
+                ->andWhere('j.probableDuplicateOfId IS NULL')
+                ->andWhere(sprintf('NOT EXISTS (SELECT a.id FROM %s a WHERE a.job = j)', Application::class));
+        }
 
         if ($eligibleOnly) {
             $query->andWhere('m.verdict = :eligible')->setParameter('eligible', MatchVerdict::Eligible->value);

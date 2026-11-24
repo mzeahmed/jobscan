@@ -15,6 +15,7 @@ jobscan:
             model: '%env(GEMINI_MODEL)%'
 
 parameters:
+    app.telegram.empty: ''
     app.trusted_proxies_default: ''
     # Interface web : compte unique. Sans JOBSCAN_UI_PASSWORD_HASH, personne ne peut se connecter (voir docs/UI.md).
     app.ui.default_user: admin

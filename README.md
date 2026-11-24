@@ -683,7 +683,7 @@ Avec un profil candidat et un profil de recherche actif, les notifications suive
 (selon configuration), offre secondaire (récapitulatif périodique, `app:notifications:digest`). Chaque message donne le poste, l'entreprise, le lieu, le contrat,
 le salaire, le télétravail, la date de publication et l'ancienneté, les trois scores, le profil et le CV recommandés, les principales raisons et le lien — seulement
 pour les informations disponibles. Une offre incompatible n'est jamais notifiée, même très fraîche, et aucune offre ne l'est deux fois. Sans profil, l'ancien mécanisme
-(score historique, seuil de **60/100**) reste en vigueur. Voir [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md).
+(score historique, seuil de **60/100**) reste en vigueur. Voir [docs/NOTIFICATIONS.md](docs/NOTIFICATIONS.md). Les notifications portent des boutons (suivre, garder, ignorer, j'ai postulé) et le bot répond à `/offres` et `/candidatures` via `app:telegram:poll`, sans port exposé ; voir [docs/TELEGRAM.md](docs/TELEGRAM.md).
 
 ---
 

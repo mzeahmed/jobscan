@@ -88,6 +88,6 @@ dizaines d'offres anciennes devenues compatibles n'inondent pas votre Telegram.
 ## Limites
 
 - Le récapitulatif n'est envoyé que si la commande est lancée (pas de planification intégrée avant le lot de planification).
-- Pas encore de boutons ni de commandes Telegram (voir le lot « Telegram interactif »).
+- Boutons et commandes : voir [TELEGRAM.md](TELEGRAM.md) (nécessite `app:telegram:poll`).
 - Un seul canal : le chat configuré. Pas de notification par profil de recherche ni par appareil.
 - Les notifications immédiates ne se déclenchent qu'à l'analyse (ou au rattrapage) : modifier un profil et recalculer le matching ne notifie pas les offres existantes, sauf via la commande de récapitulatif, dans la limite d'ancienneté.
