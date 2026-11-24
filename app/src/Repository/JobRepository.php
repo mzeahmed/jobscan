@@ -8,6 +8,7 @@ use App\Entity\Job;
 use App\Entity\JobMatch;
 use App\Entity\JobSource;
 use App\DTO\AnalysisStatus;
+use App\Entity\Application;
 use App\DTO\JobListingFilters;
 use Doctrine\ORM\QueryBuilder;
 use App\Entity\NotificationLog;
@@ -202,6 +203,8 @@ class JobRepository extends ServiceEntityRepository
         $connection = $this->getEntityManager()->getConnection();
 
         return $connection->transactional(static function ($connection): int {
+            $connection->executeStatement('DELETE FROM job_application_status_change');
+            $connection->executeStatement('DELETE FROM job_application');
             $connection->executeStatement('DELETE FROM notification_log');
             $connection->executeStatement('DELETE FROM job_match');
             $connection->executeStatement('DELETE FROM job_source');
@@ -378,9 +381,35 @@ class JobRepository extends ServiceEntityRepository
         return (int) $this->createQueryBuilder('j')
             ->select('COUNT(j.id)')
             ->where('j.createdAt < :before')
+            ->andWhere(self::purgeable('j'))
             ->setParameter('before', $before)
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /** Offres anciennes que la purge épargne : décision de l'utilisateur ou candidature associée (historique utilisateur). */
+    public function countProtectedCreatedBefore(\DateTimeImmutable $before): int
+    {
+        return (int) $this->createQueryBuilder('j')
+            ->select('COUNT(j.id)')
+            ->where('j.createdAt < :before')
+            ->andWhere('NOT (' . self::purgeable('j') . ')')
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Condition DQL « cette offre peut être purgée » : aucune décision utilisateur ni candidature. Un alias distinct
+     * par appel évite les collisions dans les sous-requêtes.
+     */
+    private static function purgeable(string $alias): string
+    {
+        return sprintf(
+            '%1$s.userState IS NULL AND NOT EXISTS (SELECT pa_%1$s.id FROM %2$s pa_%1$s WHERE pa_%1$s.job = %1$s)',
+            $alias,
+            Application::class,
+        );
     }
 
     /**
@@ -394,21 +423,21 @@ class JobRepository extends ServiceEntityRepository
         // ON DELETE CASCADE sans `PRAGMA foreign_keys`.
         $this->getEntityManager()->createQueryBuilder()
             ->delete(NotificationLog::class, 'n')
-            ->where('n.job IN (SELECT j3.id FROM ' . Job::class . ' j3 WHERE j3.createdAt < :before)')
+            ->where('n.job IN (SELECT j3.id FROM ' . Job::class . ' j3 WHERE j3.createdAt < :before AND ' . self::purgeable('j3') . ')')
             ->setParameter('before', $before)
             ->getQuery()
             ->execute();
 
         $this->getEntityManager()->createQueryBuilder()
             ->delete(JobMatch::class, 'm')
-            ->where('m.job IN (SELECT j2.id FROM ' . Job::class . ' j2 WHERE j2.createdAt < :before)')
+            ->where('m.job IN (SELECT j2.id FROM ' . Job::class . ' j2 WHERE j2.createdAt < :before AND ' . self::purgeable('j2') . ')')
             ->setParameter('before', $before)
             ->getQuery()
             ->execute();
 
         $this->getEntityManager()->createQueryBuilder()
             ->delete(JobSource::class, 's')
-            ->where('s.job IN (SELECT j.id FROM ' . Job::class . ' j WHERE j.createdAt < :before)')
+            ->where('s.job IN (SELECT j.id FROM ' . Job::class . ' j WHERE j.createdAt < :before AND ' . self::purgeable('j') . ')')
             ->setParameter('before', $before)
             ->getQuery()
             ->execute();
@@ -416,6 +445,7 @@ class JobRepository extends ServiceEntityRepository
         return (int) $this->createQueryBuilder('j')
             ->delete()
             ->where('j.createdAt < :before')
+            ->andWhere(self::purgeable('j'))
             ->setParameter('before', $before)
             ->getQuery()
             ->execute();

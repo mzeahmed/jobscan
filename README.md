@@ -687,6 +687,13 @@ pour les informations disponibles. Une offre incompatible n'est jamais notifiée
 
 ---
 
+## Suivi des candidatures
+
+`app:applications:track|status|list` consignent vos candidatures (statut, dates, CV utilisé, recruteur, message envoyé, relance) et `app:jobs:decide` sauvegarde, ignore ou archive une
+offre. Jobscan n'envoie rien : il enregistre ce que vous déclarez. Ces offres échappent à la purge. Voir [docs/APPLICATIONS.md](docs/APPLICATIONS.md).
+
+---
+
 ## Commandes utiles
 
 ```bash

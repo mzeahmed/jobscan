@@ -141,12 +141,12 @@ pipeline-logs: ## Logs du cron (si configuré) — Exemple : make pipeline-logs
 	@echo "$(YELLOW)Affichage des logs du pipeline...$(NO_COLOR)"
 	tail -f /var/log/jobscan.log
 
-cs: ## Lancement de php-cs-fixer en mode test — Exemple : make cs
+lint: ## Lancement de php-cs-fixer en mode test — Exemple : make cs
 	@echo "$(YELLOW)Lancement de php-cs-fixer...$(NO_COLOR)"
 	cd app && $(COMPOSER) run lint
 	@echo "$(GREEN)php-cs-fixer terminé$(NO_COLOR)"
 
-csf: ## Lancement de php-cs-fixer avec correction — Exemple : make csf
+lintf: ## Lancement de php-cs-fixer avec correction — Exemple : make csf
 	@echo "$(YELLOW)Lancement de php-cs-fixer avec correction$(NO_COLOR)"
 	cd app && $(COMPOSER) run lint:fix
 	@echo "$(GREEN)php-cs-fixer terminé$(NO_COLOR)"
@@ -156,15 +156,15 @@ stan: ## Lancement de PHPStan — Exemple : make stan
 	cd app && $(PHP) ./vendor/bin/phpstan analyse -c phpstan.neon
 	@echo "$(GREEN)PHPStan terminé$(NO_COLOR)"
 
-rector: ## Applique les transformations de Rector — Exemple : make rector
-	@echo "$(YELLOW)Application des transformations de Rector...$(NO_COLOR)"
-	cd app && $(PHP) ./vendor/bin/rector process
-	@echo "$(GREEN)Transformations de Rector appliquées$(NO_COLOR)"
-
-rector-check: ## Vérifie Rector sans appliquer les changements — Exemple : make rector-check
+rector: ## Vérifie Rector sans appliquer les changements — Exemple : make rector-check
 	@echo "$(YELLOW)Vérification des transformations de Rector...$(NO_COLOR)"
 	cd app && $(PHP) ./vendor/bin/rector process --dry-run
 	@echo "$(GREEN)Vérification des transformations de Rector terminée$(NO_COLOR)"
+
+rectorf: ## Applique les transformations de Rector — Exemple : make rector
+	@echo "$(YELLOW)Application des transformations de Rector...$(NO_COLOR)"
+	cd app && $(PHP) ./vendor/bin/rector process
+	@echo "$(GREEN)Transformations de Rector appliquées$(NO_COLOR)"
 
 hard: ## Réinitialise le dépôt (destructif : changements perdus) — Exemple : make hard
 	@echo "$(RED)⚠️  Cette action va supprimer toutes les modifications non commitées.$(NO_COLOR)"

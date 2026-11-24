@@ -76,6 +76,7 @@ final class PurgeJobsCommand extends Command
                 $count,
                 $before->format('Y-m-d H:i'),
             ));
+            $this->reportProtected($io, $before);
 
             return Command::SUCCESS;
         }
@@ -86,8 +87,18 @@ final class PurgeJobsCommand extends Command
             $deleted,
             $before->format('Y-m-d H:i'),
         ));
+        $this->reportProtected($io, $before);
 
         return Command::SUCCESS;
+    }
+
+    /** Les offres sauvegardées, ignorées, archivées ou candidatées sont l'historique de l'utilisateur : jamais purgées. */
+    private function reportProtected(SymfonyStyle $io, \DateTimeImmutable $before): void
+    {
+        $protected = $this->jobRepository->countProtectedCreatedBefore($before);
+        if ($protected > 0) {
+            $io->note(sprintf('%d offre(s) ancienne(s) conservée(s) : décision utilisateur ou candidature associée.', $protected));
+        }
     }
 
     /**

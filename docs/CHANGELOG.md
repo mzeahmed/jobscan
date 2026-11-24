@@ -10,6 +10,17 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-02
+
+#### Added
+
+- Suivi des candidatures : entités `Application` (statut, dates d'envoi, de réponse et de dernier contact, version de CV, recruteur, canal, message envoyé, notes, relance) et historique
+  des changements de statut ; transitions validées (statuts finaux, chronologie), sans rien envoyer ni déduire.
+- Décision sur une offre (`saved`, `ignored`, `archived`) ; une offre décidée n'est plus notifiée.
+- Commandes `app:applications:track|status|list` et `app:jobs:decide`.
+- **Protection contre la purge** : `app:jobs:purge` épargne les offres avec candidature ou décision utilisateur et indique combien ont été conservées.
+- Migration non destructive (`job_application`, `job_application_status_change`, `job.user_state`). `docs/APPLICATIONS.md`.
+
 ### 2026-12-01
 
 #### Added

@@ -117,6 +117,7 @@ class JobMatchRepository extends ServiceEntityRepository
             ->where('m.verdict = :eligible')
             ->andWhere('m.priorityScore >= :minimum')
             ->andWhere('j.notifiedAt IS NULL')
+            ->andWhere('j.userState IS NULL')
             ->andWhere('j.probableDuplicateOfId IS NULL')
             ->andWhere('j.firstSeenAt >= :since')
             ->andWhere(sprintf('NOT EXISTS (SELECT l.id FROM %s l WHERE l.job = j)', NotificationLog::class))

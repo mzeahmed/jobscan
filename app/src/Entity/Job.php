@@ -9,6 +9,7 @@ use App\DTO\Seniority;
 use App\DTO\ContractType;
 use App\DTO\AiAnalysisDto;
 use App\DTO\AnalysisStatus;
+use App\Tracking\JobUserState;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\JobRepository;
@@ -144,6 +145,13 @@ class Job
     /** Version du schéma d'extraction des exigences : permet de ré-extraire seulement les annonces périmées. */
     #[ORM\Column(type: Types::SMALLINT, nullable: true)]
     private ?int $extractionVersion = null;
+
+    /** Décision de l'utilisateur sur l'offre (sauvegardée, ignorée, archivée) ; `null` : à trier. */
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $userState = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $userStateAt = null;
 
     public function __construct()
     {
@@ -422,6 +430,28 @@ class Job
             AnalysisStatus::Fallback => $this->nextAnalysisAttemptAt === null,
             AnalysisStatus::Pending, AnalysisStatus::Failed => false,
         };
+    }
+
+    public function getUserState(): ?JobUserState
+    {
+        return $this->userState === null ? null : JobUserState::from($this->userState);
+    }
+
+    public function getUserStateAt(): ?\DateTimeImmutable
+    {
+        return $this->userStateAt;
+    }
+
+    /** Une offre ignorée ou archivée n'est plus notifiée ni proposée dans les classements. */
+    public function isHiddenByUser(): bool
+    {
+        return $this->getUserState()?->isHidden() === true;
+    }
+
+    public function setUserState(?JobUserState $state, \DateTimeImmutable $now): void
+    {
+        $this->userState = $state?->value;
+        $this->userStateAt = $state === null ? null : $now;
     }
 
     public function getRequirements(): ?JobRequirements

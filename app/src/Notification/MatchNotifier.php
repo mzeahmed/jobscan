@@ -117,6 +117,7 @@ final readonly class MatchNotifier
     {
         return $job->getNotifiedAt() === null
             && $job->isAnalysisFinal()
+            && $job->getUserState() === null
             && $job->getProbableDuplicateOfId() === null
             && !$this->logs->existsForJob($job);
     }
