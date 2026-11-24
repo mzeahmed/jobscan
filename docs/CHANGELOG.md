@@ -10,6 +10,19 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-15
+
+#### Added
+
+- API 0 (chantier front React + API Symfony, voir `docs/API.md`) : enveloppe de réponse `{code, success, data:{message,…}}` (`ApiResponse`, `AbstractApiController`), catalogue de codes et de messages d'erreur en français,
+  gestionnaire d'erreurs qui met toute erreur de `/api/*` dans l'enveloppe (401/403 JSON au lieu d'une redirection, aucun texte d'exception renvoyé), sondes publiques `/health` et `/health/ready` (sans enveloppe, hors préfixe),
+  racine `GET /api/v1/`.
+
+#### Changed
+
+- `config/routes.yaml` : chargeurs explicites (`src/Api/` sous `/api/v1`, sondes sans préfixe, `src/Controller/` inchangé) à la place du chargeur générique. Toutes les routes existantes sont conservées.
+- `access_control` : `/health`, `/health/ready` et `/api/v1/` sont publics (ils ne révèlent rien de l'installation).
+
 ### 2026-12-14
 
 #### Changed

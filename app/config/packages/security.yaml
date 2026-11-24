@@ -29,6 +29,9 @@ security:
                 interval: '15 minutes'
 
     access_control:
+        # Sondes d'infrastructure et racine de l'API : publiques, sans donnée sur l'installation.
+        - { path: ^/health(/ready)?$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/v1/?$, roles: PUBLIC_ACCESS }
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/assets/, roles: PUBLIC_ACCESS }
         - { path: ^/, roles: ROLE_USER }

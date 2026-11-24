@@ -7,5 +7,26 @@
 # To list all registered routes, run the following command:
 #   bin/console debug:router
 
-controllers:
-    resource: routing.controllers
+# API versionnée : tout ce qui se trouve sous src/Api/ (sauf les sondes) est servi sous /api/v1.
+api_v1:
+    resource:
+        path: ../src/Api/
+        namespace: App\Api
+    type: attribute
+    exclude:
+        - ../src/Api/Probe/
+    prefix: /api/v1
+
+# Sondes d'infrastructure : hors préfixe et hors enveloppe (lues par Docker ou un répartiteur de charge).
+probes:
+    resource:
+        path: ../src/Api/Probe/
+        namespace: App\Api\Probe
+    type: attribute
+
+# Pages de l'interface web (Twig), inchangées.
+web:
+    resource:
+        path: ../src/Controller/
+        namespace: App\Controller
+    type: attribute
