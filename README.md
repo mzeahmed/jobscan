@@ -692,6 +692,8 @@ pour les informations disponibles. Une offre incompatible n'est jamais notifiée
 `app:applications:track|status|list` consignent vos candidatures (statut, dates, CV utilisé, recruteur, message envoyé, relance) et `app:jobs:decide` sauvegarde, ignore ou archive une
 offre. Jobscan n'envoie rien : il enregistre ce que vous déclarez. Ces offres échappent à la purge. Voir [docs/APPLICATIONS.md](docs/APPLICATIONS.md).
 
+`app:cv:list` et `app:cv:recommend` gèrent vos versions de CV (fichiers locaux, jamais lus ni transmis) ; voir [docs/CV.md](docs/CV.md).
+
 ---
 
 ## Commandes utiles

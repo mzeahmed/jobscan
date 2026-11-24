@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Cv\CvRecommender;
 use App\Repository\JobRepository;
 use App\Tracking\ApplicationChannel;
 use App\Tracking\ApplicationManager;
@@ -27,6 +28,7 @@ final class ApplicationTrackCommand extends Command
         private readonly JobRepository $jobs,
         private readonly ApplicationManager $manager,
         private readonly EntityManagerInterface $entityManager,
+        private readonly CvRecommender $cvRecommender,
     ) {
         parent::__construct();
     }
@@ -80,6 +82,13 @@ final class ApplicationTrackCommand extends Command
         $application->setChannel($channel);
         $application->setNotes(ApplicationCommandSupport::optionalString($input->getOption('note')));
         $this->entityManager->flush();
+
+        if ($application->getCvVersionId() === null) {
+            $recommendation = $this->cvRecommender->recommend($job);
+            if ($recommendation->cv !== null) {
+                $io->note(sprintf('CV non précisé. Recommandé : « %s » → php bin/console app:applications:cv %d %s', $recommendation->cv->label, (int) $application->getId(), $recommendation->cv->id));
+            }
+        }
 
         $io->success(sprintf('Candidature n°%d ouverte (brouillon) pour « %s ». L\'offre est désormais protégée de la purge.', (int) $application->getId(), $job->getTitle()));
 

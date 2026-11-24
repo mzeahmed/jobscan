@@ -115,4 +115,4 @@ Le registre charge le profil à la première utilisation : un fichier invalide n
 
 - Aucune gestion d'alias de compétences (« Symfony » et « Symfony Framework » sont deux compétences distinctes) ;
   la comparaison ignore seulement la casse et les espaces superflus.
-- Le fichier d'un CV n'est pas lu : l'extraction de son texte et la recommandation de version viennent plus tard.
+- Le fichier d'un CV n'est jamais lu (seule son existence est vérifiée, voir [CV.md](CV.md)) ; la recommandation de version repose sur le profil de recherche, pas sur le contenu du CV.

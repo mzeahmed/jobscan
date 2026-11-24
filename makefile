@@ -174,22 +174,27 @@ hard: ## Réinitialise le dépôt (destructif : changements perdus) — Exemple 
 	git clean -fd
 	@echo "$(GREEN)Dépôt réinitialisé.$(NO_COLOR)"
 
-clean: ## Supprime toutes les branches sauf main (destructif) — Exemple : make clean
+# Branches que clean ne supprime jamais (noms entiers). La branche courante est
+# toujours conservée ; HEAD est la référence symbolique du remote.
+PROTECTED_BRANCHES := ^(main|develop|copilot-phase-1|HEAD)$$
+
+LOCAL_BRANCHES  = git branch --format='%(refname:short)' | grep -vE '$(PROTECTED_BRANCHES)' | grep -vxF "$$(git branch --show-current)"
+REMOTE_BRANCHES = git branch -r --format='%(refname:lstrip=3)' | grep -vE '$(PROTECTED_BRANCHES)'
+
+clean: ## Supprime toutes les branches locales sauf main (destructif) — Exemple : make clean
+	@git fetch --prune -q
 	@echo "$(YELLOW)Branches locales à supprimer :$(NO_COLOR)"
-	@git branch | grep -vE '^\*|main' || echo "  (aucune)"
+	@out="$$($(LOCAL_BRANCHES))"; [ -n "$$out" ] && echo "$$out" | sed 's/^/  /' || echo "  (aucune)"
 	@echo "$(YELLOW)Branches distantes à supprimer :$(NO_COLOR)"
-	@git fetch --prune -q && git branch -r | grep -vE 'origin/(main)' | sed 's/origin\///' || echo "  (aucune)"
+	@out="$$($(REMOTE_BRANCHES))"; [ -n "$$out" ] && echo "$$out" | sed 's/^/  /' || echo "  (aucune)"
 	@echo ""
 	@printf "$(RED)⚠️  Confirmer la suppression ? [y/N] $(NO_COLOR)" && read ans && [ "$${ans}" = "y" ] || { echo "$(YELLOW)Annulé.$(NO_COLOR)"; exit 1; }
 
-	@echo "$(YELLOW)Nettoyage des références distantes obsolètes...$(NO_COLOR)"
-	@git fetch --prune
-
 	@echo "$(YELLOW)Suppression des branches locales...$(NO_COLOR)"
-	@git branch | grep -vE '^\*|main' | xargs -r git branch -D || true
+	@$(LOCAL_BRANCHES) | xargs -r git branch -D || true
 
 	@#echo "$(YELLOW)Suppression des branches distantes...$(NO_COLOR)"
-	@#git branch -r | grep -vE 'origin/(main)' | sed 's/origin\///' | xargs -r -I {} git push origin --delete {} || true
+	@#$(REMOTE_BRANCHES) | xargs -r -I {} git push origin --delete {} || true
 
 	@echo "$(GREEN)Nettoyage des branches terminé$(NO_COLOR)"
 

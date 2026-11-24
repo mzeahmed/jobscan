@@ -72,4 +72,29 @@ class ApplicationRepository extends ServiceEntityRepository
 
         return $counts;
     }
+
+    /**
+     * Candidatures par version de CV : envoyées, ayant reçu une réponse (entretien, test, proposition ou refus).
+     * Les brouillons ne comptent pas : rien n'a été envoyé.
+     *
+     * @return array<string, array{sent: int, responded: int}>
+     */
+    public function statsByCv(): array
+    {
+        /** @var list<array{cv: string, sent: int|string, responded: int|string}> $rows */
+        $rows = $this->createQueryBuilder('a')
+            ->select('a.cvVersionId AS cv, COUNT(a.id) AS sent, COUNT(a.respondedAt) AS responded')
+            ->where('a.cvVersionId IS NOT NULL')
+            ->andWhere('a.appliedAt IS NOT NULL')
+            ->groupBy('a.cvVersionId')
+            ->getQuery()
+            ->getArrayResult();
+
+        $stats = [];
+        foreach ($rows as $row) {
+            $stats[$row['cv']] = ['sent' => (int) $row['sent'], 'responded' => (int) $row['responded']];
+        }
+
+        return $stats;
+    }
 }

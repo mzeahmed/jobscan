@@ -10,6 +10,13 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-03
+
+#### Added
+
+- Gestion des CV : `app:cv:list` (état du fichier sans le lire, profils de recherche utilisateurs, candidatures envoyées et réponses par version), `app:cv:recommend` (CV du profil de recherche
+  le plus pertinent, sans rien deviner), `app:applications:cv` (associer, changer ou retirer). `app:applications:track` suggère le CV recommandé sans l'appliquer. `docs/CV.md`.
+
 ### 2026-12-02
 
 #### Added
