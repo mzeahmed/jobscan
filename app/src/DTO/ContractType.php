@@ -8,5 +8,8 @@ enum ContractType: string
 {
     case Freelance = 'freelance';
     case Cdi = 'cdi';
+    case Cdd = 'cdd';
+    case Apprenticeship = 'alternance';
+    case Internship = 'stage';
     case Unknown = 'unknown';
 }

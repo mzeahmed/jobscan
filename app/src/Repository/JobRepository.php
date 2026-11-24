@@ -118,6 +118,40 @@ class JobRepository extends ServiceEntityRepository
             ->getResult());
     }
 
+    /**
+     * Offres analysées par le LLM dont les exigences structurées manquent ou datent d'un schéma plus ancien
+     * que `$schemaVersion`. Les plus récemment détectées passent en premier.
+     *
+     * Les offres analysées seulement par l'heuristique n'en font pas partie : elles seront reprises par la
+     * reprise d'analyse ordinaire, qui produira directement le schéma courant.
+     *
+     * @return list<Job>
+     */
+    public function findOutdatedExtraction(int $schemaVersion, int $limit): array
+    {
+        return array_values($this->createQueryBuilder('j')
+            ->where('j.analysisStatus = :done')
+            ->andWhere('j.extractionVersion IS NULL OR j.extractionVersion < :version')
+            ->setParameter('done', AnalysisStatus::Done->value)
+            ->setParameter('version', $schemaVersion)
+            ->orderBy('j.firstSeenAt', 'DESC')
+            ->setMaxResults(max(1, $limit))
+            ->getQuery()
+            ->getResult());
+    }
+
+    public function countOutdatedExtraction(int $schemaVersion): int
+    {
+        return (int) $this->createQueryBuilder('j')
+            ->select('COUNT(j.id)')
+            ->where('j.analysisStatus = :done')
+            ->andWhere('j.extractionVersion IS NULL OR j.extractionVersion < :version')
+            ->setParameter('done', AnalysisStatus::Done->value)
+            ->setParameter('version', $schemaVersion)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     /** @return array<string, int> */
     public function countByAnalysisStatus(): array
     {

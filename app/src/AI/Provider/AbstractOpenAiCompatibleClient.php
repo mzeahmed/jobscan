@@ -46,7 +46,7 @@ abstract class AbstractOpenAiCompatibleClient implements LLMClientInterface
                             ['role' => 'user', 'content' => $userText],
                         ],
                         'temperature' => 0,
-                        'max_tokens' => 1024,
+                        'max_tokens' => 2048,
                         'think' => false,
                     ],
                     'timeout' => 120,

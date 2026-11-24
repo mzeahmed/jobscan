@@ -11,7 +11,7 @@ use App\AI\Provider\LLMClientInterface;
  */
 final class MutableLlmClient implements LLMClientInterface
 {
-    public const string SUCCESS_RESPONSE = '{"stack":["php"],"contract_type":"unknown","freelance":false,"remote":false,"budget":"non précisé","seniority":"unknown"}';
+    public const string SUCCESS_RESPONSE = '{"required_skills":["php"],"nice_skills":[],"mentioned_skills":[],"seniority":"unknown","min_years_experience":null,"languages":[],"remote_mode":null,"contract_types":[],"salary":null,"locations":[]}';
 
     /** @var list<string|null|\Throwable> */
     public array $responses = [];

@@ -8,39 +8,52 @@ use App\DTO\Seniority;
 use App\DTO\ContractType;
 use App\DTO\AiAnalysisDto;
 use Psr\Log\LoggerInterface;
+use App\AI\Extraction\JobExtraction;
+use App\AI\Extraction\PromptBuilder;
 use Psr\Cache\CacheItemPoolInterface;
+use App\AI\Extraction\JobRequirements;
 use App\AI\Provider\LLMClientInterface;
 use Psr\Cache\InvalidArgumentException;
+use App\AI\Extraction\LegacyAnalysisMapper;
+use App\AI\Extraction\RequirementsValidator;
+use App\AI\Extraction\PromptInjectionDetector;
+use App\AI\Extraction\InvalidExtractionException;
 
 /**
- * Analyse le texte d'une offre d'emploi via un moteur LLM pluggable
- * (`LLMClientInterface` — Ollama, LM Studio ou Gemini, sélectionné par
- * `DEFAULT_LLM_PROVIDER`, voir `LLMClientFactory`).
+ * Extrait les exigences d'une annonce via un moteur LLM pluggable (`LLMClientInterface` — Ollama,
+ * LM Studio ou Gemini, sélectionné par `DEFAULT_LLM_PROVIDER`, voir `LLMClientFactory`).
  *
- * Extrait les données structurées suivantes : stack technique, type de contrat,
- * indicateurs remote/freelance/recent, budget et séniorité.
+ * L'extraction est **indépendante du profil candidat** : une annonce n'est analysée qu'une fois, quel
+ * que soit le nombre de profils de recherche. Elle produit des `JobRequirements` (compétences exigées
+ * ou appréciées, séniorité, télétravail, contrats, rémunération…) validés et ancrés dans le texte de
+ * l'annonce, ainsi que la vue historique `AiAnalysisDto` encore utilisée par le scoring existant.
  *
  * **Stratégie de résilience :**
- * - Le résultat est mis en cache 24h (clé = SHA-256 du texte nettoyé) pour éviter
- *   d'interroger le LLM plusieurs fois pour la même offre.
- * - Si le provider IA est indisponible ou retourne une réponse non parseable, un fallback
- *   heuristique basé sur des regex et des correspondances de chaînes prend le relais.
+ * - Le résultat du LLM est mis en cache 24h (clé = schéma, prompt et texte) pour ne pas interroger
+ *   plusieurs fois le modèle sur la même annonce.
+ * - Si le LLM est indisponible ou renvoie une réponse inexploitable, un fallback heuristique prend le
+ *   relais (moins précis : il ne distingue pas compétences exigées et appréciées) ; il n'est jamais mis en cache.
  * - Les erreurs LLM ne propagent jamais d'exception vers le pipeline.
  *
- * Le prompt système est entièrement configurable via `app.ai_system_prompt` dans
- * `jobscan.yaml`, sans modifier le code.
+ * **Sécurité :** l'annonce est une donnée non fiable — voir `PromptBuilder` et `RequirementsValidator`.
  */
 final class AIClient
 {
     /** Durée de mise en cache des réponses IA en secondes (24h). */
     private const int CACHE_TTL = 86400;
 
+    private const string SUSPICIOUS_WARNING = 'Annonce contenant une consigne adressée à un modèle d\'IA : passage retiré de l\'analyse, extraction à vérifier.';
+
     private bool $providerUnavailable = false;
     private bool $lastAnalysisUsedFallback = false;
+    private readonly PromptBuilder $promptBuilder;
+    private readonly RequirementsValidator $validator;
+    private readonly PromptInjectionDetector $injectionDetector;
 
     /**
-     * @param  string  $systemPrompt  Prompt système injecté en tête de chaque requête (config `app.ai_system_prompt`)
+     * @param  string  $systemPrompt  Prompt de la tâche d'extraction (config `app.ai_system_prompt`)
      * @param  list<string>  $knownStack  Technologies connues pour le fallback heuristique (config `app.profile.known_stack`)
+     * @param  int  $maxInputChars  Longueur maximale de l'annonce envoyée au modèle (config `app.profile.ai_max_input_chars`)
      */
     public function __construct(
         private readonly LLMClientInterface $provider,
@@ -49,50 +62,77 @@ final class AIClient
         private readonly string $systemPrompt,
         private readonly array $knownStack = [],
         private readonly int $recentJobDays = 14,
+        private readonly int $maxInputChars = 6000,
+        ?PromptBuilder $promptBuilder = null,
+        ?RequirementsValidator $validator = null,
     ) {
+        $this->promptBuilder = $promptBuilder ?? new PromptBuilder($this->systemPrompt);
+        $this->validator = $validator ?? new RequirementsValidator();
+        $this->injectionDetector = new PromptInjectionDetector();
     }
 
     /**
-     * Analyse une description d'offre et retourne les données structurées extraites.
-     *
-     * Le texte est nettoyé et tronqué à 3 000 caractères avant envoi.
-     * En cas de cache hit, le LLM n'est pas sollicité.
-     * En cas d'échec LLM, le fallback heuristique est automatiquement utilisé.
+     * Vue historique de l'extraction (stack, contrat, remote, budget, séniorité).
      *
      * @throws InvalidArgumentException
      */
     public function analyze(string $text, ?\DateTimeImmutable $publishedAt = null): AiAnalysisDto
     {
-        $this->lastAnalysisUsedFallback = false;
-        $text = $this->cleanText($text);
-        $text = mb_substr($text, 0, 3000);
+        return $this->extract($text, $publishedAt)->analysis;
+    }
 
-        $cacheKey = 'ai_' . hash('sha256', $text);
+    /**
+     * Extrait les exigences structurées d'une annonce.
+     *
+     * Le texte est nettoyé et tronqué à `maxInputChars` avant envoi. En cas de cache hit, le LLM n'est
+     * pas sollicité. En cas d'échec LLM, le fallback heuristique est automatiquement utilisé.
+     *
+     * @throws InvalidArgumentException
+     */
+    public function extract(string $text, ?\DateTimeImmutable $publishedAt = null): JobExtraction
+    {
+        $this->lastAnalysisUsedFallback = false;
+        $text = mb_substr($this->cleanText($text), 0, max(1, $this->maxInputChars));
+
+        // Une consigne adressée à un modèle est retirée du texte avant l'envoi et avant l'ancrage des résultats.
+        [$text, $suspicious] = $this->injectionDetector->neutralize($text);
+        if ($suspicious) {
+            $this->logger->warning('AIClient: annonce contenant une consigne adressée à un modèle d\'IA, passage retiré.');
+        }
+
+        $cacheKey = 'ai_v' . JobRequirements::SCHEMA_VERSION . '_' . hash('sha256', $this->promptBuilder->systemPrompt() . "\0" . $text);
         $item = $this->cache->getItem($cacheKey);
 
-        if ($item->isHit()) {
+        $cached = $item->isHit() ? $item->get() : null;
+        if ($cached instanceof JobRequirements) {
             $this->logger->debug('AIClient: cache hit.', ['key' => $cacheKey]);
 
-            return $this->withDeterministicRecency($item->get(), $publishedAt);
+            return $this->build($cached, $publishedAt, false, $suspicious);
         }
 
-        if ($this->providerUnavailable) {
-            $this->lastAnalysisUsedFallback = true;
-            return $this->withDeterministicRecency($this->heuristicFallback($text), $publishedAt);
-        }
+        if (!$this->providerUnavailable) {
+            $requirements = $this->callAI($text);
 
-        $result = $this->callAI($text);
+            if ($requirements !== null) {
+                $item->set($requirements)->expiresAfter(self::CACHE_TTL);
+                $this->cache->save($item);
 
-        if ($result !== null) {
-            $item->set($result)->expiresAfter(self::CACHE_TTL);
-            $this->cache->save($item);
-
-            return $this->withDeterministicRecency($result, $publishedAt);
+                return $this->build($requirements, $publishedAt, false, $suspicious);
+            }
         }
 
         $this->lastAnalysisUsedFallback = true;
 
-        return $this->withDeterministicRecency($this->heuristicFallback($text), $publishedAt);
+        // En repli, la vue historique est l'analyse heuristique elle-même (elle porte le budget détecté,
+        // que les exigences minimales qui en sont tirées n'ont pas).
+        $analysis = $this->heuristicFallback($text);
+
+        return $this->build(LegacyAnalysisMapper::toRequirements($analysis), $publishedAt, true, $suspicious, $analysis);
+    }
+
+    public function lastAnalysisUsedFallback(): bool
+    {
+        return $this->lastAnalysisUsedFallback;
     }
 
     /**
@@ -106,23 +146,45 @@ final class AIClient
         $this->providerUnavailable = false;
     }
 
-    public function lastAnalysisUsedFallback(): bool
-    {
-        return $this->lastAnalysisUsedFallback;
+    private function build(
+        JobRequirements $requirements,
+        ?\DateTimeImmutable $publishedAt,
+        bool $usedFallback,
+        bool $suspicious,
+        ?AiAnalysisDto $analysis = null,
+    ): JobExtraction {
+        if ($suspicious) {
+            $requirements = $requirements->withWarnings([self::SUSPICIOUS_WARNING]);
+        }
+
+        $recent = $this->isRecent($publishedAt);
+        $analysis = $analysis === null
+            ? LegacyAnalysisMapper::toAnalysis($requirements, $recent)
+            : new AiAnalysisDto(
+                $analysis->stack,
+                $analysis->contractType,
+                $analysis->freelance,
+                $analysis->remote,
+                $analysis->budget,
+                $recent,
+                $analysis->seniority,
+            );
+
+        return new JobExtraction($requirements, $analysis, $usedFallback);
     }
 
     /**
-     * Envoie le texte au moteur LLM actif (Ollama, LM Studio ou Gemini).
+     * Envoie l'annonce au moteur LLM actif (Ollama, LM Studio ou Gemini) et valide sa réponse.
      *
-     * Tente deux passes de parsing sur la réponse :
+     * Tente deux passes de décodage sur la réponse :
      *   1. `json_decode` direct sur le contenu brut
      *   2. Extraction par regex d'un bloc JSON si le LLM a ajouté du texte autour
      *
-     * Retourne `null` si la réponse est non parseable ou si une exception est levée.
+     * Retourne `null` si la réponse est absente, non décodable ou inexploitable après validation.
      */
-    private function callAI(string $text): ?AiAnalysisDto
+    private function callAI(string $text): ?JobRequirements
     {
-        $content = $this->provider->analyze($this->systemPrompt, $text);
+        $content = $this->provider->analyze($this->promptBuilder->systemPrompt(), $this->promptBuilder->userMessage($text));
 
         if ($content === null) {
             $this->providerUnavailable = true;
@@ -131,66 +193,39 @@ final class AIClient
             return null;
         }
 
+        $parsed = $this->decode($content);
+        if ($parsed === null) {
+            $this->logger->warning('AIClient: réponse non décodable, fallback heuristique.', ['length' => mb_strlen($content)]);
+
+            return null;
+        }
+
+        try {
+            return $this->validator->validate($parsed, $text);
+        } catch (InvalidExtractionException $e) {
+            $this->logger->warning('AIClient: réponse inexploitable, fallback heuristique.', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /** @return array<array-key, mixed>|null */
+    private function decode(string $content): ?array
+    {
         $parsed = json_decode($content, true);
         if (\is_array($parsed)) {
-            $this->logger->debug('AIClient: réponse parsée avec succès.', [
-                'content' => $content,
-                'parsed' => $parsed,
-            ]);
-
-            return $this->normalize($parsed);
+            return $parsed;
         }
 
         if (preg_match('/\{[\s\S]*\}/', $content, $matches)) {
             $parsed = json_decode($matches[0], true);
 
             if (\is_array($parsed)) {
-                $this->logger->debug('AIClient: réponse parsée avec succès après extraction heuristique.', [
-                    'content' => $content,
-                    'extracted' => $matches[0],
-                    'parsed' => $parsed,
-                ]);
-
-                return $this->normalize($parsed);
+                return $parsed;
             }
         }
 
-        $this->logger->warning('AIClient: réponse non parseable, fallback heuristique.', [
-            'content' => $content,
-        ]);
-
         return null;
-    }
-
-    /**
-     * Normalise et type-safe la réponse brute du LLM.
-     *
-     * Garantit que chaque champ est présent avec le bon type, quelle que soit
-     * la qualité de la réponse du modèle. Les valeurs `contract_type` et
-     * `seniority` hors vocabulaire contrôlé sont ramenées à `Unknown`.
-     *
-     * @param  array<string, mixed>  $data  Tableau décodé depuis la réponse JSON du LLM
-     */
-    private function normalize(array $data): AiAnalysisDto
-    {
-        $contractType = ContractType::tryFrom(strtolower((string) ($data['contract_type'] ?? 'unknown')))
-            ?? ContractType::Unknown;
-
-        $seniority = Seniority::tryFrom(strtolower((string) ($data['seniority'] ?? 'unknown')))
-            ?? Seniority::Unknown;
-
-        return new AiAnalysisDto(
-            stack: array_values(array_unique(array_map(
-                static fn ($item) => strtolower(trim((string) $item)),
-                (array) ($data['stack'] ?? [])
-            ))),
-            contractType: $contractType,
-            freelance: (bool) ($data['freelance'] ?? false),
-            remote: (bool) ($data['remote'] ?? false),
-            budget: (string) ($data['budget'] ?? 'non précisé'),
-            recent: false,
-            seniority: $seniority,
-        );
     }
 
     /**
@@ -289,20 +324,10 @@ final class AIClient
         return trim((string) $text);
     }
 
-    private function withDeterministicRecency(AiAnalysisDto $analysis, ?\DateTimeImmutable $publishedAt): AiAnalysisDto
+    private function isRecent(?\DateTimeImmutable $publishedAt): bool
     {
-        $recent = $publishedAt !== null
+        return $publishedAt !== null
             && $publishedAt <= new \DateTimeImmutable()
             && $publishedAt >= new \DateTimeImmutable(sprintf('-%d days', $this->recentJobDays));
-
-        return new AiAnalysisDto(
-            stack: $analysis->stack,
-            contractType: $analysis->contractType,
-            freelance: $analysis->freelance,
-            remote: $analysis->remote,
-            budget: $analysis->budget,
-            recent: $recent,
-            seniority: $analysis->seniority,
-        );
     }
 }

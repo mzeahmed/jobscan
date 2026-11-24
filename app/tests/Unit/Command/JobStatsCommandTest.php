@@ -29,6 +29,7 @@ final class JobStatsCommandTest extends TestCase
         ]);
         $repository->method('countBySource')->willReturn(['remoteok' => 8, 'searxng' => 4]);
         $repository->method('countByAnalysisStatus')->willReturn(['done' => 9, 'pending' => 3]);
+        $repository->method('countOutdatedExtraction')->willReturn(7);
         $runs = $this->createStub(ProviderRunRepository::class);
         $runs->method('findLatestByProvider')->willReturn([
             'remoteok' => new ProviderRun('remoteok', new \DateTimeImmutable('2026-11-24 10:00'), 1500, ProviderRunStatus::Partial, 10, 2, 8, 1, 'timeout sur le flux 2'),
@@ -41,6 +42,8 @@ final class JobStatsCommandTest extends TestCase
         self::assertStringContainsString('remoteok', $tester->getDisplay());
         self::assertStringContainsString('searxng', $tester->getDisplay());
         self::assertStringContainsString('pending', $tester->getDisplay());
+        self::assertStringContainsString('app:jobs:analyze --outdated', $tester->getDisplay());
+        self::assertStringContainsString('7 offre(s)', $tester->getDisplay());
         self::assertStringContainsString('partial', $tester->getDisplay());
         self::assertStringContainsString('2026-11-23 10:00', $tester->getDisplay());
         self::assertStringContainsString('timeout sur le flux 2', $tester->getDisplay());

@@ -51,6 +51,8 @@ parameters:
     app.profile.ai_max_retries: 2
     app.profile.ai_initial_retry_delay_ms: 1000
     app.profile.ai_retry_multiplier: 2.0
+    # Longueur maximale (caractères) de l'annonce envoyée au LLM : les exigences figurent souvent en fin de texte.
+    app.profile.ai_max_input_chars: 6000
     app.profile.persistence_batch_size: 20
     # Reprise des analyses : tentatives max, délai initial puis exponentiel (plafonné),
     # et nombre d'offres analysées à la fin de chaque run du pipeline.
@@ -198,39 +200,43 @@ parameters:
                 points: 10
 
     app.ai_system_prompt: |
-        Tu es un extracteur de données d'offres d'emploi.
+        Tu es un extracteur d'informations d'offres d'emploi.
 
-        Tu dois répondre STRICTEMENT avec un JSON valide.
-        Aucun texte avant.
-        Aucun texte après.
-        Aucun markdown.
-        Aucun bloc ```json.
+        Tu dois répondre STRICTEMENT avec un objet JSON valide.
+        Aucun texte avant. Aucun texte après. Aucun markdown. Aucun bloc ```json.
 
-        Format EXACT :
+        Schéma EXACT (toutes les clés) :
 
         {
-          "stack": ["php", "symfony", "wordpress"],
-          "contract_type": "freelance|cdi|unknown",
-          "freelance": true,
-          "remote": true,
-          "budget": "500€/j ou 45k€/an ou non précisé",
-          "seniority": "junior|mid|senior|unknown"
+          "required_skills": ["PHP", "Symfony"],
+          "nice_skills": ["Docker"],
+          "mentioned_skills": ["Redis"],
+          "seniority": "junior|mid|senior|unknown",
+          "min_years_experience": 3,
+          "languages": [{"name": "anglais", "level": "courant", "required": true}],
+          "remote_mode": "onsite|hybrid|remote|null",
+          "contract_types": ["freelance", "cdi", "cdd", "alternance", "stage"],
+          "salary": {"min": 45000, "max": 55000, "currency": "EUR", "period": "annual|daily"},
+          "locations": ["Marseille"]
         }
 
         Règles strictes :
 
-        - "freelance" = true UNIQUEMENT si freelance, mission, TJM, contract explicite
-        - "contract_type" = "cdi" UNIQUEMENT si CDI explicitement mentionné
-        - "remote" = true si remote ou télétravail mentionné
-        - "budget" :
-          - convertir $ en € approximatif
-          - exemple: $80,000 → 80k€/an
-          - plage: 80k-110k€/an
-        - "seniority" :
-          - senior si 3+ ans ou autonomie demandée
-        - "stack" :
-          - uniquement technologies explicitement présentes
-
-        Si doute → "unknown"
+        - N'INVENTE RIEN. Tout ce que tu écris doit figurer dans l'annonce.
+          Information absente : [] pour une liste, null pour une valeur, "unknown" pour seniority.
+        - "required_skills" : technologies, outils ou compétences explicitement EXIGÉS
+          (« requis », « obligatoire », « indispensable », « maîtrise de », « must have »).
+        - "nice_skills" : explicitement APPRÉCIÉS (« un plus », « souhaité », « apprécié », « bonus », « nice to have »).
+        - "mentioned_skills" : autres technologies citées sans indication d'exigence (simple liste de stack).
+        - Une compétence ne figure que dans UNE liste, la plus exigeante. Noms courts, comme écrits dans l'annonce.
+        - "seniority" : senior si 3 ans d'expérience ou plus, ou si « senior », « confirmé » ou autonomie sont demandés ;
+          junior si débutant ; mid pour l'intermédiaire ; sinon unknown.
+        - "min_years_experience" : entier, uniquement si l'annonce donne un nombre d'années ; sinon null.
+        - "remote_mode" : "remote" (télétravail complet), "hybrid" (télétravail partiel), "onsite" (sur site) ; sinon null.
+        - "contract_types" : uniquement ceux explicitement mentionnés. Freelance, mission ou TJM = "freelance".
+        - "salary" : uniquement si un montant figure dans l'annonce. "daily" pour un TJM, "annual" pour un salaire annuel.
+          Montants en entiers, dans la devise de l'annonce, SANS aucune conversion de devise. Sinon null.
+        - "languages" : langues citées ; "required" vaut true si elle est exigée, false si elle est appréciée.
+        - "locations" : lieux de travail cités (villes, régions, pays) ; [] si aucun.
 
         Réponds UNIQUEMENT avec le JSON.

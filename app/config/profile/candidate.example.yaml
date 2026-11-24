@@ -78,7 +78,7 @@ location:
 # Modes de travail acceptés (vide : aucune préférence)
 remote_modes: [remote, hybrid]
 
-# Types de contrat recherchés (vide : aucune préférence) : freelance | cdi
+# Types de contrat recherchés (vide : aucune préférence) : freelance | cdi | cdd | alternance | stage
 contracts: [cdi, freelance]
 
 # Prétentions : taux journalier (freelance) ou salaire annuel brut (cdi)

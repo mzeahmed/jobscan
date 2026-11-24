@@ -47,7 +47,7 @@ final readonly class GeminiClient implements LLMClientInterface
                         ],
                         'generationConfig' => [
                             'temperature' => 0,
-                            'maxOutputTokens' => 1024,
+                            'maxOutputTokens' => 2048,
                         ],
                     ],
                     'timeout' => 120,

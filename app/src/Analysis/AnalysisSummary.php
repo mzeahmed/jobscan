@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Analysis;
 
 /**
- * Bilan d'une reprise d'analyses.
+ * Bilan d'une reprise d'analyses. `skipped` : offres laissées inchangées lors d'une ré-extraction
+ * (LLM indisponible).
  */
 final readonly class AnalysisSummary
 {
@@ -14,6 +15,7 @@ final readonly class AnalysisSummary
         public int $analyzedByFallback = 0,
         public int $failed = 0,
         public int $notified = 0,
+        public int $skipped = 0,
     ) {
     }
 

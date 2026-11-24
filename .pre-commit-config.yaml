@@ -23,13 +23,6 @@ repos:
     hooks:
       - id: gitleaks
 
-  # YAML — lint des fichiers de config Symfony
-  - repo: https://github.com/adrienverge/yamllint
-    rev: v1.35.1
-    hooks:
-      - id: yamllint
-        args: ['-c', '.yamllint.yaml']
-
   # PHP et assets — hooks locaux sur les binaires Composer
   - repo: local
     hooks:

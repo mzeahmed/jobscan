@@ -10,6 +10,31 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-11-29
+
+#### Added
+
+- Extraction IA structurée (`JobRequirements`) : compétences exigées / appréciées / citées, séniorité, années d'expérience,
+  langues, mode de travail, types de contrat, rémunération et lieux, extraits **indépendamment du profil candidat** par un seul
+  appel LLM, validés strictement (`RequirementsValidator`) et stockés dans `job.requirements` avec leur version de schéma
+  (`job.extraction_version`). Migration non destructive (deux colonnes nullables).
+- Ancrage dans le texte : toute compétence, langue, contrat, mode de travail, montant ou lieu absent de l'annonce est écarté avec un
+  avertissement. Une information absente reste inconnue, jamais « non ».
+- Durcissement contre l'injection de prompt : règles de sécurité ajoutées par le code, annonce entre balises à identifiant aléatoire,
+  neutralisation des consignes détectées (retirées avant l'envoi et avant l'ancrage), sortie du modèle jamais interprétée.
+- `app:jobs:analyze --outdated` : ré-extraction explicite des offres dont le schéma est périmé, sans notification et sans jamais
+  remplacer une analyse LLM par un repli heuristique. `app:jobs:stats` signale les offres à ré-extraire.
+- Types de contrat `cdd`, `alternance` et `stage` (`ContractType`), utilisables dans les profils.
+- `docs/EXTRACTION.md`.
+
+#### Changed
+
+- `AIClient::extract()` est le point d'entrée ; `analyze()` en reste la vue historique pour le scoring existant. Prompt
+  `app.ai_system_prompt` remplacé par le schéma d'extraction ; texte envoyé au modèle porté à 6000 caractères
+  (`app.profile.ai_max_input_chars`) et réponse jusqu'à 2048 jetons.
+- Les rémunérations ne sont plus converties en euros : une offre en devise étrangère n'obtient plus le bonus de budget du scoring.
+- Clé de cache IA : schéma + prompt + texte (les anciennes entrées ne sont plus lues).
+
 ### 2026-11-28
 
 #### Added

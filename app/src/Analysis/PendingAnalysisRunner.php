@@ -7,6 +7,7 @@ namespace App\Analysis;
 use Psr\Log\LoggerInterface;
 use App\Notification\Notifier;
 use App\Repository\JobRepository;
+use App\AI\Extraction\JobRequirements;
 
 /**
  * Analyse les offres persistées en attente ou à retenter, puis notifie celles dont
@@ -59,5 +60,33 @@ final readonly class PendingAnalysisRunner implements PendingAnalysisRunnerInter
         $this->jobRepository->clear();
 
         return new AnalysisSummary($ai, $fallback, $failed, $notified);
+    }
+
+    public function reextractOutdated(int $limit, \DateTimeImmutable $now = new \DateTimeImmutable()): AnalysisSummary
+    {
+        $this->analyzer->startBatch();
+        $jobs = $this->jobRepository->findOutdatedExtraction(JobRequirements::SCHEMA_VERSION, $limit);
+        $updated = $skipped = $failed = 0;
+
+        foreach ($jobs as $job) {
+            $outcome = $this->analyzer->reextract($job, $now);
+
+            if (!$outcome->succeeded) {
+                ++$failed;
+                $this->logger->warning('Ré-extraction en échec pour "{title}" : {error}', [
+                    'title' => $job->getTitle(),
+                    'error' => $outcome->error,
+                ]);
+            } elseif ($outcome->usedFallback) {
+                ++$skipped;
+            } else {
+                ++$updated;
+                $this->jobRepository->flush();
+            }
+        }
+
+        $this->jobRepository->clear();
+
+        return new AnalysisSummary(analyzedByAi: $updated, failed: $failed, skipped: $skipped);
     }
 }

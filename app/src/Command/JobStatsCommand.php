@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Repository\JobRepository;
+use App\AI\Extraction\JobRequirements;
 use App\Repository\ProviderRunRepository;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -52,6 +53,14 @@ final class JobStatsCommand extends Command
             $analysis[] = [$status, $total];
         }
         $io->table(['Statut', 'Total'], $analysis);
+        $outdated = $this->jobRepository->countOutdatedExtraction(JobRequirements::SCHEMA_VERSION);
+        if ($outdated > 0) {
+            $io->note(sprintf(
+                '%d offre(s) analysée(s) sans exigences structurées à jour (schéma v%d). Mise à jour : php bin/console app:jobs:analyze --outdated',
+                $outdated,
+                JobRequirements::SCHEMA_VERSION,
+            ));
+        }
 
         $io->section('Santé des providers (dernière exécution)');
         $lastSuccess = $this->providerRunRepository->findLastSuccessByProvider();

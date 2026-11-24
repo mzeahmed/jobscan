@@ -107,6 +107,10 @@ services:
         class: App\AI\Provider\LLMClientInterface
         factory: ['@App\AI\Provider\LLMClientFactory', 'create']
 
+    App\AI\Extraction\PromptBuilder:
+        arguments:
+            $taskPrompt: '%app.ai_system_prompt%'
+
     App\AI\AIClient:
         arguments:
             $provider: '@llm.client'
@@ -114,6 +118,7 @@ services:
             $systemPrompt: '%app.ai_system_prompt%'
             $knownStack: '%app.profile.known_stack%'
             $recentJobDays: '%app.profile.recent_job_days%'
+            $maxInputChars: '%app.profile.ai_max_input_chars%'
 
     App\Provider\RsFeedProvider:
         arguments:

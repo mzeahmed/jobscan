@@ -33,4 +33,26 @@ final class AnalyzeJobsCommandTest extends TestCase
         self::assertStringContainsString('Aucune offre à analyser', $tester->getDisplay());
         self::assertSame(Command::INVALID, $tester->execute(['--limit' => '0']));
     }
+
+    public function testOutdatedReextractsWithoutRunningTheOrdinaryAnalysis(): void
+    {
+        $runner = $this->createMock(PendingAnalysisRunnerInterface::class);
+        $runner->expects($this->never())->method('run');
+        $runner->expects($this->once())->method('reextractOutdated')->with(20)->willReturn(new AnalysisSummary(analyzedByAi: 12, failed: 1, skipped: 2));
+        $tester = new CommandTester(new AnalyzeJobsCommand($runner));
+
+        self::assertSame(Command::SUCCESS, $tester->execute(['--outdated' => true, '--limit' => '20']));
+        self::assertStringContainsString('Exigences mises à jour', $tester->getDisplay());
+        self::assertStringContainsString('LLM indisponible', $tester->getDisplay());
+    }
+
+    public function testOutdatedSaysWhenEverythingIsUpToDate(): void
+    {
+        $runner = $this->createStub(PendingAnalysisRunnerInterface::class);
+        $runner->method('reextractOutdated')->willReturn(new AnalysisSummary());
+        $tester = new CommandTester(new AnalyzeJobsCommand($runner));
+
+        self::assertSame(Command::SUCCESS, $tester->execute(['--outdated' => true]));
+        self::assertStringContainsString('suivent le schéma courant', $tester->getDisplay());
+    }
 }

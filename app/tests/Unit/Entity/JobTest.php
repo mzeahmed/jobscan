@@ -12,6 +12,7 @@ use App\DTO\AiAnalysisDto;
 use App\DTO\AnalysisStatus;
 use PHPUnit\Framework\TestCase;
 use App\DTO\PublicationDateSource;
+use App\AI\Extraction\JobRequirements;
 use App\DTO\PublicationDateConfidence;
 
 final class JobTest extends TestCase
@@ -117,6 +118,39 @@ final class JobTest extends TestCase
         self::assertFalse($job->isAnalysisFinal());
         self::assertSame(500, mb_strlen((string) $job->getLastAnalysisError()));
         self::assertNotNull($job->getNextAnalysisAttemptAt());
+    }
+
+    public function testRequirementsAreStoredWithTheirSchemaVersion(): void
+    {
+        $job = Job::fromDTO($this->dto(null, PublicationDateConfidence::Unknown));
+        self::assertNull($job->getRequirements());
+        self::assertNull($job->getExtractionVersion());
+
+        $job->setRequirements(new JobRequirements(requiredSkills: ['PHP'], seniority: Seniority::Senior));
+
+        self::assertSame(['PHP'], $job->getRequirements()?->requiredSkills);
+        self::assertSame(Seniority::Senior, $job->getRequirements()->seniority);
+        self::assertSame(JobRequirements::SCHEMA_VERSION, $job->getExtractionVersion());
+    }
+
+    public function testReextractionEnrichesWithoutChangingTheAnalysisState(): void
+    {
+        $job = Job::fromDTO($this->dto(null, PublicationDateConfidence::Unknown));
+        $before = new \DateTimeImmutable('-2 days');
+        $job->recordAnalysis($this->analysis(), 40, [], false, $before, null);
+        $job->markAsNotified();
+        $notifiedAt = $job->getNotifiedAt();
+        $now = new \DateTimeImmutable();
+
+        $job->applyReextraction($this->analysis(), 70, ['+30 (symfony stack)'], new JobRequirements(requiredSkills: ['Symfony']), $now);
+
+        self::assertSame(70, $job->getScore());
+        self::assertSame(['+30 (symfony stack)'], $job->getScoreBreakdown());
+        self::assertSame(['Symfony'], $job->getRequirements()?->requiredSkills);
+        self::assertEquals($now, $job->getAnalyzedAt());
+        self::assertSame(AnalysisStatus::Done, $job->getAnalysisStatus());
+        self::assertSame(1, $job->getAnalysisAttempts());
+        self::assertEquals($notifiedAt, $job->getNotifiedAt());
     }
 
     private function dto(?\DateTimeImmutable $date, PublicationDateConfidence $confidence): JobDto

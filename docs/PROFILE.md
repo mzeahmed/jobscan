@@ -61,7 +61,7 @@ Une compétence ciblée par un profil de recherche mais non déclarée vous vaut
 | `languages` | `- Anglais` ou `{name, level}` (niveau libre : `B2`, `natif`…) |
 | `location` | `cities`, `mobility` (`local` `regional` `national` `international`), `max_distance_km` |
 | `remote_modes` | modes acceptés : `onsite` `hybrid` `remote` |
-| `contracts` | types recherchés : `freelance` `cdi` |
+| `contracts` | types recherchés : `freelance` `cdi` `cdd` `alternance` `stage` |
 | `salary` | `contract`, `period` (`daily` pour un TJM, `annual`), `min`, `max`, `currency` (défaut `EUR`) |
 | `availability` | `from` (`AAAA-MM-JJ`), `notice_days`, `comment` |
 | `cvs` | versions de CV : `id`, `label`, `path` (le fichier n'est ni lu ni vérifié) |
@@ -114,8 +114,6 @@ Le registre charge le profil à la première utilisation : un fichier invalide n
 
 ## Limites connues
 
-- Les types de contrat se limitent à `freelance` et `cdi` (ceux que Jobscan sait extraire aujourd'hui) ; CDD,
-  alternance ou stage viendront avec l'extraction IA structurée.
 - Aucune gestion d'alias de compétences (« Symfony » et « Symfony Framework » sont deux compétences distinctes) ;
   la comparaison ignore seulement la casse et les espaces superflus.
 - Le fichier d'un CV n'est pas lu : l'extraction de son texte et la recommandation de version viennent plus tard.

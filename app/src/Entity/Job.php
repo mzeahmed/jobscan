@@ -13,6 +13,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use App\Repository\JobRepository;
 use App\DTO\PublicationDateSource;
+use App\AI\Extraction\JobRequirements;
 use App\DTO\PublicationDateConfidence;
 
 #[ORM\Entity(repositoryClass: JobRepository::class)]
@@ -130,6 +131,19 @@ class Job
     /** Offre probablement identique (même titre, entreprise, lieu) : simple indice, jamais une fusion. */
     #[ORM\Column(nullable: true)]
     private ?int $probableDuplicateOfId = null;
+
+    /**
+     * Exigences extraites de l'annonce (voir `JobRequirements`), indépendantes de tout profil candidat.
+     * Null tant que l'annonce n'a pas été analysée avec le schéma d'extraction structuré.
+     *
+     * @var array<string, mixed>|null
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $requirements = null;
+
+    /** Version du schéma d'extraction des exigences : permet de ré-extraire seulement les annonces périmées. */
+    #[ORM\Column(type: Types::SMALLINT, nullable: true)]
+    private ?int $extractionVersion = null;
 
     public function __construct()
     {
@@ -408,6 +422,38 @@ class Job
             AnalysisStatus::Fallback => $this->nextAnalysisAttemptAt === null,
             AnalysisStatus::Pending, AnalysisStatus::Failed => false,
         };
+    }
+
+    public function getRequirements(): ?JobRequirements
+    {
+        return $this->requirements === null ? null : JobRequirements::fromArray($this->requirements);
+    }
+
+    public function getExtractionVersion(): ?int
+    {
+        return $this->extractionVersion;
+    }
+
+    public function setRequirements(JobRequirements $requirements): void
+    {
+        $this->requirements = $requirements->toArray();
+        $this->extractionVersion = JobRequirements::SCHEMA_VERSION;
+    }
+
+    /**
+     * Met à jour l'analyse d'une offre déjà analysée par le LLM avec un schéma d'extraction plus récent.
+     *
+     * Ne touche ni au statut, ni au compteur de tentatives, ni à la notification : il s'agit d'un
+     * enrichissement, pas d'une reprise.
+     *
+     * @param list<string> $breakdown
+     */
+    public function applyReextraction(AiAnalysisDto $analysis, int $score, array $breakdown, JobRequirements $requirements, \DateTimeImmutable $now): void
+    {
+        $this->setAnalysis($analysis, $breakdown);
+        $this->score = $score;
+        $this->setRequirements($requirements);
+        $this->analyzedAt = $now;
     }
 
     public function getTitleHash(): ?string

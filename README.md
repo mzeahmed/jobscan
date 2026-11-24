@@ -616,16 +616,21 @@ L'analyse est effectuée par `AIClient`, qui délègue l'appel au client sélect
 (API compatible OpenAI, `POST {BASE_URL}/chat/completions`) ou `GeminiClient`
 (API Gemini de Google).
 
-L'IA extrait notamment :
+L'IA extrait, **indépendamment de tout profil candidat**, les exigences structurées de l'annonce :
 
-* stack technique
-* type de contrat (`freelance`, `cdi`, `unknown`)
-* remote
-* budget
-* récence
-* seniority
+* compétences **exigées**, **appréciées** et simplement **citées**
+* séniorité et années d'expérience demandées
+* langues, mode de travail (sur site, hybride, remote)
+* types de contrat (`freelance`, `cdi`, `cdd`, `alternance`, `stage`)
+* rémunération annoncée (jamais convertie)
+* lieux
 
-En cas d'échec de l'analyse IA, JOBSCAN utilise un **fallback heuristique** basé sur des règles locales.
+Chaque information est **ancrée dans le texte de l'annonce** : ce que le modèle invente est écarté. Une information absente reste
+inconnue, jamais « non ». L'annonce est traitée comme une donnée non fiable (consignes détectées et retirées, réponse validée).
+Le score final reste calculé en PHP. Voir [docs/EXTRACTION.md](docs/EXTRACTION.md).
+
+En cas d'échec de l'analyse IA, JOBSCAN utilise un **fallback heuristique** basé sur des règles locales. Les offres analysées avant
+l'extraction structurée se mettent à jour avec `php bin/console app:jobs:analyze --outdated`.
 
 ---
 
@@ -727,7 +732,7 @@ Ce projet utilise [pre-commit](https://blog.stephane-robert.info/docs/outils/qua
 
 | Moment | Vérifications |
 |---|---|
-| `git commit` | trailing whitespace, YAML/JSON, secrets (gitleaks), yamllint, PHP-CS-Fixer, PHPStan |
+| `git commit` | trailing whitespace, YAML/JSON, secrets (gitleaks), PHP-CS-Fixer, PHPStan |
 | `git push` | build assets TypeScript + AssetMapper, PHPUnit |
 
 Pour contourner ponctuellement un hook : `git commit --no-verify` (à éviter).

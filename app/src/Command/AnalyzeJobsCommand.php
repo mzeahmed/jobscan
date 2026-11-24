@@ -31,7 +31,9 @@ final class AnalyzeJobsCommand extends Command
 
     protected function configure(): void
     {
-        $this->addOption('limit', null, InputOption::VALUE_REQUIRED, "Nombre maximal d'offres à traiter.", (string) $this->defaultLimit);
+        $this
+            ->addOption('limit', null, InputOption::VALUE_REQUIRED, "Nombre maximal d'offres à traiter.", (string) $this->defaultLimit)
+            ->addOption('outdated', null, InputOption::VALUE_NONE, "Ré-extrait les exigences des offres déjà analysées dont le schéma d'extraction est périmé (sans notifier).");
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -46,6 +48,10 @@ final class AnalyzeJobsCommand extends Command
             return Command::INVALID;
         }
 
+        if ((bool) $input->getOption('outdated')) {
+            return $this->reextract($io, $limit);
+        }
+
         $summary = $this->runner->run($limit);
 
         $io->table(['Indicateur', 'Total'], [
@@ -57,6 +63,25 @@ final class AnalyzeJobsCommand extends Command
 
         if ($summary->total() === 0) {
             $io->note('Aucune offre à analyser pour le moment.');
+        }
+
+        return Command::SUCCESS;
+    }
+
+    private function reextract(SymfonyStyle $io, int $limit): int
+    {
+        $summary = $this->runner->reextractOutdated($limit);
+
+        $io->table(['Indicateur', 'Total'], [
+            ['Exigences mises à jour', $summary->analyzedByAi],
+            ['Laissées inchangées (LLM indisponible)', $summary->skipped],
+            ['En échec', $summary->failed],
+        ]);
+
+        if ($summary->analyzedByAi + $summary->skipped + $summary->failed === 0) {
+            $io->note('Aucune offre à ré-extraire : toutes suivent le schéma courant.');
+        } elseif ($summary->skipped > 0) {
+            $io->warning('Le LLM était indisponible pour certaines offres : elles restent inchangées. Relancez plus tard.');
         }
 
         return Command::SUCCESS;
