@@ -6,7 +6,7 @@ namespace App\Api\Jobs;
 
 use App\Repository\JobRepository;
 use App\Api\Shared\AbstractApiController;
-use App\Api\Shared\InvalidQueryException;
+use App\Api\Shared\InvalidInputException;
 use App\Repository\ApplicationRepository;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -30,8 +30,8 @@ final class ListJobsController extends AbstractApiController
     {
         try {
             $query = JobListQuery::fromQuery($request->query);
-        } catch (InvalidQueryException $e) {
-            return $this->invalidQuery($e);
+        } catch (InvalidInputException $e) {
+            return $this->invalidInput($e);
         }
 
         $total = $this->jobs->countFiltered($query->filters);

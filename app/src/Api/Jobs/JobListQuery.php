@@ -7,7 +7,7 @@ namespace App\Api\Jobs;
 use App\DTO\Seniority;
 use App\DTO\ContractType;
 use App\DTO\JobListingFilters;
-use App\Api\Shared\InvalidQueryException;
+use App\Api\Shared\InvalidInputException;
 use Symfony\Component\HttpFoundation\InputBag;
 
 /**
@@ -31,7 +31,7 @@ final readonly class JobListQuery
     /**
      * @param InputBag<string> $query
      *
-     * @throws InvalidQueryException
+     * @throws InvalidInputException
      */
     public static function fromQuery(InputBag $query): self
     {
@@ -99,7 +99,7 @@ final readonly class JobListQuery
         $perPage = $integer('per_page', 1, self::MAX_PER_PAGE, self::DEFAULT_PER_PAGE) ?? self::DEFAULT_PER_PAGE;
 
         if ($errors !== []) {
-            throw new InvalidQueryException($errors);
+            throw new InvalidInputException($errors);
         }
 
         return new self($filters, $page, $perPage);

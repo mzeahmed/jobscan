@@ -10,6 +10,12 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-19
+
+#### Added
+
+- API 3 : routes d'écriture (voir `docs/API.md`) — `POST /api/v1/jobs/{id}/application` (suivre, idempotent), `PUT /api/v1/jobs/{id}/decision`, `POST /api/v1/applications/{id}/status` (transitions contrôlées, historique) et `PATCH /api/v1/applications/{id}` (mise à jour partielle). Saisies validées strictement (jamais tronquées en silence), aucune écriture partielle, aucun envoi à un tiers.
+
 ### 2026-12-18
 
 #### Added

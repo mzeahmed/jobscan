@@ -8,7 +8,7 @@ use App\Analytics\Rate;
 use App\Analytics\Window;
 use App\Analytics\AnalyticsService;
 use App\Api\Shared\AbstractApiController;
-use App\Api\Shared\InvalidQueryException;
+use App\Api\Shared\InvalidInputException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -37,7 +37,7 @@ final class AnalyticsController extends AbstractApiController
         $choice = $request->query->get('since', '90d');
 
         if (!\in_array($choice, self::WINDOWS, true)) {
-            return $this->invalidQuery(new InvalidQueryException(['since' => 'Valeur attendue : ' . implode(', ', self::WINDOWS) . '.']));
+            return $this->invalidInput(new InvalidInputException(['since' => 'Valeur attendue : ' . implode(', ', self::WINDOWS) . '.']));
         }
 
         $now = new \DateTimeImmutable();

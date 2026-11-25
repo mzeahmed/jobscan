@@ -49,6 +49,10 @@ Toute réponse JSON de `/api/v1/*` est dans la même enveloppe :
 | `GET /api/v1/applications` | Candidatures (200 au plus, récentes d'abord), filtre `?status=` ; `counts` (un compteur par statut, indépendant du filtre), `total`, `due_follow_ups`. |
 | `GET /api/v1/applications/{id}` | Candidature, `history` (étapes), `allowed_transitions`, notes et message envoyé. |
 | `GET /api/v1/analytics` | `?since=30d\|90d\|365d\|all` (défaut `90d`) : `funnel`, `breakdowns` (source, cv, profile, channel), `sourcing`. Les taux valent `null` sous `min_sample` (5) : le front affiche « x/y », jamais un pourcentage trompeur. |
+| `POST /api/v1/jobs/{id}/application` | Ouvre le suivi d'une offre : une candidature **brouillon** (rien n'est envoyé). `201` + `created: true` ; si l'offre est déjà suivie : `200` + `created: false` et la candidature existante (idempotent). |
+| `PUT /api/v1/jobs/{id}/decision` | `{"state": "saved"\|"ignored"\|"archived"\|null}` : décision de l'utilisateur (`null` la retire ; clé absente : `422`). Idempotent. Renvoie le résumé de l'offre. |
+| `POST /api/v1/applications/{id}/status` | `{"status", "at"?, "note"?}` : consigne un changement de statut **déclaré** (`at` : date passée, `note` : 500 caractères max). Transition interdite : `422 invalid_transition` avec les statuts possibles. Renvoie la candidature et son historique. |
+| `PATCH /api/v1/applications/{id}` | Mise à jour **partielle** : `recruiter_name`, `recruiter_contact`, `channel`, `cv`, `message_sent`, `notes`, `follow_up_at`. Champ absent : inchangé ; `null` ou vide : effacé. Champ inconnu (dont `status`) ou texte trop long : `422`, et **rien** n'est enregistré. |
 | `GET /health/ready` | Sonde de **disponibilité** : la base répond (`200`), sinon `503`. Publique, sans enveloppe, un booléen par dépendance, jamais le détail d'une panne. |
 
 Le code vit sous `src/Api/` : `Shared/` (enveloppe, contrôleur de base, erreurs), `Probe/` (sondes, montées hors préfixe), puis un dossier par domaine (`Info/`, et plus tard `Identity/`, `Jobs/`, `Applications/`, `Analytics/`). `config/routes.yaml` monte `src/Api/` sous `/api/v1`, les sondes sans préfixe et `src/Controller/` (interface Twig) tel quel.
@@ -70,6 +74,14 @@ Dans `app/.env.local` : `JOBSCAN_API_JWT_SECRET=$(openssl rand -hex 32)` (valeur
 
 Limite connue : deux rafraîchissements simultanés avec le même cookie (deux onglets non coordonnés) font échouer le second et révoquent la session ; le front les sérialise avec un verrou Web Locks.
 
+### Écritures
+
+- Jeton d'accès (`Authorization: Bearer`) exigé, corps `application/json` (`415` sinon) et objet JSON (`400` sinon). Un jeton porté en en-tête n'est jamais envoyé automatiquement par le navigateur : pas de jeton CSRF à gérer.
+- Les saisies sont **validées, jamais corrigées en silence** : un texte trop long, une date invalide ou future, un canal ou un CV inconnu donnent `422` avec `data.errors` par champ ; les notes de l'utilisateur ne sont jamais tronquées sans le dire.
+- Une erreur n'enregistre rien (validation avant toute modification, un seul `flush`).
+- **Aucun envoi** : ces routes ne font que consigner ce que l'utilisateur déclare. Rien n'est envoyé à un recruteur ni à un tiers.
+- Le texte saisi (notes, message envoyé) est stocké et renvoyé tel quel, sans interprétation ; le front l'affiche comme du texte.
+
 ### Contenus non fiables (offres)
 
 Une annonce est écrite par un tiers : l'API n'en publie que du **texte brut** (balises retirées, entités décodées, longueur bornée : extrait de 240 caractères en liste, 20 000 en détail) et une **URL `http(s)`** (`url` vaut `null` sinon, jamais `javascript:`). Le front affiche ces champs comme du texte, jamais comme du HTML. Les dates sont en ISO 8601 ; un champ inconnu vaut `null`, jamais une valeur inventée.
@@ -79,7 +91,7 @@ Une annonce est écrite par un tiers : l'API n'en publie que du **texte brut** (
 - [x] **API 0** — enveloppe, erreurs JSON, sondes, racine de l'API
 - [x] **API 1** — authentification : login, refresh rotatif, logout, me ; pare-feu `^/api` sans état ; table `refresh_token`
 - [x] **API 2** — lecture : offres (filtres, pagination), candidatures, analytics
-- [ ] **API 3** — écriture : suivre, décider, statut, détails
+- [x] **API 3** — écriture : suivre, décider, statut, détails
 - [x] **Front 0** — squelette `frontend/` (Vite, React 19, TypeScript strict, ESLint, Prettier, Playwright), design-system, routeur, client HTTP, authentification, Docker et Traefik
 - [ ] **Front 1 à 3** — Offres, Candidatures, Analytics
 - [ ] **Final** — retrait de l'interface Twig, documentation

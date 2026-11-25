@@ -6,6 +6,7 @@ namespace App\Api\Applications;
 
 use App\Tracking\ApplicationStatus;
 use App\Api\Shared\AbstractApiController;
+use App\Api\Shared\InvalidInputException;
 use App\Repository\ApplicationRepository;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
@@ -38,7 +39,7 @@ final class ListApplicationsController extends AbstractApiController
             $filter = ApplicationStatus::tryFrom($value);
 
             if ($filter === null) {
-                return $this->invalidQuery(new \App\Api\Shared\InvalidQueryException([
+                return $this->invalidInput(new InvalidInputException([
                     'status' => 'Valeur attendue : ' . implode(', ', array_column(ApplicationStatus::cases(), 'value')) . '.',
                 ]));
             }
