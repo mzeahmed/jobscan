@@ -14,6 +14,8 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 #### Fixed
 
+- **Tests : ils ne peuvent plus atteindre une vraie base.** Lancés dans le conteneur de développement, ils utilisaient `app/var/jobscan.db` (la variable du conteneur l'emportait sur `phpunit.dist.xml`) et en recréaient le schéma, ce qui en effaçait les données. `tests/bootstrap.php` impose désormais une base en mémoire.
+- Écran React : sous-titre de transition retiré de l'accueil.
 - Écran React : une authentification non configurée (`503 auth_not_configured`) n'est plus présentée comme un serveur injoignable ; l'écran nomme les deux réglages à vérifier. 1 test Playwright.
 - Développement : front publié sur `5174` par défaut (`FRONTEND_PORT`) ; `.env.example` documente `JOBSCAN_API_JWT_SECRET`.
 
