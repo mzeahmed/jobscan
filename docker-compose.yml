@@ -63,7 +63,7 @@ services:
 
     # Front React (développement) : serveur Vite. nginx est la porte d'entrée (`app.jobscan.local`) et lui relaie `/` ;
     # `/api` et `/health` vont à Symfony. Le navigateur ne voit donc qu'une origine : ni CORS, ni cookie inter-site.
-    # Accès direct, sans nom de domaine ni certificat : http://localhost:5173 (Vite relaie alors /api à nginx).
+    # Accès direct, sans nom de domaine ni certificat : http://localhost:5174 (port réglable par FRONTEND_PORT ; Vite relaie alors /api à nginx).
     frontend:
         build:
             context: ./.docker/frontend
@@ -78,7 +78,7 @@ services:
             # Relais de /api et /health par le serveur Vite quand on l'ouvre directement : nginx, sur le réseau interne.
             API_PROXY_TARGET: http://nginx:80
         ports:
-            - "127.0.0.1:${FRONTEND_PORT:-5173}:5173"
+            - "127.0.0.1:${FRONTEND_PORT:-5174}:5173"
         depends_on:
             - nginx
         networks:

@@ -7,7 +7,7 @@ Les en-têtes de sécurité (CSP) sont définis dans `security-headers.conf`, so
 
 ```bash
 npm install
-npm run dev          # http://localhost:5173 (relaie /api et /health vers Symfony)
+npm run dev          # http://localhost:5173 sur l’hôte (dans Docker : 5174, voir FRONTEND_PORT) ; relaie /api et /health
 npm run typecheck && npm run lint && npm run format:check && npm run build
 npm run e2e:install  # une fois : navigateur Playwright
 npm run e2e          # tests de bout en bout (build de production, API simulée)
