@@ -14,6 +14,17 @@ framework:
     trusted_proxies: '%env(default:app.trusted_proxies_default:TRUSTED_PROXIES)%'
     trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port']
 
+    # Connexion à l'API : limitation du débit par adresse puis par couple adresse/identifiant (force brute).
+    rate_limiter:
+        api_login_ip:
+            policy: sliding_window
+            limit: 20
+            interval: '15 minutes'
+        api_login_user:
+            policy: sliding_window
+            limit: 5
+            interval: '15 minutes'
+
     #esi: true
     #fragments: true
 
@@ -22,3 +33,9 @@ when@test:
         test: true
         session:
             storage_factory_id: session.storage.factory.mock_file
+        # Stockage en mémoire, propre à chaque démarrage du noyau de test.
+        rate_limiter:
+            api_login_ip:
+                storage_service: limiter.test_storage
+            api_login_user:
+                storage_service: limiter.test_storage

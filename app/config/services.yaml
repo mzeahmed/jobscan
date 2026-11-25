@@ -161,6 +161,17 @@ services:
             $username: '%env(default:app.ui.default_user:JOBSCAN_UI_USER)%'
             $passwordHash: '%env(default:app.ui.default_hash:JOBSCAN_UI_PASSWORD_HASH)%'
 
+    # API : secret de signature des jetons d'accès (JOBSCAN_API_JWT_SECRET, 32 caractères minimum : `openssl rand -hex 32`).
+    # Vide ou trop court : la connexion à l'API répond 503, jamais « ouverte ».
+    App\Api\Identity\Token\AccessTokenService:
+        arguments:
+            $secret: '%env(default:app.api.jwt_secret_default:JOBSCAN_API_JWT_SECRET)%'
+            $ttl: 900
+
+    App\Api\Identity\Token\RefreshTokenService:
+        arguments:
+            $ttl: 2592000
+
     App\Assistant\LlmDraftWriter:
         arguments:
             $client: '@llm.client'

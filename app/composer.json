@@ -13,6 +13,7 @@
         "doctrine/doctrine-bundle": ">=3.3.0",
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^3.6.7",
+        "firebase/php-jwt": "^7.2",
         "sensiolabs/typescript-bundle": "^0.2.2",
         "symfony/asset": "8.1.*",
         "symfony/asset-mapper": "8.1.*",

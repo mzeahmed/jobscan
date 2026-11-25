@@ -12,6 +12,13 @@ security:
         dev:
             pattern: ^/(_profiler|_wdt)/
             security: false
+        # API : sans session ni cookie, authentifiée par le jeton d'accès (Authorization: Bearer).
+        api:
+            pattern: ^/api(/|$)
+            stateless: true
+            provider: ui_user
+            custom_authenticators:
+                - App\Api\Identity\Security\JwtAuthenticator
         main:
             lazy: true
             provider: ui_user
@@ -32,6 +39,8 @@ security:
         # Sondes d'infrastructure et racine de l'API : publiques, sans donnée sur l'installation.
         - { path: ^/health(/ready)?$, roles: PUBLIC_ACCESS }
         - { path: ^/api/v1/?$, roles: PUBLIC_ACCESS }
+        # Ouverture, renouvellement et fermeture de session : ils portent leurs propres justificatifs (mot de passe, cookie).
+        - { path: ^/api/v1/auth/(login|refresh|logout)$, roles: PUBLIC_ACCESS }
         - { path: ^/login$, roles: PUBLIC_ACCESS }
         - { path: ^/assets/, roles: PUBLIC_ACCESS }
         - { path: ^/, roles: ROLE_USER }

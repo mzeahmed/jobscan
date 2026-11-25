@@ -10,6 +10,12 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-17
+
+#### Added
+
+- API 1 : authentification de l'API (voir `docs/API.md`) — `POST /api/v1/auth/login|refresh|logout` et `GET /api/v1/auth/me`, jeton d'accès JWT (HS256, 15 min, `firebase/php-jwt`), cookie de rafraîchissement HttpOnly/SameSite=Strict à rotation et usage unique (empreinte SHA-256 en base, révocation de la famille en cas de réutilisation), pare-feu `api` sans état, limitation du débit de la connexion. Migration `refresh_token` (non destructive). Variable `JOBSCAN_API_JWT_SECRET` (sans elle, l'authentification de l'API est désactivée).
+
 ### 2026-12-16
 
 #### Added
