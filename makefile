@@ -61,7 +61,7 @@ up: build ## Démarre les conteneurs — Exemple : make up
 	$(COMPOSE) up -d
 	@echo "$(GREEN)Conteneurs démarrés$(NO_COLOR)"
 	@echo "$(BLUE)Dashboard Traefik: http://localhost:9080$(NO_COLOR)"
-	@echo "$(BLUE)Application: https://jobscan.local:8443/job$(NO_COLOR)"
+	@echo "$(BLUE)Application: https://jobscan.local:8443$(NO_COLOR)"
 	@echo "$(BLUE)SearXNG: https://searxng.local:8443$(NO_COLOR)"
 
 up-fast: ## Démarre sans rebuild — Exemple : make up-fast
@@ -69,7 +69,7 @@ up-fast: ## Démarre sans rebuild — Exemple : make up-fast
 	$(COMPOSE) up -d
 	@echo "$(GREEN)Conteneurs démarrés$(NO_COLOR)"
 	@echo "$(BLUE)Dashboard Traefik: http://localhost:9080$(NO_COLOR)"
-	@echo "$(BLUE)Application: https://jobscan.local:8443/job$(NO_COLOR)"
+	@echo "$(BLUE)Application: https://jobscan.local:8443$(NO_COLOR)"
 	@echo "$(BLUE)SearXNG: https://searxng.local:8443$(NO_COLOR)"
 
 down: ## Stop les conteneurs — Exemple : make down
@@ -90,7 +90,7 @@ front-bash: ## Accède au conteneur du front — Exemple : make front-bash
 
 prod-up: ## Déploiement autonome : web seul — Exemple : make prod-up
 	$(COMPOSE_PROD) up -d --build
-	@echo "$(BLUE)Application : http://127.0.0.1:$${JOBSCAN_HTTP_PORT:-8088}/login (derrière votre proxy HTTPS)$(NO_COLOR)"
+	@echo "$(BLUE)Application : http://127.0.0.1:$${JOBSCAN_HTTP_PORT:-8088}/ (derrière votre proxy HTTPS)$(NO_COLOR)"
 
 prod-up-workers: ## Déploiement autonome avec planification et boutons Telegram — Exemple : make prod-up-workers
 	$(COMPOSE_PROD) --profile workers up -d --build
@@ -145,19 +145,6 @@ llm-load: ## Charge le modèle LM Studio utilisé par JOBSCAN — Exemple : make
 llm-status: ## Affiche les modèles actuellement chargés dans LM Studio — Exemple : make llm-status
 	@command -v lms >/dev/null 2>&1 || (echo "$(RED)CLI LM Studio 'lms' introuvable.$(NO_COLOR)" && exit 1)
 	lms ps
-
-# ========================
-# Assets
-# ========================
-w: ## Lance le watcher TypeScript — Exemple : make w
-	@echo "$(YELLOW)Lancement du watcher TypeScript...$(NO_COLOR)"
-	cd app && $(PHP) bin/console typescript:build --watch
-
-b: ## Build les assets TypeScript — Exemple : make b
-	@echo "$(YELLOW)Build des assets TypeScript...$(NO_COLOR)"
-	cd app && $(PHP) bin/console typescript:build
-	cd app && $(PHP) bin/console asset-map:compile
-	@echo "$(GREEN)Build terminé$(NO_COLOR)"
 
 # ========================
 # LOGS / UTILES

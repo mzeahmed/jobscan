@@ -9,7 +9,7 @@ use App\Entity\Job;
 use App\Tracking\JobUserState;
 use App\Tracking\ApplicationStatus;
 use App\Tracking\ApplicationManager;
-use App\Tests\Integration\Web\WebTestCaseBase;
+use App\Tests\Integration\WebTestCaseBase;
 
 /**
  * Les routes de lecture de l'API (offres, candidatures, analytics) : accès, filtres, pagination, forme des données

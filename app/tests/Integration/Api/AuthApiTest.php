@@ -7,7 +7,7 @@ namespace App\Tests\Integration\Api;
 use Firebase\JWT\JWT;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\BrowserKit\Cookie;
-use App\Tests\Integration\Web\WebTestCaseBase;
+use App\Tests\Integration\WebTestCaseBase;
 
 /**
  * Authentification de l'API de bout en bout : connexion, jeton d'accès, rotation du cookie de rafraîchissement,
@@ -241,16 +241,6 @@ final class AuthApiTest extends WebTestCaseBase
         self::assertResponseStatusCodeSame(401);
     }
 
-    public function testTheApiTokenDoesNotOpenTheWebInterface(): void
-    {
-        [$token] = $this->openSession();
-        $this->client->getCookieJar()->clear();
-
-        $this->client->request('GET', '/job', server: $this->bearer($token));
-
-        self::assertResponseRedirects('/login');
-    }
-
     public function testAuthRoutesRefuseOtherMethodsInTheEnvelope(): void
     {
         $this->client->request('GET', '/api/v1/auth/login');
@@ -387,5 +377,74 @@ final class AuthApiTest extends WebTestCaseBase
         $this->sendCookie('inconnu');
         $this->post('/api/v1/auth/logout', '');
         self::assertResponseStatusCodeSame(204);
+    }
+
+    // --- Derrière un proxy HTTPS (Traefik, ou le vôtre en production) ----------------------------------
+
+    /** @return array<string, string> */
+    private static function viaProxy(string $from = '172.18.0.9'): array
+    {
+        return ['CONTENT_TYPE' => 'application/json', 'REMOTE_ADDR' => $from, 'HTTP_HOST' => 'jobscan.local', 'HTTP_X_FORWARDED_PROTO' => 'https', 'HTTP_X_FORWARDED_HOST' => 'jobscan.local', 'HTTP_X_FORWARDED_PORT' => '443'];
+    }
+
+    private function loginViaProxy(string $from = '172.18.0.9'): bool
+    {
+        $this->client->request('POST', '/api/v1/auth/login', server: self::viaProxy($from), content: (string) json_encode(['username' => self::USER, 'password' => self::PASSWORD]));
+        self::assertResponseStatusCodeSame(200);
+
+        foreach ($this->client->getResponse()->headers->getCookies() as $cookie) {
+            if ($cookie->getName() === 'jobscan_refresh') {
+                return $cookie->isSecure();
+            }
+        }
+
+        self::fail('Aucun cookie de rafraîchissement.');
+    }
+
+    public function testForwardedHeadersAreIgnoredByDefault(): void
+    {
+        self::assertFalse($this->loginViaProxy(), 'Sans proxy de confiance, X-Forwarded-Proto ne change rien : personne ne peut le falsifier.');
+    }
+
+    public function testTheRefreshCookieIsSecureBehindATrustedProxy(): void
+    {
+        $this->restartWithEnvironment('TRUSTED_PROXIES', 'REMOTE_ADDR', '172.18.0.9');
+
+        self::assertTrue($this->loginViaProxy(), 'Régression : derrière le proxy HTTPS, le cookie n\'était pas « secure ».');
+    }
+
+    public function testOnlyTheConfiguredProxyIsTrusted(): void
+    {
+        $this->restartWithEnvironment('TRUSTED_PROXIES', '172.18.0.0/16');
+        self::assertTrue($this->loginViaProxy('172.18.0.9'));
+
+        $this->client->getCookieJar()->clear();
+        self::assertFalse($this->loginViaProxy('203.0.113.7'), 'Un client extérieur au réseau du proxy ne peut pas imposer son schéma.');
+    }
+
+    // --- En-têtes de sécurité -------------------------------------------------------------------
+
+    public function testEveryResponseCarriesTheSecurityHeaders(): void
+    {
+        foreach ([['GET', '/api/v1/jobs'], ['GET', '/api/v1/'], ['GET', '/health']] as [$method, $path]) {
+            $this->client->request($method, $path);
+            $headers = $this->client->getResponse()->headers;
+
+            self::assertStringContainsString("default-src 'none'", (string) $headers->get('Content-Security-Policy'), $path);
+            self::assertStringContainsString("frame-ancestors 'none'", (string) $headers->get('Content-Security-Policy'), $path);
+            self::assertSame('nosniff', $headers->get('X-Content-Type-Options'), $path);
+            self::assertSame('DENY', $headers->get('X-Frame-Options'), $path);
+            self::assertSame('no-referrer', $headers->get('Referrer-Policy'), $path);
+            self::assertStringContainsString('no-store', (string) $headers->get('Cache-Control'), $path);
+        }
+    }
+
+    public function testNothingOutsideTheApiAndTheProbesIsReachableWithoutLoggingIn(): void
+    {
+        // L'ancienne interface Twig n'existe plus : ni page de connexion, ni écrans.
+        foreach (['/login', '/job', '/applications', '/analytics'] as $path) {
+            $this->client->request('GET', $path);
+            self::assertResponseStatusCodeSame(404, $path);
+        }
     }
 }

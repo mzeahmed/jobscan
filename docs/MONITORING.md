@@ -22,7 +22,7 @@ Rapide, gratuit et sans effet de bord : **aucun appel réseau, aucun appel au LL
 | Rappels de relance | rappel non envoyé plus de 6 h après la date (le cron tourne-t-il ?) | |
 | Disque (volume de `var/`) | moins de 10 % libre | moins de 5 % libre |
 | Profils | profil candidat absent, ou aucun profil de recherche actif | profil invalide |
-| Interface web | *(information : protégée par mot de passe, ou fermée)* | |
+| Écran React et API | *(information : protégée par mot de passe, ou fermée)* | |
 
 Une source **désactivée** par configuration n'est jamais un problème. Un contrôle qui plante est signalé « critique » avec un message lisible (« table absente : lancez `make migrate` »), sans SQL brut, et n'empêche pas les autres. Les seuils sont dans `config/packages/jobscan.yaml` (`app.health.*`).
 

@@ -9,9 +9,6 @@
 /app/vendor/
 ###< symfony/framework-bundle ###
 
-###> symfony/asset-mapper ###
-/app/public/assets/
-###< symfony/asset-mapper ###
 
 ###> ideas###
 .idea

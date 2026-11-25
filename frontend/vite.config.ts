@@ -11,15 +11,15 @@ const API_PROXY_TARGET = process.env.API_PROXY_TARGET ?? 'https://jobscan.local:
 // Dans la pile Docker, compose fixe API_PROXY_TARGET=http://nginx:80 : réseau interne, sans TLS ni /etc/hosts.
 
 /**
- * Reprend la CSP de nginx.conf pour le serveur Vite, afin de reproduire en local les blocages du navigateur vus
- * en production. nginx.conf reste la source unique : seuls les écarts propres au développement sont ajoutés ici.
+ * Reprend la CSP de security-headers.conf pour le serveur Vite, afin de reproduire en local les blocages du navigateur vus
+ * en production. security-headers.conf reste la source unique : seuls les écarts propres au développement sont ajoutés ici.
  */
 function cspFromNginx(development: boolean): string {
-  const nginx = readFileSync(fileURLToPath(new URL('./nginx.conf', import.meta.url)), 'utf8');
+  const nginx = readFileSync(fileURLToPath(new URL('./security-headers.conf', import.meta.url)), 'utf8');
   const match = nginx.match(/^\s*add_header Content-Security-Policy "([^"]+)" always;/m);
 
   if (!match) {
-    throw new Error('Politique CSP introuvable dans nginx.conf.');
+    throw new Error('Politique CSP introuvable dans security-headers.conf.');
   }
 
   if (!development) {

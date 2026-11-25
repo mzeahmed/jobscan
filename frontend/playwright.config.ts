@@ -11,7 +11,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure'
   },
-  // Les tests visent le build de production avec sa CSP stricte (nginx.conf) et simulent l'API (page.route) :
+  // Les tests visent le build de production avec sa CSP stricte (security-headers.conf) et simulent l'API (page.route) :
   // ils n'ont besoin d'aucun serveur Symfony.
   webServer: {
     command: 'npm run build && npm run preview',

@@ -60,8 +60,6 @@ services:
         build:
             context: .
             dockerfile: .docker/nginx/Dockerfile
-            additional_contexts:
-                app: service:app
         image: jobscan-nginx:prod
         container_name: jobscan_prod_nginx
         restart: unless-stopped

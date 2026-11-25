@@ -1,15 +1,7 @@
 http:
   routers:
     jobscan:
-      rule: Host(`jobscan.local`)
-      entryPoints:
-        - websecure
-      service: jobscan
-      tls: { }
-
-    # Front React (développement) : même nginx, qui route selon le nom de domaine.
-    jobscan-app:
-      rule: Host(`app.jobscan.local`)
+      rule: Host(`jobscan.local`) || Host(`app.jobscan.local`)
       entryPoints:
         - websecure
       service: jobscan

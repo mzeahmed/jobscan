@@ -34,9 +34,6 @@ composer install
 # Surcharges propres à la machine (ignorées par Git)
 # → Renseigner TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, OLLAMA_BASE_URL, etc. dans .env.local
 
-# Assets TypeScript (requis pour l'interface web et pour PHPUnit)
-php bin/console typescript:build
-
 # Créer la base de données et appliquer les migrations
 php bin/console doctrine:migrations:migrate --no-interaction
 ```

@@ -2,6 +2,9 @@
 
 Interface de Jobscan, qui consomme l'API Symfony `/api/v1` (voir `../docs/API.md`).
 
+Écran unique de Jobscan (offres, candidatures, analytics). En production il est construit dans l'image nginx (`../.docker/nginx/Dockerfile`).
+Les en-têtes de sécurité (CSP) sont définis dans `security-headers.conf`, source unique pour nginx et Vite.
+
 ```bash
 npm install
 npm run dev          # http://localhost:5173 (relaie /api et /health vers Symfony)

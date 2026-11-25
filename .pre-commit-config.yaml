@@ -23,7 +23,7 @@ repos:
     hooks:
       - id: gitleaks
 
-  # PHP et assets — hooks locaux sur les binaires Composer
+  # PHP — hooks locaux sur les binaires Composer
   - repo: local
     hooks:
       - id: php-cs-fixer
@@ -39,16 +39,6 @@ repos:
         entry: bash -c 'cd app && ../.githooks/run-php vendor/bin/phpstan analyse -c phpstan.neon --no-progress'
         types: [php]
         pass_filenames: false
-
-      - id: assets-build
-        name: Build assets (TypeScript + AssetMapper)
-        language: system
-        entry: >-
-          bash -c 'cd app && ../.githooks/run-php bin/console typescript:build
-          && ../.githooks/run-php bin/console asset-map:compile'
-        files: ^app/assets/.*\.(ts|css|js)$
-        pass_filenames: false
-        stages: [pre-push]
 
       - id: phpunit
         name: PHPUnit (tests)

@@ -10,6 +10,27 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-23
+
+#### Added
+
+- Image nginx de production : étape Node qui construit l'écran React (`frontend/dist`) et le sert, repli sur `index.html`, `/api/` et `/health` relayés à php-fpm (`.docker/nginx/prod.conf`).
+- Travail `frontend` dans la CI (types, ESLint, Prettier, build, Playwright).
+- Tests de l'API : en-têtes de sécurité sur toutes les réponses, cookie de rafraîchissement `Secure` derrière un proxy de confiance (et seulement celui-là), absence des anciennes pages.
+
+#### Changed
+
+- `frontend/nginx.conf` devient `frontend/security-headers.conf` (en-têtes seuls, source unique pour nginx et Vite).
+- `SecurityHeadersSubscriber` : en-têtes adaptés à une API JSON (plus de nonce).
+- Développement : `jobscan.local` et `app.jobscan.local` servent l'écran React.
+- `docs/UI.md` réécrit pour l'écran React et l'API ; `docs/DEPLOY.md`, `README.md` mis à jour.
+
+#### Removed
+
+- **Interface Twig** : contrôleurs, gabarits, assets, extensions Twig, formulaire de connexion, tests associés. Les adresses `/job`, `/applications`, `/login` n'existent plus côté Symfony.
+- Paquets `symfony/twig-bundle`, `symfony/asset`, `symfony/asset-mapper`, `sensiolabs/typescript-bundle` (14 avis de sécurité restent, contre 23 avant).
+- Commandes `make w` et `make b`, hook `assets-build`.
+
 ### 2026-12-22
 
 #### Added

@@ -11,7 +11,7 @@ use App\Repository\JobRepository;
 use App\Tracking\ApplicationStatus;
 use App\Tracking\ApplicationManager;
 use App\Repository\ApplicationRepository;
-use App\Tests\Integration\Web\WebTestCaseBase;
+use App\Tests\Integration\WebTestCaseBase;
 
 /**
  * Les routes d'écriture de l'API : suivre une offre, décider, changer le statut, éditer les informations.

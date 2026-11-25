@@ -8,7 +8,7 @@ php bin/console app:analytics:report --since=30d        # 30d, 12w ou all (tout 
 php bin/console app:analytics:report --format=json      # pour un autre outil
 ```
 
-Dans l'interface web : **Analytics** (`/analytics`), avec le choix de la période (30 jours, 90 jours, 1 an, tout).
+Dans l'écran React : **Analytics** (`/analytics`, alimenté par `GET /api/v1/analytics`), avec le choix de la période (30 jours, 90 jours, 1 an, tout).
 
 ## Ce qui est mesuré
 

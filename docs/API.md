@@ -1,6 +1,6 @@
 # API Jobscan (`/api/v1`)
 
-Chantier : un **front React** (dossier `frontend/`) qui consomme Symfony comme API, sur le modèle de l'API et du front Yoostart v4. L'interface Twig actuelle reste en service pendant toute la migration.
+Chantier : un **front React** (dossier `frontend/`) qui consomme Symfony comme API, sur le modèle de l'API et du front Yoostart v4. La migration est terminée : l'ancienne interface Twig a été supprimée (lot Final).
 
 ## Contrat de réponse
 
@@ -32,7 +32,7 @@ Toute réponse JSON de `/api/v1/*` est dans la même enveloppe :
 
 - **Le texte d'une exception n'est jamais renvoyé** (il peut contenir une requête SQL, un chemin, un secret) : il est journalisé (`api_exception`). En mode debug seulement, la classe et le message sont ajoutés sous `data.debug` pour une erreur serveur.
 - Seuls les en-têtes `Allow` et `Retry-After` d'une exception HTTP sont relayés.
-- Les routes hors `/api` ne sont pas touchées : l'interface web garde ses redirections et ses pages d'erreur.
+- Hors `/api` et sondes, Symfony n'expose plus rien (`404`) : les écrans sont ceux du front React.
 
 ## Routes
 
@@ -55,18 +55,18 @@ Toute réponse JSON de `/api/v1/*` est dans la même enveloppe :
 | `PATCH /api/v1/applications/{id}` | Mise à jour **partielle** : `recruiter_name`, `recruiter_contact`, `channel`, `cv`, `message_sent`, `notes`, `follow_up_at`. Champ absent : inchangé ; `null` ou vide : effacé. Champ inconnu (dont `status`) ou texte trop long : `422`, et **rien** n'est enregistré. |
 | `GET /health/ready` | Sonde de **disponibilité** : la base répond (`200`), sinon `503`. Publique, sans enveloppe, un booléen par dépendance, jamais le détail d'une panne. |
 
-Le code vit sous `src/Api/` : `Shared/` (enveloppe, contrôleur de base, erreurs), `Probe/` (sondes, montées hors préfixe), puis un dossier par domaine (`Info/`, et plus tard `Identity/`, `Jobs/`, `Applications/`, `Analytics/`). `config/routes.yaml` monte `src/Api/` sous `/api/v1`, les sondes sans préfixe et `src/Controller/` (interface Twig) tel quel.
+Le code vit sous `src/Api/` : `Shared/` (enveloppe, contrôleur de base, erreurs), `Probe/` (sondes, montées hors préfixe), puis un dossier par domaine (`Info/`, et plus tard `Identity/`, `Jobs/`, `Applications/`, `Analytics/`). `config/routes.yaml` monte `src/Api/` sous `/api/v1`, et les sondes sans préfixe.
 
 ## Sécurité
 
 Seuls `/health`, `/health/ready`, `/api/v1/` et `/api/v1/auth/{login,refresh,logout}` sont publics (`access_control`) ; **toute autre route de l'API exige un jeton d'accès** (règle générale `^/ → ROLE_USER`).
 
-- **Pare-feu `api`** (`^/api`) : sans état, sans session ni cookie PHP ; `JwtAuthenticator` lit `Authorization: Bearer`. Sans jeton : `401` JSON (jamais de redirection vers `/login`). Le pare-feu `main` (interface Twig, session) est indépendant : un jeton d'API n'ouvre pas l'interface web et la session web n'ouvre pas l'API.
+- **Pare-feu `api`** (`^/api`) : sans état, sans session ni cookie PHP ; `JwtAuthenticator` lit `Authorization: Bearer`. Sans jeton : `401` JSON (jamais de redirection vers `/login`). Le pare-feu `main` (tout le reste) refuse l'accès par défaut.
 - **Jeton d'accès** : JWT HS256, 15 minutes, porté **en mémoire** par le front. L'algorithme est imposé à la vérification (pas d'`alg=none`), l'émetteur vérifié ; il ne contient que l'identifiant et les rôles.
 - **Jeton de rafraîchissement** : secret aléatoire de 256 bits, 30 jours, **à usage unique** (rotation à chaque rafraîchissement), posé en cookie `jobscan_refresh` : `HttpOnly`, `SameSite=Strict`, `Secure` dès que la requête est en HTTPS, chemin `/api/v1/auth` (il ne voyage pas avec chaque appel). Seule son **empreinte SHA-256** est stockée (table `refresh_token`). Présenter un jeton déjà utilisé révoque toute sa famille (vol probable) ; l'expiration purge les anciens jetons à la connexion.
 - **Connexion** : limitation du débit (5 échecs / 15 min par adresse + identifiant, 20 par adresse), message et temps de calcul identiques pour « identifiant inconnu » et « mauvais mot de passe », champs bornés à 256 caractères, `Content-Type: application/json` exigé.
 - **Désactivée plutôt qu'ouverte** : sans `JOBSCAN_API_JWT_SECRET` (32 caractères minimum) ou sans compte configuré (`JOBSCAN_UI_PASSWORD_HASH`), `login` et `refresh` répondent `503`.
-- **Compte** : le même compte unique que l'interface web (`JOBSCAN_UI_USER` / `JOBSCAN_UI_PASSWORD_HASH`, voir `docs/UI.md`).
+- **Compte** : le compte unique historique de l'interface (`JOBSCAN_UI_USER` / `JOBSCAN_UI_PASSWORD_HASH`, voir `docs/UI.md`).
 
 ### Mise en service
 
@@ -96,19 +96,19 @@ Une annonce est écrite par un tiers : l'API n'en publie que du **texte brut** (
 - [x] **Front 1** — Offres : liste, filtres dans l'adresse, pagination, suivre, décider
 - [x] **Front 2** — Candidatures : liste par statut, détail, historique, changement de statut, édition
 - [x] **Front 3** — Analytics : parcours, répartitions, rendement des sources
-- [ ] **Final** — retrait de l'interface Twig, documentation
+- [x] **Final** — retrait de l'interface Twig (contrôleurs, gabarits, assets, TwigBundle, AssetMapper, TypeScriptBundle), image nginx de production avec l'écran construit, CI du front, documentation
 
-Choix retenus : `/api/v1` sur **la même origine** (Traefik route le chemin vers Symfony et le reste vers le front : ni CORS ni nouveau certificat), JWT via `firebase/php-jwt`, i18n `i18next` en français seul au départ, interface Twig conservée jusqu'au dernier lot.
+Choix retenus : `/api/v1` sur **la même origine** (Traefik route le chemin vers Symfony et le reste vers le front : ni CORS ni nouveau certificat), JWT via `firebase/php-jwt`, i18n `i18next` en français seul au départ, interface Twig supprimée au dernier lot.
 
 ## Front (`frontend/`)
 
 Front 0 livré : React 19, TypeScript strict, Vite, TanStack Query, react-router, i18next (français), design-system `js-*` (variables reprises de l'interface Twig), client HTTP `symfonyClient` (rafraîchissement du jeton en vol unique, verrou Web Locks entre onglets).
 Commandes : `make front-check` (types, lint, format, build) et `make front-e2e` (Playwright, build de production avec CSP stricte, API simulée).
 
-- **Développement** : `make up` lance le conteneur `frontend` (Vite). Accès `https://app.jobscan.local:8443` (nginx route `/api` et `/health` vers Symfony, le reste vers Vite — une seule origine, donc ni CORS ni cookie inter-site) ou directement `http://localhost:5173`. `make hosts` ajoute `app.jobscan.local`.
-- **Production** : pas d'image dédiée pour l'instant ; le build statique sera servi par nginx au lot « Final ».
+- **Développement** : `make up` lance le conteneur `frontend` (Vite). Accès `https://jobscan.local:8443` (ou son alias `https://app.jobscan.local:8443`) (nginx route `/api` et `/health` vers Symfony, le reste vers Vite — une seule origine, donc ni CORS ni cookie inter-site) ou directement `http://localhost:5173`. `make hosts` ajoute `app.jobscan.local`.
+- **Production** : l'image nginx (`.docker/nginx/Dockerfile`) construit l'écran (étape Node, comme Coelbook) et le sert ; `/api/` et `/health` sont relayés à php-fpm (`.docker/nginx/prod.conf`). Une seule origine, sur `127.0.0.1:8088`.
 - **Contrat d'authentification** : `POST /auth/login {username,password}` et `POST /auth/refresh` (cookie HttpOnly) renvoient `{user:{id,username,roles}, access_token, token_type, expires_in}` ; `POST /auth/logout` répond 204.
-- **Vérifié** contre l'API réelle (API 1) : connexion, `me`, rotation, déconnexion, `/job` toujours protégé.
+- **Vérifié** contre l'API réelle (API 1) : connexion, `me`, rotation, déconnexion.
 
 ### Écran Offres (Front 1)
 
@@ -133,3 +133,12 @@ Commandes : `make front-check` (types, lint, format, build) et `make front-e2e` 
 - **Rendement des sources** : offres collectées → compatibles → notifiées → suivies → postulées. Affiché même sans candidature envoyée ; sans candidature, un état vide remplace le parcours.
 - Les libellés (source, CV, profil) peuvent venir de contenus externes : rendus comme du texte.
 - Tous les écrans de l'ancienne interface sont migrés : l'écran « Bientôt disponible » est supprimé.
+
+### Lot Final
+
+- **Supprimé** : `src/Controller/`, `templates/`, `assets/`, les extensions Twig, le formulaire de connexion et ses tests, `symfony/twig-bundle`, `symfony/asset`, `symfony/asset-mapper`, `sensiolabs/typescript-bundle` (avec eux, 9 avis de sécurité de dépendances disparaissent), les commandes `make w`/`make b` et le hook d'assets.
+- **En-têtes de sécurité** : `SecurityHeadersSubscriber` ne pose plus de nonce (plus de page HTML côté Symfony) : chaque réponse de l'API porte `default-src 'none'`, `frame-ancestors 'none'`, `nosniff`, `no-referrer`, `no-store`. La CSP de l'écran React est dans `frontend/security-headers.conf` (source unique, relue par Vite).
+- **Image de production** : `docker-compose.prod.yml` ne passe plus `additional_contexts` à nginx (plus de ressources PHP à copier) ; l'image nginx embarque `frontend/dist`.
+- **Développement** : `jobscan.local` et `app.jobscan.local` mènent au même écran (Vite derrière nginx) ; `/api` et `/health` vont à Symfony.
+- **CI** : un travail `frontend` (types, ESLint, Prettier, build, Playwright) s'ajoute au travail PHP.
+- **Vérifié de bout en bout** sur la pile de production construite (projet Docker isolé, identifiants factices) : connexion réelle depuis un navigateur, les trois écrans, rechargement avec session conservée, déconnexion, aucune violation de CSP ; `/api/v1/*` répond avec le jeton ; `/login` côté Symfony n'existe plus.

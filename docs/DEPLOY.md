@@ -14,7 +14,7 @@ Deux piles Docker, indépendantes :
 ## Pile autonome
 
 ```bash
-make prod-up              # web seul : http://127.0.0.1:8088/login
+make prod-up              # web seul : http://127.0.0.1:8088/
 make prod-up-workers      # + planification et boutons Telegram
 make prod-down            # arrête (le volume `var` est conservé)
 make prod-logs
@@ -24,11 +24,11 @@ make prod-logs
 
 Avant le premier démarrage :
 
-1. **Identifiants** dans `app/.env.local` (ignoré par Git) : `APP_SECRET`, `JOBSCAN_UI_PASSWORD_HASH` (voir [UI.md](UI.md)), Telegram, clés LLM. Ce fichier est lu **à l'exécution** (`env_file`) et n'est **jamais copié dans une image** : `.dockerignore` exclut `app/.env`, `app/.env.local` et le profil candidat.
+1. **Identifiants** dans `app/.env.local` (ignoré par Git) : `APP_SECRET`, `JOBSCAN_UI_PASSWORD_HASH` (voir [UI.md](UI.md)), `JOBSCAN_API_JWT_SECRET` (`openssl rand -hex 32`, 32 caractères minimum : sans lui la connexion répond 503), Telegram, clés LLM. Ce fichier est lu **à l'exécution** (`env_file`) et n'est **jamais copié dans une image** : `.dockerignore` exclut `app/.env`, `app/.env.local` et le profil candidat.
 2. **Profil candidat** : `app/config/profile/local/` est monté en **lecture seule** sur `/profile`. Autre dossier : `JOBSCAN_PROFILE_DIR=/chemin make prod-up`.
 3. **LLM** : depuis un conteneur, `localhost` n'est pas votre machine. Pointez `OLLAMA_BASE_URL` vers l'hôte (`http://host.docker.internal:11434/v1`, ce qui reste un moteur « local » pour l'assistant) et mettez à jour `extra_hosts` si besoin.
 
-L'image est construite en plusieurs étapes (`dev`, `build`, `prod`) : dépendances sans `--dev`, autoloader optimisé, ressources compilées, cache chauffé, OPcache sans revalidation. Le service `app` démarre php-fpm **après** avoir appliqué les migrations (non destructives) ; `nginx`, `cron` et `telegram` attendent qu'il soit sain.
+L'image est construite en plusieurs étapes (`dev`, `build`, `prod`) : dépendances sans `--dev`, autoloader optimisé, écran React construit dans l'image nginx (`.docker/nginx/Dockerfile`, étape Node), cache chauffé, OPcache sans revalidation. Le service `app` démarre php-fpm **après** avoir appliqué les migrations (non destructives) ; `nginx`, `cron` et `telegram` attendent qu'il soit sain.
 
 ## Planification (`cron`)
 
@@ -50,7 +50,7 @@ Pourquoi supercronic et non Symfony Scheduler : voir [SCHEDULER.md](SCHEDULER.md
 
 - **Aucun secret dans une image.** (Avant ce lot, le `.dockerignore` n'excluait ni `app/.env` ni `app/.env.local` : le `COPY` du Dockerfile les embarquait.)
 - Services applicatifs : racine en **lecture seule**, **aucune capacité Linux**, `no-new-privileges`, `/tmp` en `tmpfs`, utilisateur sans privilège.
-- Le web n'écoute que sur **`127.0.0.1`** (`JOBSCAN_HTTP_PORT`, 8088 par défaut) : placez devant lui votre proxy HTTPS. N'exposez pas l'interface en clair sur Internet ; `TRUSTED_PROXIES` vaut `REMOTE_ADDR` par défaut dans cette pile (php-fpm ne reçoit que les requêtes de nginx, publié sur `127.0.0.1`) pour que les redirections et le cookie de session suivent le HTTPS de **votre** proxy ; `JOBSCAN_TRUSTED_PROXIES` permet de le changer (voir [UI.md](UI.md)).
+- Le web n'écoute que sur **`127.0.0.1`** (`JOBSCAN_HTTP_PORT`, 8088 par défaut) : placez devant lui votre proxy HTTPS. N'exposez pas l'application en clair sur Internet ; `TRUSTED_PROXIES` vaut `REMOTE_ADDR` par défaut dans cette pile (php-fpm ne reçoit que les requêtes de nginx, publié sur `127.0.0.1`) pour que le cookie de rafraîchissement (`Secure`) suive le HTTPS de **votre** proxy ; `JOBSCAN_TRUSTED_PROXIES` permet de le changer (voir [UI.md](UI.md)).
 - Le tableau de bord Traefik de la pile de développement (`insecure: true`, sans authentification) n'est plus publié que sur `127.0.0.1:9080` (il l'était sur toutes les interfaces).
 
 ## Développement : fin des fichiers appartenant à root
@@ -66,7 +66,7 @@ make build && make up       # recrée le conteneur sous votre identifiant
 
 ## Vérification
 
-La pile a été construite et exécutée de bout en bout dans un projet Docker isolé (identifiants factices) : migrations au démarrage, `/login` et en-têtes de sécurité, connexion avec CSRF, ressources servies par nginx,
+La pile a été construite et exécutée de bout en bout dans un projet Docker isolé (identifiants factices) : migrations au démarrage, écran React servi par nginx (repli sur `index.html`, CSP stricte, fichiers à empreinte en cache d'un an), `/api/` et `/health` relayés à php-fpm, connexion réelle depuis un navigateur (Playwright : connexion, trois écrans, rechargement avec session conservée, déconnexion, aucune violation de CSP),
 racine en lecture seule, aucune capacité, lecture du crontab par supercronic, arrêt propre du service Telegram (0,15 s), aucun secret ni jeton dans l'image ou les journaux. Les tâches planifiées elles-mêmes n'ont **pas** été
 déclenchées (elles appellent des services externes) : lancez-en une à la main (`docker compose -f docker-compose.prod.yml exec cron php bin/console app:jobs:run --dry-run`) avant de compter sur l'horaire.
 

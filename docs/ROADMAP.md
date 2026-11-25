@@ -151,7 +151,6 @@ make setup
 cd app
 cp .env.example .env
 composer install
-php bin/console typescript:build
 cd ..
 make migrate
 ```

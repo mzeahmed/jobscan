@@ -139,24 +139,7 @@ final class ApiFoundationTest extends WebTestCase
         self::assertSame('DENY', $headers->get('X-Frame-Options'));
     }
 
-    // --- Ce qui ne doit pas changer ----------------------------------------------------------------
-
-    public function testThePagesOfTheWebInterfaceStillRequireAuthentication(): void
-    {
-        foreach (['/job', '/applications', '/analytics'] as $path) {
-            $this->client->request('GET', $path);
-
-            self::assertResponseRedirects('http://localhost/login', null, $path);
-        }
-    }
-
-    public function testTheLoginPageStillWorks(): void
-    {
-        $this->client->request('GET', '/login');
-
-        self::assertResponseStatusCodeSame(200);
-        self::assertStringContainsString('text/html', $this->contentType());
-    }
+    // --- Hors de l'API ----------------------------------------------------------------
 
     public function testErrorsOutsideTheApiAreNotTurnedIntoJson(): void
     {

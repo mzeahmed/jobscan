@@ -2,13 +2,6 @@
 framework:
     secret: '%env(APP_SECRET)%'
 
-    # La session n'est démarrée que si on la lit ou l'écrit. Cookie inaccessible au JavaScript, jamais envoyé
-    # par un site tiers, et réservé à HTTPS dès que la requête l'est.
-    session:
-        cookie_secure: auto
-        cookie_httponly: true
-        cookie_samesite: lax
-
     # Derrière un proxy inverse (Traefik) : adresses des proxys de confiance (TRUSTED_PROXIES : adresses ou réseaux exacts ; éviter `private_ranges`, CVE-2026-121619). Vide
     # par défaut : aucun en-tête X-Forwarded-* n'est cru, donc personne ne peut falsifier son adresse ou le schéma HTTPS.
     trusted_proxies: '%env(default:app.trusted_proxies_default:TRUSTED_PROXIES)%'
@@ -31,8 +24,6 @@ framework:
 when@test:
     framework:
         test: true
-        session:
-            storage_factory_id: session.storage.factory.mock_file
         # Stockage en mémoire, propre à chaque démarrage du noyau de test.
         rate_limiter:
             api_login_ip:

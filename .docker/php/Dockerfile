@@ -46,8 +46,6 @@ COPY app /app
 # Le .env de l'hôte est exclu du contexte : l'image part toujours du modèle versionné. Les vrais identifiants arrivent à l'exécution.
 RUN cp .env.example .env \
     && APP_ENV=prod composer install --no-dev --optimize-autoloader --classmap-authoritative --no-interaction \
-    && APP_ENV=prod php bin/console typescript:build \
-    && APP_ENV=prod php bin/console asset-map:compile \
     && APP_ENV=prod php bin/console cache:warmup
 
 # ── Production : code figé dans l'image, utilisateur sans privilège, aucun volume de code ─────────────────────

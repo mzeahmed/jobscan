@@ -267,7 +267,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         formats?: array<string, string|list<scalar|Param|null>>,
  *     },
  *     assets?: bool|array{ // Assets configuration
- *         enabled?: bool|Param, // Default: true
+ *         enabled?: bool|Param, // Default: false
  *         strict_mode?: bool|Param, // Throw an exception if an entry is missing from the manifest.json. // Default: false
  *         version_strategy?: scalar|Param|null, // Default: null
  *         version?: scalar|Param|null, // Default: null
@@ -286,7 +286,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         }>,
  *     },
  *     asset_mapper?: bool|array{ // Asset Mapper configuration
- *         enabled?: bool|Param, // Default: true
+ *         enabled?: bool|Param, // Default: false
  *         paths?: string|array<string, scalar|Param|null>,
  *         excluded_patterns?: list<scalar|Param|null>,
  *         exclude_dotfiles?: bool|Param, // If true, any files starting with "." will be excluded from the asset mapper. // Default: true
@@ -1057,38 +1057,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         },
  *     }>,
  * }
- * @psalm-type TwigConfig = array{
- *     form_themes?: list<scalar|Param|null>,
- *     globals?: array<string, array{ // Default: []
- *         id?: scalar|Param|null,
- *         type?: scalar|Param|null,
- *         value?: mixed,
- *     }>,
- *     autoescape_service?: scalar|Param|null, // Default: null
- *     autoescape_service_method?: scalar|Param|null, // Default: null
- *     cache?: scalar|Param|null, // Default: true
- *     charset?: scalar|Param|null, // Default: "%kernel.charset%"
- *     debug?: bool|Param, // Default: "%kernel.debug%"
- *     strict_variables?: bool|Param, // Default: "%kernel.debug%"
- *     auto_reload?: scalar|Param|null,
- *     optimizations?: int|Param,
- *     default_path?: scalar|Param|null, // The default path used to load templates. // Default: "%kernel.project_dir%/templates"
- *     file_name_pattern?: string|list<scalar|Param|null>,
- *     paths?: array<string, mixed>,
- *     date?: array{ // The default format options used by the date filter.
- *         format?: scalar|Param|null, // Default: "F j, Y H:i"
- *         interval_format?: scalar|Param|null, // Default: "%d days"
- *         timezone?: scalar|Param|null, // The timezone used when formatting dates, when set to null, the timezone returned by date_default_timezone_get() is used. // Default: null
- *     },
- *     number_format?: array{ // The default format options for the number_format filter.
- *         decimals?: int|Param, // Default: 0
- *         decimal_point?: scalar|Param|null, // Default: "."
- *         thousands_separator?: scalar|Param|null, // Default: ","
- *     },
- *     mailer?: array{
- *         html_to_text_converter?: scalar|Param|null, // A service implementing the "Symfony\Component\Mime\HtmlToTextConverter\HtmlToTextConverterInterface". // Default: null
- *     },
- * }
  * @psalm-type SecurityConfig = array{
  *     access_denied_url?: scalar|Param|null, // Default: null
  *     session_fixation_strategy?: "none"|"migrate"|"invalidate"|Param, // Default: "migrate"
@@ -1398,13 +1366,6 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     }>,
  *     role_hierarchy?: array<string, string|list<scalar|Param|null>>,
  * }
- * @psalm-type SensiolabsTypescriptConfig = array{
- *     source_dir?: list<scalar|Param|null>,
- *     binary_download_dir?: scalar|Param|null, // The directory where the SWC binary will be downloaded // Default: "%kernel.project_dir%/var"
- *     swc_binary?: scalar|Param|null, // The SWC binary to use // Default: null
- *     swc_config_file?: scalar|Param|null, // Path to .swcrc configuration file to use // Default: "%kernel.project_dir%/.swcrc"
- *     swc_version?: scalar|Param|null, // The SWC version to use // Default: "v1.3.92"
- * }
  * @psalm-type JobscanConfig = array{
  *     llm?: array{
  *         provider?: scalar|Param|null, // Moteur LLM actif utilisé par LLMClientFactory. // Default: "ollama"
@@ -1430,9 +1391,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     doctrine?: DoctrineConfig,
  *     doctrine_migrations?: DoctrineMigrationsConfig,
  *     monolog?: MonologConfig,
- *     twig?: TwigConfig,
  *     security?: SecurityConfig,
- *     sensiolabs_typescript?: SensiolabsTypescriptConfig,
  *     jobscan?: JobscanConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
@@ -1443,9 +1402,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         doctrine?: DoctrineConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
  *         monolog?: MonologConfig,
- *         twig?: TwigConfig,
  *         security?: SecurityConfig,
- *         sensiolabs_typescript?: SensiolabsTypescriptConfig,
  *         jobscan?: JobscanConfig,
  *     },
  *     "when@prod"?: array{
@@ -1456,9 +1413,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         doctrine?: DoctrineConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
  *         monolog?: MonologConfig,
- *         twig?: TwigConfig,
  *         security?: SecurityConfig,
- *         sensiolabs_typescript?: SensiolabsTypescriptConfig,
  *         jobscan?: JobscanConfig,
  *     },
  *     "when@test"?: array{
@@ -1469,9 +1424,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         doctrine?: DoctrineConfig,
  *         doctrine_migrations?: DoctrineMigrationsConfig,
  *         monolog?: MonologConfig,
- *         twig?: TwigConfig,
  *         security?: SecurityConfig,
- *         sensiolabs_typescript?: SensiolabsTypescriptConfig,
  *         jobscan?: JobscanConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias

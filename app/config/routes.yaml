@@ -23,10 +23,3 @@ probes:
         path: ../src/Api/Probe/
         namespace: App\Api\Probe
     type: attribute
-
-# Pages de l'interface web (Twig), inchangées.
-web:
-    resource:
-        path: ../src/Controller/
-        namespace: App\Controller
-    type: attribute

@@ -113,7 +113,6 @@ git clone https://github.com/mzeahmed/jobscan.git
 cd jobscan/app
 cp .env.example .env     # requis AVANT composer install (cache:clear lit .env)
 composer install
-php bin/console typescript:build   # assets TypeScript, requis pour rendre l'interface web et lancer PHPUnit
 ```
 
 `app/.env` et `app/.env.local` sont ignorés par Git : `.env.example` est le seul
@@ -571,9 +570,9 @@ make alerts
 > `make fix-perms` corrige ça (`sudo chmod -R 777 app/var` — suffisant en local, à ne
 > jamais faire en production).
 
-Accès application (vue HTML des offres) :
+Accès application (écran React : offres, candidatures, analytics) :
 
-* `https://jobscan.local:8443/job`
+* `https://jobscan.local:8443` (alias `https://app.jobscan.local:8443`)
 
 Accès SearXNG :
 
@@ -696,9 +695,9 @@ pour les informations disponibles. Une offre incompatible n'est jamais notifiée
 `app:applications:track|status|list` consignent vos candidatures (statut, dates, CV utilisé, recruteur, message envoyé, relance) et `app:jobs:decide` sauvegarde, ignore ou archive une
 offre. Jobscan n'envoie rien : il enregistre ce que vous déclarez. Ces offres échappent à la purge. Voir [docs/APPLICATIONS.md](docs/APPLICATIONS.md).
 
-L'**interface web** (offres et candidatures) est protégée par un compte unique, un jeton CSRF sur chaque écriture et une limitation des tentatives ; elle reste fermée tant que `app:ui:hash-password` n'a pas été utilisé. Voir [docs/UI.md](docs/UI.md).
+L'**écran React** (`frontend/` : offres, candidatures et analytics) parle à Symfony par l'**API** `/api/v1` (JWT court + cookie de rafraîchissement rotatif). Il est protégé par un compte unique et une limitation des tentatives ; il reste fermé tant que `app:ui:hash-password` n'a pas été utilisé. Voir [docs/UI.md](docs/UI.md) et [docs/API.md](docs/API.md).
 
-`app:analytics:report` et la page **Analytics** montrent, sur vos seules données, ce qui fonctionne : réponses par source, CV, profil et canal, rendement des sources. Des comptages, pas des preuves (pourcentage à partir de 5 candidatures) ; voir [docs/ANALYTICS.md](docs/ANALYTICS.md).
+`app:analytics:report` et l'écran **Analytics** montrent, sur vos seules données, ce qui fonctionne : réponses par source, CV, profil et canal, rendement des sources. Des comptages, pas des preuves (pourcentage à partir de 5 candidatures) ; voir [docs/ANALYTICS.md](docs/ANALYTICS.md).
 
 `app:health:check` contrôle l'installation (migrations, sources, analyses, notifications, rappels, disque, profils) et prévient par Telegram une fois par changement d'état ; `app:report:weekly` produit le rapport de période. Voir [docs/MONITORING.md](docs/MONITORING.md).
 
@@ -764,7 +763,6 @@ make setup        # configure les git hooks (.githooks/)
 cd app
 cp .env.example .env
 composer install
-php bin/console typescript:build
 cd ..
 make migrate
 ```
@@ -776,7 +774,7 @@ Ce projet utilise [pre-commit](https://blog.stephane-robert.info/docs/outils/qua
 | Moment | Vérifications |
 |---|---|
 | `git commit` | trailing whitespace, YAML/JSON, secrets (gitleaks), PHP-CS-Fixer, PHPStan |
-| `git push` | build assets TypeScript + AssetMapper, PHPUnit |
+| `git push` | PHPUnit |
 
 Pour contourner ponctuellement un hook : `git commit --no-verify` (à éviter).
 

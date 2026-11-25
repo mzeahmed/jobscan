@@ -14,9 +14,6 @@
         "doctrine/doctrine-migrations-bundle": "^3.7",
         "doctrine/orm": "^3.6.7",
         "firebase/php-jwt": "^7.2",
-        "sensiolabs/typescript-bundle": "^0.2.2",
-        "symfony/asset": "8.1.*",
-        "symfony/asset-mapper": "8.1.*",
         "symfony/console": "8.1.*",
         "symfony/dotenv": "8.1.*",
         "symfony/flex": ">=2.11",
@@ -26,7 +23,6 @@
         "symfony/rate-limiter": "8.1.*",
         "symfony/runtime": "8.1.*",
         "symfony/security-bundle": "8.1.*",
-        "symfony/twig-bundle": "8.1.*",
         "symfony/yaml": "8.1.*"
     },
     "require-dev": {
@@ -74,9 +70,7 @@
         "lint": "@php vendor/bin/php-cs-fixer fix --dry-run --diff",
         "lint:fix": "@php vendor/bin/php-cs-fixer fix --diff",
         "auto-scripts": {
-            "cache:clear": "symfony-cmd",
-            "assets:install %PUBLIC_DIR%": "symfony-cmd",
-            "importmap:install": "symfony-cmd"
+            "cache:clear": "symfony-cmd"
         },
         "post-install-cmd": [
             "@auto-scripts"
