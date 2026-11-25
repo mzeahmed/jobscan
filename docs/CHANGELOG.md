@@ -10,6 +10,12 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-20
+
+#### Added
+
+- Front 1 : écran Offres (`/jobs`) — liste paginée, filtres et tri conservés dans l'adresse, anneau de score, suivre une offre, sauvegarder/ignorer/archiver. Annonces rendues en texte, lien externe sans transmission de l'origine, score inconnu affiché « — ». 15 tests Playwright supplémentaires (35 au total) ; composants du design-system `SelectField` et `Pagination`.
+
 ### 2026-12-19
 
 #### Added

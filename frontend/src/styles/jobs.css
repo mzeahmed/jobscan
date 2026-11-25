@@ -1,0 +1,196 @@
+/* Écran Offres : filtres, cartes, anneau de score, pagination. */
+.js-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--sp-3) var(--sp-4);
+  align-items: end;
+  margin-bottom: var(--sp-6);
+  padding: var(--sp-4);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-card);
+  background: var(--c-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.js-filters-actions {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+.js-jobs-alert {
+  margin-bottom: var(--sp-4);
+}
+
+.js-job-list {
+  display: grid;
+  gap: var(--sp-4);
+  list-style: none;
+  transition: opacity 0.12s;
+}
+
+.js-job-list-stale {
+  opacity: 0.55;
+}
+
+.js-job {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-6);
+  border: 1px solid var(--c-border);
+  border-left: 4px solid var(--c-border);
+  border-radius: var(--r-card);
+  background: var(--c-card);
+  box-shadow: var(--shadow-card);
+}
+
+.js-job-excellent {
+  border-left-color: var(--c-success);
+}
+
+.js-job-medium {
+  border-left-color: var(--c-warning);
+}
+
+.js-job-low {
+  border-left-color: var(--c-text-faint);
+}
+
+.js-job-main {
+  display: grid;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.js-job-title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.js-job-title a {
+  color: var(--c-text);
+  text-decoration: none;
+}
+
+.js-job-title a:hover {
+  color: var(--c-primary);
+}
+
+.js-job-external {
+  margin-left: 6px;
+  color: var(--c-text-faint);
+  font-size: 11px;
+}
+
+.js-job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px var(--sp-3);
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+.js-job-source {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+.js-job-excerpt {
+  color: var(--c-text-muted);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.js-job-badges,
+.js-job-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+.js-job-actions {
+  margin-top: var(--sp-2);
+}
+
+/* Anneau de score */
+.js-score {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+}
+
+.js-score svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.js-score-track {
+  stroke: var(--c-border-subtle);
+}
+
+.js-score-fill {
+  stroke: var(--c-text-faint);
+}
+
+.js-score-excellent .js-score-fill {
+  stroke: var(--c-success);
+}
+
+.js-score-medium .js-score-fill {
+  stroke: var(--c-warning);
+}
+
+.js-score-value {
+  position: relative;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.js-score-unknown {
+  border: 2px dashed var(--c-border);
+  border-radius: 50%;
+  color: var(--c-text-faint);
+}
+
+/* Pagination */
+.js-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-4);
+  margin-top: var(--sp-6);
+}
+
+.js-pagination-info {
+  color: var(--c-text-muted);
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  /* Deux colonnes : les filtres ne mangent pas tout l'écran du téléphone. */
+  .js-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+  }
+
+  .js-filters > :first-child,
+  .js-filters-actions {
+    grid-column: 1 / -1;
+  }
+
+  .js-job {
+    grid-template-columns: 1fr;
+    padding: var(--sp-4);
+  }
+}

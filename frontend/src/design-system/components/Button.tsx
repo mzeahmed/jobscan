@@ -2,7 +2,7 @@ import type {ButtonHTMLAttributes, ReactNode} from 'react';
 import {Icon, type IconSource} from './Icon.tsx';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-ghost';
   size?: 'sm';
   icon?: IconSource;
   block?: boolean;

@@ -157,7 +157,6 @@ test.describe('navigation', () => {
     await page.goto('/');
 
     for (const [name, path] of [
-      ['Offres', '/jobs'],
       ['Candidatures', '/applications'],
       ['Analytics', '/analytics']
     ]) {

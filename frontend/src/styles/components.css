@@ -65,6 +65,17 @@
   color: #fff;
 }
 
+.js-btn-danger-ghost {
+  background: var(--c-card);
+  border-color: var(--c-border);
+  color: #b91c1c;
+}
+
+.js-btn-danger-ghost:hover:not(:disabled) {
+  border-color: var(--c-danger-border);
+  background: var(--c-danger-subtle);
+}
+
 .js-btn-sm {
   padding: 6px 12px;
   font-size: 13px;

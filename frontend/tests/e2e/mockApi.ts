@@ -1,4 +1,5 @@
 import type {Page} from '@playwright/test';
+import {handleJobs, type JobsMock, type MockJob} from './mockJobs.ts';
 
 /** État de l'API simulée, modifiable pendant un test pour reproduire une panne ou une reprise. */
 export interface ApiState {
@@ -10,6 +11,8 @@ export interface ApiState {
   logoutStatus: number;
   /** Corps JSON reçus par `POST /auth/login`. */
   logins: unknown[];
+  /** Offres simulées et journal des requêtes (voir `mockJobs.ts`). */
+  jobs: JobsMock;
 }
 
 export const ACCESS_TOKEN = 'jeton-d-acces-de-test';
@@ -33,8 +36,19 @@ function failure(code: string, message: string) {
  * Simule l'API Jobscan (contrat de docs/API.md) : racine, connexion, rafraîchissement, déconnexion. Tout autre
  * chemin répond 404 dans l'enveloppe. Les polices Google sont neutralisées : les tests ne dépendent pas d'Internet.
  */
-export async function mockApi(page: Page, initial: Partial<ApiState> = {}): Promise<ApiState> {
-  const state: ApiState = {session: false, unavailable: false, logoutStatus: 204, logins: [], ...initial};
+export async function mockApi(
+  page: Page,
+  initial: Partial<Omit<ApiState, 'jobs'>> & {jobs?: MockJob[]} = {}
+): Promise<ApiState> {
+  const {jobs = [], ...rest} = initial;
+  const state: ApiState = {
+    session: false,
+    unavailable: false,
+    logoutStatus: 204,
+    logins: [],
+    jobs: {jobs, listQueries: [], writeStatus: 0, listStatus: 0, nextApplicationId: 100},
+    ...rest
+  };
 
   await page.route('https://fonts.googleapis.com/**', (route) =>
     route.fulfill({status: 200, contentType: 'text/css', body: ''})
@@ -95,6 +109,10 @@ export async function mockApi(page: Page, initial: Partial<ApiState> = {}): Prom
         });
 
       default:
+        if (await handleJobs(state.jobs, route, request.method(), path, new URL(request.url()))) {
+          return;
+        }
+
         return route.fulfill({status: 404, json: failure('not_found', 'Ressource introuvable.')});
     }
   });

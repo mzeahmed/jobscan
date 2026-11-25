@@ -5,6 +5,12 @@ export const fr = {
     reload: 'Recharger la page'
   },
   common: {
+    pagination: {
+      label: 'Pagination',
+      previous: 'Précédent',
+      next: 'Suivant',
+      info: 'Page {{page}} sur {{total}}'
+    },
     retry: 'Réessayer',
     loading: 'Chargement…'
   }

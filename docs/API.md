@@ -93,7 +93,8 @@ Une annonce est écrite par un tiers : l'API n'en publie que du **texte brut** (
 - [x] **API 2** — lecture : offres (filtres, pagination), candidatures, analytics
 - [x] **API 3** — écriture : suivre, décider, statut, détails
 - [x] **Front 0** — squelette `frontend/` (Vite, React 19, TypeScript strict, ESLint, Prettier, Playwright), design-system, routeur, client HTTP, authentification, Docker et Traefik
-- [ ] **Front 1 à 3** — Offres, Candidatures, Analytics
+- [x] **Front 1** — Offres : liste, filtres dans l'adresse, pagination, suivre, décider
+- [ ] **Front 2 et 3** — Candidatures, Analytics
 - [ ] **Final** — retrait de l'interface Twig, documentation
 
 Choix retenus : `/api/v1` sur **la même origine** (Traefik route le chemin vers Symfony et le reste vers le front : ni CORS ni nouveau certificat), JWT via `firebase/php-jwt`, i18n `i18next` en français seul au départ, interface Twig conservée jusqu'au dernier lot.
@@ -107,3 +108,11 @@ Commandes : `make front-check` (types, lint, format, build) et `make front-e2e` 
 - **Production** : pas d'image dédiée pour l'instant ; le build statique sera servi par nginx au lot « Final ».
 - **Contrat d'authentification** : `POST /auth/login {username,password}` et `POST /auth/refresh` (cookie HttpOnly) renvoient `{user:{id,username,roles}, access_token, token_type, expires_in}` ; `POST /auth/logout` répond 204.
 - **Vérifié** contre l'API réelle (API 1) : connexion, `me`, rotation, déconnexion, `/job` toujours protégé.
+
+### Écran Offres (Front 1)
+
+- `/jobs` : liste paginée (`GET /api/v1/jobs`), cartes avec anneau de score, filtres et tri.
+- **Filtres dans l'adresse** (`?source=rss&min_score=60&page=2`, mêmes noms que les paramètres de l'API) : la page se partage, le bouton « précédent » fonctionne. L'adresse est relue sans jamais échouer : une valeur absurde retombe sur le défaut. Les champs ne sont envoyés qu'au clic sur « Filtrer » (pas de requête à chaque frappe) ; changer un filtre revient à la page 1.
+- **Actions** : « Suivre » (brouillon, rien n'est envoyé), « Sauvegarder / Ignorer / Archiver / Retirer la décision ». Une action en échec est signalée et l'offre reste utilisable.
+- **Annonces non fiables** : titre, entreprise et extrait sont rendus comme du texte (jamais comme du HTML) ; le lien vers l'annonce n'existe que si l'API fournit une URL http(s), et s'ouvre avec `noopener noreferrer`. Un score absent s'affiche « — », jamais 0.
+- `/applications/:id` est réservé (écran « Bientôt disponible ») jusqu'au Front 2.
