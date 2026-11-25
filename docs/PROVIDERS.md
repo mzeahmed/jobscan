@@ -20,6 +20,12 @@ journalisées et relevées par `FetchDiagnostics` pour le monitoring (`provider_
 > **Statut : implémenté avec des mocks, non validé contre la documentation officielle.**
 > Désactivé par défaut. Ne l'activez qu'après avoir effectué les vérifications ci-dessous.
 
+### Accès à l'API : bloqué (vérifié le 25/11/2026)
+
+La [fiche data.gouv.fr](https://www.data.gouv.fr/dataservices/api-offres-demploi) indique que l'API n'est plus exposée sur francetravail.io, le temps d'une analyse de ses modalités de distribution et de réutilisation, et que son accès est restreint (demande par [formulaire de contact](https://francetravail.io/contact), formulée pour des « organismes »). La même fiche liste encore « Particulier » parmi les publics éligibles : aucune exclusion officielle des particuliers n'a été trouvée, mais rien n'indique qu'une demande personnelle aboutisse. La mention n'est pas datée et la page francetravail.io n'a pas pu être lue.
+
+**En attendant** : le provider reste désactivé. Les offres peuvent arriver par les alertes email de France Travail ([EMAIL.md](EMAIL.md)), dont le parser reste à valider sur un vrai email.
+
 ### Pourquoi « non validé »
 
 - Le portail francetravail.io est rendu côté client : sa documentation n'a pas pu être lue

@@ -10,6 +10,12 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-11-25
+
+#### Changed
+
+- Docs : accès à l'API France Travail noté comme bloqué (`docs/PROVIDERS.md`).
+
 ### 2026-12-24
 
 #### Fixed
