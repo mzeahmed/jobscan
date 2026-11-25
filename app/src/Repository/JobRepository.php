@@ -315,6 +315,8 @@ class JobRepository extends ServiceEntityRepository
         } else {
             $query->orderBy('j.createdAt', 'DESC');
         }
+        // Ordre total : sans départage, deux offres ex æquo peuvent changer de page d'un appel à l'autre.
+        $query->addOrderBy('j.id', 'DESC');
 
         return $query
             ->setFirstResult($offset)

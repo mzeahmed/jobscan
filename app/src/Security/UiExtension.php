@@ -6,6 +6,7 @@ namespace App\Security;
 
 use Twig\TwigFilter;
 use Twig\TwigFunction;
+use App\Api\Shared\SafeUrl;
 use Twig\Extension\AbstractExtension;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -39,8 +40,6 @@ final class UiExtension extends AbstractExtension
      */
     public static function safeUrl(?string $url): string
     {
-        $url = trim((string) $url);
-
-        return preg_match('~^https?://[^\s<>"\']+$~i', $url) === 1 ? $url : '#';
+        return SafeUrl::http($url) ?? '#';
     }
 }

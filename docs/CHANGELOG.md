@@ -10,6 +10,17 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-18
+
+#### Added
+
+- API 2 : routes de lecture (voir `docs/API.md`) — `GET /api/v1/jobs` (filtres validés strictement, pagination bornée), `GET /api/v1/jobs/{id}`, `GET /api/v1/applications` (+ compteurs par statut, relances dues), `GET /api/v1/applications/{id}` (historique, transitions permises), `GET /api/v1/analytics` (taux `null` sous l'échantillon minimal). Contenus d'annonces exposés en texte brut avec URL `http(s)` seulement.
+
+#### Changed
+
+- La liste des offres est triée avec un départage par identifiant : deux offres de même date ou de même score ne changent plus de page d'un appel à l'autre.
+- Le filtre Twig `safe_url` s'appuie sur `App\Api\Shared\SafeUrl` (même règle, une seule implémentation).
+
 ### 2026-12-17
 
 #### Added

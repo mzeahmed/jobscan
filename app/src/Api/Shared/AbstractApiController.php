@@ -40,4 +40,10 @@ abstract class AbstractApiController extends AbstractController
     {
         return ApiResponse::noContent($headers);
     }
+
+    /** Réponse `422` : le message général et, par paramètre, ce qui est refusé. */
+    protected function invalidQuery(InvalidQueryException $e): JsonResponse
+    {
+        return $this->error(['message' => 'Un ou plusieurs paramètres sont invalides.', 'errors' => $e->errors], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+    }
 }

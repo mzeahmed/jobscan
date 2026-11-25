@@ -173,8 +173,11 @@ final class ApiFoundationTest extends WebTestCase
             self::assertFalse($this->client->getResponse()->isRedirection(), $path . ' doit rester public.');
         }
 
-        // Une route d'API qui n'existe pas n'est pas « publique » pour autant : elle ne révèle rien, c'est tout.
+        // Une route d'API protégée refuse sans jeton (401) ; une route qui n'existe pas ne révèle rien (404).
         $this->client->request('GET', '/api/v1/applications');
+        self::assertResponseStatusCodeSame(401);
+
+        $this->client->request('GET', '/api/v1/inexistant');
         self::assertResponseStatusCodeSame(404);
     }
 }

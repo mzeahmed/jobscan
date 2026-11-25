@@ -44,6 +44,11 @@ Toute réponse JSON de `/api/v1/*` est dans la même enveloppe :
 | `POST /api/v1/auth/refresh` | Sans corps ; échange le cookie contre une nouvelle session et un **nouveau cookie** (rotation). `401` (même réponse si cookie absent, inconnu, expiré, révoqué ou déjà utilisé). Publique. |
 | `POST /api/v1/auth/logout` | Révoque la famille du cookie et l'efface ; `204`, idempotent. Publique. |
 | `GET /api/v1/auth/me` | L'utilisateur du jeton d'accès. Protégée. |
+| `GET /api/v1/jobs` | Offres filtrées, triées, paginées : `{items, pagination:{page,per_page,total,total_pages}, sources}`. Paramètres : `location`, `remote` (`remote`\|`onsite`), `contract`, `seniority`, `freelance` et `notified` (`yes`\|`no`), `min_score` (0-100), `source`, `age` (`1`\|`7`\|`30` jours), `sort` (`date`\|`score`), `state` (`saved`\|`ignored`\|`archived`\|`all`, défaut : offres sans décision), `page`, `per_page` (défaut 20, max 100). Valeur inconnue : `422` avec `data.errors` par paramètre (jamais ignorée en silence). Page au-delà de la dernière : ramenée à la dernière. |
+| `GET /api/v1/jobs/{id}` | Détail : résumé + `description` (texte brut), `score_breakdown`, `requirements`, `budget`, `publication`, `analysis`, doublon probable. `404` si inconnue. |
+| `GET /api/v1/applications` | Candidatures (200 au plus, récentes d'abord), filtre `?status=` ; `counts` (un compteur par statut, indépendant du filtre), `total`, `due_follow_ups`. |
+| `GET /api/v1/applications/{id}` | Candidature, `history` (étapes), `allowed_transitions`, notes et message envoyé. |
+| `GET /api/v1/analytics` | `?since=30d\|90d\|365d\|all` (défaut `90d`) : `funnel`, `breakdowns` (source, cv, profile, channel), `sourcing`. Les taux valent `null` sous `min_sample` (5) : le front affiche « x/y », jamais un pourcentage trompeur. |
 | `GET /health/ready` | Sonde de **disponibilité** : la base répond (`200`), sinon `503`. Publique, sans enveloppe, un booléen par dépendance, jamais le détail d'une panne. |
 
 Le code vit sous `src/Api/` : `Shared/` (enveloppe, contrôleur de base, erreurs), `Probe/` (sondes, montées hors préfixe), puis un dossier par domaine (`Info/`, et plus tard `Identity/`, `Jobs/`, `Applications/`, `Analytics/`). `config/routes.yaml` monte `src/Api/` sous `/api/v1`, les sondes sans préfixe et `src/Controller/` (interface Twig) tel quel.
@@ -65,11 +70,15 @@ Dans `app/.env.local` : `JOBSCAN_API_JWT_SECRET=$(openssl rand -hex 32)` (valeur
 
 Limite connue : deux rafraîchissements simultanés avec le même cookie (deux onglets non coordonnés) font échouer le second et révoquent la session ; le front les sérialise avec un verrou Web Locks.
 
+### Contenus non fiables (offres)
+
+Une annonce est écrite par un tiers : l'API n'en publie que du **texte brut** (balises retirées, entités décodées, longueur bornée : extrait de 240 caractères en liste, 20 000 en détail) et une **URL `http(s)`** (`url` vaut `null` sinon, jamais `javascript:`). Le front affiche ces champs comme du texte, jamais comme du HTML. Les dates sont en ISO 8601 ; un champ inconnu vaut `null`, jamais une valeur inventée.
+
 ## Plan du chantier
 
 - [x] **API 0** — enveloppe, erreurs JSON, sondes, racine de l'API
 - [x] **API 1** — authentification : login, refresh rotatif, logout, me ; pare-feu `^/api` sans état ; table `refresh_token`
-- [ ] **API 2** — lecture : offres (filtres, pagination), candidatures, analytics
+- [x] **API 2** — lecture : offres (filtres, pagination), candidatures, analytics
 - [ ] **API 3** — écriture : suivre, décider, statut, détails
 - [x] **Front 0** — squelette `frontend/` (Vite, React 19, TypeScript strict, ESLint, Prettier, Playwright), design-system, routeur, client HTTP, authentification, Docker et Traefik
 - [ ] **Front 1 à 3** — Offres, Candidatures, Analytics
