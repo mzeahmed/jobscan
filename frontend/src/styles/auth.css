@@ -56,3 +56,16 @@
   font-size: 12px;
   text-align: center;
 }
+
+.js-auth-settings {
+  display: grid;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.js-auth-settings dd {
+  margin-top: 2px;
+  color: var(--c-text-muted);
+}

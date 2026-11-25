@@ -127,6 +127,20 @@ test.describe('session', () => {
     await expect(page.getByRole('button', {name: 'Déconnexion'})).toBeEnabled();
   });
 
+  test('une authentification non configurée est annoncée comme telle, avec les réglages à vérifier', async ({page}) => {
+    const api = await mockApi(page, {notConfigured: true});
+    await page.goto('/login');
+
+    await expect(page.getByRole('heading', {name: 'Authentification non configurée'})).toBeVisible();
+    await expect(page.getByText('JOBSCAN_API_JWT_SECRET')).toBeVisible();
+    await expect(page.getByText('JOBSCAN_UI_PASSWORD_HASH')).toBeVisible();
+    await expect(page.getByText('Service indisponible')).toHaveCount(0);
+
+    api.notConfigured = false;
+    await page.getByRole('button', {name: 'Réessayer'}).click();
+    await expect(page.getByRole('button', {name: 'Se connecter'})).toBeVisible();
+  });
+
   test('une API indisponible au chargement n’est pas une déconnexion : écran dédié puis reprise', async ({page}) => {
     const api = await mockApi(page, {session: true, unavailable: true});
     await page.goto('/');

@@ -15,7 +15,6 @@ export function HomePage() {
       <div className="js-page-header">
         <div className="js-page-eyebrow">{t('system.home.eyebrow')}</div>
         <h1 className="js-page-title">{t('system.home.title')}</h1>
-        <p className="js-page-subtitle">{t('system.home.subtitle')}</p>
       </div>
 
       <Card

@@ -19,7 +19,7 @@ JOBSCAN_UI_PASSWORD_HASH='$2y$...'
 JOBSCAN_API_JWT_SECRET=<la valeur de openssl rand -hex 32>
 ```
 
-Seul le **hash** est stocké, jamais le mot de passe. Il n'y a qu'un compte : outil personnel, pas service multi-utilisateurs. Sans `JOBSCAN_API_JWT_SECRET`, la connexion répond `503 auth_not_configured` (fermé, jamais ouvert). Appliquez aussi les migrations (`make migrate`) : la table `refresh_token` en fait partie.
+Seul le **hash** est stocké, jamais le mot de passe. Il n'y a qu'un compte : outil personnel, pas service multi-utilisateurs. Sans `JOBSCAN_API_JWT_SECRET`, la connexion répond `503 auth_not_configured` (fermé, jamais ouvert). L'écran React affiche alors « Authentification non configurée » avec les réglages à vérifier (de même sans mot de passe configuré). Appliquez aussi les migrations (`make migrate`) : la table `refresh_token` en fait partie.
 
 ## Ce qui est protégé
 

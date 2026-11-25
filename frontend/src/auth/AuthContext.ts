@@ -11,6 +11,8 @@ export interface AuthContextValue {
   unavailable: boolean;
   /** Cause technique de l'indisponibilité (ex. « TimeoutError », « HTTP 503 »), pour le diagnostic. */
   unavailableReason: string | null;
+  /** Le serveur répond mais la connexion n'y est pas activée (compte ou secret de signature manquant). */
+  notConfigured: boolean;
   /** Relance la restauration de la session (bouton « Réessayer »). */
   retrySession: () => void;
   /** Ouvre la session ; lève une `AuthenticationError` si l'API refuse. */

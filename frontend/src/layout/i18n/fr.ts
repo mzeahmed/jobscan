@@ -22,6 +22,10 @@ export const fr = {
       title: 'Service indisponible',
       text: "Jobscan n'arrive pas à joindre son serveur. Votre session n'est pas perdue : réessayez dans un instant.",
       reason: 'Cause : {{reason}}'
+    },
+    notConfigured: {
+      title: 'Authentification non configurée',
+      text: "Le serveur répond, mais la connexion n'y est pas encore activée. Vérifiez ces deux réglages dans app/.env.local (la commande indiquée produit la valeur), puis réessayez."
     }
   }
 } as const;

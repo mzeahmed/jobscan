@@ -12,6 +12,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
   const [loading, setLoading] = useState(true);
   const [unavailable, setUnavailable] = useState(false);
   const [unavailableReason, setUnavailableReason] = useState<string | null>(null);
+  const [notConfigured, setNotConfigured] = useState(false);
   const [attempt, setAttempt] = useState(0);
 
   // Restauration de la session : une API indisponible n'est pas une déconnexion.
@@ -24,6 +25,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
           setAuth(session);
           setUnavailable(false);
           setUnavailableReason(null);
+          setNotConfigured(false);
         }
       })
       .catch((error: unknown) => {
@@ -34,6 +36,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
         if (isAuthServiceUnavailable(error)) {
           setUnavailable(true);
           setUnavailableReason(describeUnavailability(error));
+          setNotConfigured(error instanceof AuthenticationError && error.code === 'auth_not_configured');
 
           return;
         }
@@ -41,6 +44,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
         setAuth(null);
         setUnavailable(false);
         setUnavailableReason(null);
+        setNotConfigured(false);
       })
       .finally(() => {
         if (!cancelled) {
@@ -97,11 +101,12 @@ export function AuthProvider({children}: {children: ReactNode}) {
       loading,
       unavailable,
       unavailableReason,
+      notConfigured,
       retrySession,
       login,
       logout
     }),
-    [auth, loading, unavailable, unavailableReason, retrySession, login, logout]
+    [auth, loading, unavailable, unavailableReason, notConfigured, retrySession, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

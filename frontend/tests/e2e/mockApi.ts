@@ -9,6 +9,8 @@ export interface ApiState {
   session: boolean;
   /** Le rafraîchissement répond 503 (API indisponible). */
   unavailable: boolean;
+  /** Le serveur n'a pas de compte ou de secret : le rafraîchissement répond 503 `auth_not_configured`. */
+  notConfigured: boolean;
   /** Statut de la déconnexion (204 = confirmée). */
   logoutStatus: number;
   /** Corps JSON reçus par `POST /auth/login`. */
@@ -55,6 +57,7 @@ export async function mockApi(
   const state: ApiState = {
     session: false,
     unavailable: false,
+    notConfigured: false,
     logoutStatus: 204,
     logins: [],
     jobs: {jobs, listQueries: [], writeStatus: 0, listStatus: 0, nextApplicationId: 100},
@@ -85,6 +88,13 @@ export async function mockApi(
         return route.fulfill({json: success({service: 'jobscan-api', version: 'v1'})});
 
       case 'POST /auth/refresh':
+        if (state.notConfigured) {
+          return route.fulfill({
+            status: 503,
+            json: failure('auth_not_configured', "L'authentification n'est pas configurée sur ce serveur.")
+          });
+        }
+
         if (state.unavailable) {
           return route.fulfill({
             status: 503,

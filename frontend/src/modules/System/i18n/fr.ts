@@ -2,8 +2,7 @@ export const fr = {
   system: {
     home: {
       eyebrow: 'Accueil',
-      title: 'Bienvenue sur Jobscan',
-      subtitle: "La nouvelle interface se construit écran par écran ; les autres restent servis par l'ancienne."
+      title: 'Bienvenue sur Jobscan'
     },
     api: {
       title: "Connexion à l'API",

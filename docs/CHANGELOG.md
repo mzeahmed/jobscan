@@ -10,6 +10,13 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-24
+
+#### Fixed
+
+- Écran React : une authentification non configurée (`503 auth_not_configured`) n'est plus présentée comme un serveur injoignable ; l'écran nomme les deux réglages à vérifier. 1 test Playwright.
+- Développement : front publié sur `5174` par défaut (`FRONTEND_PORT`) ; `.env.example` documente `JOBSCAN_API_JWT_SECRET`.
+
 ### 2026-12-23
 
 #### Added
