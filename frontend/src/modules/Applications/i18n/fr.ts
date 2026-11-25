@@ -1,0 +1,62 @@
+export const fr = {
+  applications: {
+    eyebrow: 'Candidatures',
+    title: 'Candidatures',
+    subtitle_one: '{{count}} candidature suivie',
+    subtitle_other: '{{count}} candidatures suivies',
+    loadFailed: 'Impossible de charger les candidatures : {{message}}',
+    dueFollowUps_one: '{{count}} relance est due.',
+    dueFollowUps_other: '{{count}} relances sont dues.',
+    tabs: {label: 'Statuts', all: 'Toutes'},
+    empty: {
+      title: 'Aucune candidature',
+      none: 'Ouvrez le suivi d’une offre depuis l’écran Offres : elle apparaîtra ici en brouillon.',
+      filtered: 'Aucune candidature avec ce statut.',
+      goToJobs: 'Voir les offres'
+    },
+    limit: 'Seules les {{limit}} candidatures les plus récentes sont affichées.',
+    card: {
+      untitled: 'Offre sans titre',
+      openOffer: 'Voir l’offre (nouvel onglet)',
+      appliedOn: 'Envoyée le {{date}}',
+      followUp: 'Relance : {{date}}',
+      followUpDue: 'Relance due',
+      cv: 'CV : {{label}}',
+      unknownCompany: 'Entreprise non précisée'
+    },
+    detail: {
+      back: 'Candidatures',
+      openOffer: 'Voir l’offre',
+      notFoundTitle: 'Candidature introuvable',
+      notFoundText: 'Cette candidature n’existe pas ou a été supprimée.',
+      loadFailed: 'Impossible de charger la candidature : {{message}}',
+      status: 'Statut',
+      statusTitle: 'Changer le statut',
+      statusHint: 'Consigne ce que vous avez fait : rien n’est envoyé à un recruteur.',
+      finalStatus: '« {{status}} » est un statut final : il ne peut plus changer.',
+      newStatus: 'Nouveau statut',
+      statusDate: 'Date (aujourd’hui par défaut)',
+      statusNote: 'Note (facultative)',
+      statusSubmit: 'Changer le statut',
+      statusSubmitting: 'Enregistrement…',
+      choose: '— choisir —',
+      detailsTitle: 'Informations',
+      recruiterName: 'Recruteur',
+      recruiterContact: 'Contact du recruteur',
+      channel: 'Canal',
+      cv: 'Version du CV',
+      noValue: '— aucun —',
+      followUpAt: 'Date de relance',
+      followUpDue: 'Relance due',
+      followUpReminded: 'Rappel Telegram envoyé le {{date}}.',
+      messageSent: 'Message envoyé',
+      notes: 'Notes',
+      save: 'Enregistrer',
+      saving: 'Enregistrement…',
+      historyTitle: 'Historique',
+      historyCount_one: '{{count}} étape',
+      historyCount_other: '{{count}} étapes',
+      saveFailed: 'L’enregistrement a échoué : {{message}}'
+    }
+  }
+} as const;

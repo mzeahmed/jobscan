@@ -1,4 +1,5 @@
 import type {Page} from '@playwright/test';
+import {type ApplicationsMock, handleApplications, type MockApplication} from './mockApplications.ts';
 import {handleJobs, type JobsMock, type MockJob} from './mockJobs.ts';
 
 /** État de l'API simulée, modifiable pendant un test pour reproduire une panne ou une reprise. */
@@ -13,6 +14,8 @@ export interface ApiState {
   logins: unknown[];
   /** Offres simulées et journal des requêtes (voir `mockJobs.ts`). */
   jobs: JobsMock;
+  /** Candidatures simulées et journal des écritures (voir `mockApplications.ts`). */
+  applications: ApplicationsMock;
 }
 
 export const ACCESS_TOKEN = 'jeton-d-acces-de-test';
@@ -38,15 +41,28 @@ function failure(code: string, message: string) {
  */
 export async function mockApi(
   page: Page,
-  initial: Partial<Omit<ApiState, 'jobs'>> & {jobs?: MockJob[]} = {}
+  initial: Partial<Omit<ApiState, 'jobs' | 'applications'>> & {
+    jobs?: MockJob[];
+    applications?: MockApplication[];
+    cvVersions?: {id: string; label: string}[];
+  } = {}
 ): Promise<ApiState> {
-  const {jobs = [], ...rest} = initial;
+  const {jobs = [], applications = [], cvVersions = [], ...rest} = initial;
   const state: ApiState = {
     session: false,
     unavailable: false,
     logoutStatus: 204,
     logins: [],
     jobs: {jobs, listQueries: [], writeStatus: 0, listStatus: 0, nextApplicationId: 100},
+    applications: {
+      applications,
+      cvVersions,
+      statusPosts: [],
+      patches: [],
+      listQueries: [],
+      listStatus: 0,
+      writeStatus: 0
+    },
     ...rest
   };
 
@@ -109,7 +125,10 @@ export async function mockApi(
         });
 
       default:
-        if (await handleJobs(state.jobs, route, request.method(), path, new URL(request.url()))) {
+        if (
+          (await handleJobs(state.jobs, route, request.method(), path, new URL(request.url()))) ||
+          (await handleApplications(state.applications, route, request.method(), path, new URL(request.url())))
+        ) {
           return;
         }
 

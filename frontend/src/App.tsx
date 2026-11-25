@@ -5,6 +5,8 @@ import {ErrorBoundary} from '@/layout/components/ErrorBoundary.tsx';
 import {ModuleNotBuiltPage} from '@/layout/pages/ModuleNotBuiltPage.tsx';
 import {NotFoundPage} from '@/layout/pages/NotFoundPage.tsx';
 import {Login} from '@/modules/Auth/Login.tsx';
+import {ApplicationDetailPage} from '@/modules/Applications/ApplicationDetailPage.tsx';
+import {ApplicationsPage} from '@/modules/Applications/ApplicationsPage.tsx';
 import {JobsPage} from '@/modules/Jobs/JobsPage.tsx';
 import {HomePage} from '@/modules/System/HomePage.tsx';
 import {QueryProvider} from '@/queries/QueryProvider.tsx';
@@ -26,8 +28,8 @@ function App() {
                   <Route index element={<HomePage />} />
                   {/* Écrans migrés aux lots Front 1 à 3. */}
                   <Route path="/jobs" element={<JobsPage />} />
-                  <Route path="/applications" element={<ModuleNotBuiltPage />} />
-                  <Route path="/applications/:id" element={<ModuleNotBuiltPage />} />
+                  <Route path="/applications" element={<ApplicationsPage />} />
+                  <Route path="/applications/:id" element={<ApplicationDetailPage />} />
                   <Route path="/analytics" element={<ModuleNotBuiltPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>

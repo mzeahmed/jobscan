@@ -47,7 +47,7 @@ Toute réponse JSON de `/api/v1/*` est dans la même enveloppe :
 | `GET /api/v1/jobs` | Offres filtrées, triées, paginées : `{items, pagination:{page,per_page,total,total_pages}, sources}`. Paramètres : `location`, `remote` (`remote`\|`onsite`), `contract`, `seniority`, `freelance` et `notified` (`yes`\|`no`), `min_score` (0-100), `source`, `age` (`1`\|`7`\|`30` jours), `sort` (`date`\|`score`), `state` (`saved`\|`ignored`\|`archived`\|`all`, défaut : offres sans décision), `page`, `per_page` (défaut 20, max 100). Valeur inconnue : `422` avec `data.errors` par paramètre (jamais ignorée en silence). Page au-delà de la dernière : ramenée à la dernière. |
 | `GET /api/v1/jobs/{id}` | Détail : résumé + `description` (texte brut), `score_breakdown`, `requirements`, `budget`, `publication`, `analysis`, doublon probable. `404` si inconnue. |
 | `GET /api/v1/applications` | Candidatures (200 au plus, récentes d'abord), filtre `?status=` ; `counts` (un compteur par statut, indépendant du filtre), `total`, `due_follow_ups`. |
-| `GET /api/v1/applications/{id}` | Candidature, `history` (étapes), `allowed_transitions`, notes et message envoyé. |
+| `GET /api/v1/applications/{id}` | `{application, options}` : candidature, `history` (étapes), `allowed_transitions`, notes et message envoyé ; `options` : `channels` et `cv_versions` (versions de CV du profil candidat, liste vide sans profil) pour les formulaires. |
 | `GET /api/v1/analytics` | `?since=30d\|90d\|365d\|all` (défaut `90d`) : `funnel`, `breakdowns` (source, cv, profile, channel), `sourcing`. Les taux valent `null` sous `min_sample` (5) : le front affiche « x/y », jamais un pourcentage trompeur. |
 | `POST /api/v1/jobs/{id}/application` | Ouvre le suivi d'une offre : une candidature **brouillon** (rien n'est envoyé). `201` + `created: true` ; si l'offre est déjà suivie : `200` + `created: false` et la candidature existante (idempotent). |
 | `PUT /api/v1/jobs/{id}/decision` | `{"state": "saved"\|"ignored"\|"archived"\|null}` : décision de l'utilisateur (`null` la retire ; clé absente : `422`). Idempotent. Renvoie le résumé de l'offre. |
@@ -94,7 +94,8 @@ Une annonce est écrite par un tiers : l'API n'en publie que du **texte brut** (
 - [x] **API 3** — écriture : suivre, décider, statut, détails
 - [x] **Front 0** — squelette `frontend/` (Vite, React 19, TypeScript strict, ESLint, Prettier, Playwright), design-system, routeur, client HTTP, authentification, Docker et Traefik
 - [x] **Front 1** — Offres : liste, filtres dans l'adresse, pagination, suivre, décider
-- [ ] **Front 2 et 3** — Candidatures, Analytics
+- [x] **Front 2** — Candidatures : liste par statut, détail, historique, changement de statut, édition
+- [ ] **Front 3** — Analytics
 - [ ] **Final** — retrait de l'interface Twig, documentation
 
 Choix retenus : `/api/v1` sur **la même origine** (Traefik route le chemin vers Symfony et le reste vers le front : ni CORS ni nouveau certificat), JWT via `firebase/php-jwt`, i18n `i18next` en français seul au départ, interface Twig conservée jusqu'au dernier lot.
@@ -116,3 +117,10 @@ Commandes : `make front-check` (types, lint, format, build) et `make front-e2e` 
 - **Actions** : « Suivre » (brouillon, rien n'est envoyé), « Sauvegarder / Ignorer / Archiver / Retirer la décision ». Une action en échec est signalée et l'offre reste utilisable.
 - **Annonces non fiables** : titre, entreprise et extrait sont rendus comme du texte (jamais comme du HTML) ; le lien vers l'annonce n'existe que si l'API fournit une URL http(s), et s'ouvre avec `noopener noreferrer`. Un score absent s'affiche « — », jamais 0.
 - `/applications/:id` est réservé (écran « Bientôt disponible ») jusqu'au Front 2.
+
+### Écrans Candidatures (Front 2)
+
+- `/applications` : onglets par statut avec compteurs (liens `?status=`, l'adresse porte le filtre ; un statut inconnu est ignoré et jamais envoyé), bandeau des relances dues, cartes avec statut, canal, CV, date d'envoi, relance.
+- `/applications/:id` : changement de statut (**seules les transitions que l'API renvoie sont proposées**, date et note facultatives ; un statut final n'a plus de formulaire), informations (recruteur, canal, CV, relance, message, notes) et historique du plus récent au plus ancien. Un identifiant invalide n'appelle jamais l'API : même écran qu'une candidature inconnue.
+- **Édition** : texte vide = champ effacé (`null`) ; le CV n'est envoyé que si le profil en propose (sinon le CV associé n'est pas touché). Une erreur `422` s'affiche sous le champ concerné et **garde la saisie** ; une panne du serveur est annoncée sans perdre le texte.
+- Notes et message sont des textes de l'utilisateur, affichés et renvoyés tels quels, jamais interprétés. Rien n'est envoyé à un recruteur : l'écran le rappelle.

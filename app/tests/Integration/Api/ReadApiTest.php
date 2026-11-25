@@ -287,6 +287,41 @@ final class ReadApiTest extends WebTestCaseBase
         self::assertNotContains('draft', array_column($data['allowed_transitions'], 'value'));
     }
 
+    public function testTheApplicationDetailListsTheChoicesOfTheEditForms(): void
+    {
+        $application = $this->manager()->start($this->job('Choix'), new \DateTimeImmutable());
+        $this->entityManager->flush();
+
+        $this->get('/api/v1/applications/' . $application->getId());
+
+        $options = $this->json()['data']['options'];
+        self::assertContains('email', array_column($options['channels'], 'value'));
+        self::assertCount(6, $options['channels']);
+        self::assertSame([], $options['cv_versions'], 'Sans profil candidat, aucun CV n\'est proposé (et rien n\'est inventé).');
+    }
+
+    public function testTheApplicationDetailListsTheCvVersionsOfTheCandidateProfile(): void
+    {
+        $directory = sys_get_temp_dir() . '/jobscan-api-profile-' . bin2hex(random_bytes(4));
+        mkdir($directory);
+        file_put_contents($directory . '/candidate.yaml', "skills: [PHP]\ncvs:\n  - {id: backend-php, label: CV Backend PHP}\n");
+
+        try {
+            $this->restartWithEnvironment('JOBSCAN_PROFILE_DIR', $directory);
+            $this->client->request('POST', '/api/v1/auth/login', server: ['CONTENT_TYPE' => 'application/json'], content: (string) json_encode(['username' => 'admin', 'password' => self::PASSWORD]));
+            $this->token = $this->json()['data']['access_token'];
+            $application = $this->manager()->start($this->job('Avec CV'), new \DateTimeImmutable());
+            $this->entityManager->flush();
+
+            $this->get('/api/v1/applications/' . $application->getId());
+
+            self::assertSame([['id' => 'backend-php', 'label' => 'CV Backend PHP']], $this->json()['data']['options']['cv_versions']);
+        } finally {
+            @unlink($directory . '/candidate.yaml');
+            @rmdir($directory);
+        }
+    }
+
     public function testAnUnknownApplicationIsA404(): void
     {
         $this->get('/api/v1/applications/999999');

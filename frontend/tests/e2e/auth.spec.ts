@@ -95,11 +95,11 @@ test.describe('session', () => {
   test('l’écran demandé avant la connexion est rouvert après', async ({page}) => {
     await mockApi(page);
 
-    await page.goto('/applications');
+    await page.goto('/analytics');
     await expect(page).toHaveURL(/\/login$/);
     await signIn(page);
 
-    await expect(page).toHaveURL('/applications');
+    await expect(page).toHaveURL('/analytics');
     await expect(page.getByRole('heading', {name: 'Bientôt disponible'})).toBeVisible();
   });
 
@@ -156,10 +156,7 @@ test.describe('navigation', () => {
     await mockApi(page, {session: true});
     await page.goto('/');
 
-    for (const [name, path] of [
-      ['Candidatures', '/applications'],
-      ['Analytics', '/analytics']
-    ]) {
+    for (const [name, path] of [['Analytics', '/analytics']]) {
       await page.getByRole('navigation', {name: 'Navigation principale'}).getByRole('link', {name}).click();
       await expect(page).toHaveURL(path);
       await expect(page.getByRole('heading', {name: 'Bientôt disponible'})).toBeVisible();

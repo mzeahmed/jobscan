@@ -10,6 +10,13 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-21
+
+#### Added
+
+- Front 2 : écrans Candidatures (`/applications`, `/applications/:id`) — onglets par statut avec compteurs, relances dues, changement de statut limité aux transitions permises, édition des informations (erreurs par champ, saisie conservée), historique. 20 tests Playwright supplémentaires (55 au total).
+- API : `GET /api/v1/applications/{id}` renvoie aussi `options` (`channels`, `cv_versions` du profil candidat) pour alimenter les formulaires.
+
 ### 2026-12-20
 
 #### Added
