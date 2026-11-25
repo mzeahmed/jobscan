@@ -100,7 +100,7 @@ test.describe('session', () => {
     await signIn(page);
 
     await expect(page).toHaveURL('/analytics');
-    await expect(page.getByRole('heading', {name: 'Bientôt disponible'})).toBeVisible();
+    await expect(page.getByRole('heading', {name: 'Analytics', level: 1})).toBeVisible();
   });
 
   test('la déconnexion ferme la session et renvoie vers la connexion', async ({page}) => {
@@ -150,17 +150,6 @@ test.describe('navigation', () => {
     await expect(page.getByRole('heading', {name: 'Page introuvable'})).toBeVisible();
     await page.getByRole('link', {name: /Retour à l.accueil/}).click();
     await expect(page).toHaveURL('/');
-  });
-
-  test('les écrans non migrés annoncent qu’ils arrivent', async ({page}) => {
-    await mockApi(page, {session: true});
-    await page.goto('/');
-
-    for (const [name, path] of [['Analytics', '/analytics']]) {
-      await page.getByRole('navigation', {name: 'Navigation principale'}).getByRole('link', {name}).click();
-      await expect(page).toHaveURL(path);
-      await expect(page.getByRole('heading', {name: 'Bientôt disponible'})).toBeVisible();
-    }
   });
 
   test('le lien actif de la navigation est signalé', async ({page}) => {

@@ -18,10 +18,6 @@ export const fr = {
       text: "Cette adresse ne correspond à aucun écran de l'application.",
       back: "Retour à l'accueil"
     },
-    notBuilt: {
-      title: 'Bientôt disponible',
-      text: "Cet écran est encore servi par l'ancienne interface ; il sera migré dans un prochain lot."
-    },
     unavailable: {
       title: 'Service indisponible',
       text: "Jobscan n'arrive pas à joindre son serveur. Votre session n'est pas perdue : réessayez dans un instant.",

@@ -5,6 +5,7 @@ import {fr as authFr} from '@/modules/Auth/i18n/fr.ts';
 import {fr as layoutFr} from '@/layout/i18n/fr.ts';
 import {fr as systemFr} from '@/modules/System/i18n/fr.ts';
 import {fr as jobsFr} from '@/modules/Jobs/i18n/fr.ts';
+import {fr as analyticsFr} from '@/modules/Analytics/i18n/fr.ts';
 import {fr as applicationsFr} from '@/modules/Applications/i18n/fr.ts';
 
 /** Français seul pour l'instant ; ajouter une langue = un fichier `en.ts` par module et une entrée ici. */
@@ -19,7 +20,8 @@ const resources = {
       ...layoutFr,
       ...systemFr,
       ...jobsFr,
-      ...applicationsFr
+      ...applicationsFr,
+      ...analyticsFr
     }
   }
 } as const;

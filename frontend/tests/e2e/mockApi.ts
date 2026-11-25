@@ -1,4 +1,5 @@
 import type {Page} from '@playwright/test';
+import {type AnalyticsMock, emptyReport, handleAnalytics, type MockReport} from './mockAnalytics.ts';
 import {type ApplicationsMock, handleApplications, type MockApplication} from './mockApplications.ts';
 import {handleJobs, type JobsMock, type MockJob} from './mockJobs.ts';
 
@@ -16,6 +17,8 @@ export interface ApiState {
   jobs: JobsMock;
   /** Candidatures simulées et journal des écritures (voir `mockApplications.ts`). */
   applications: ApplicationsMock;
+  /** Rapport simulé et journal des fenêtres demandées (voir `mockAnalytics.ts`). */
+  analytics: AnalyticsMock;
 }
 
 export const ACCESS_TOKEN = 'jeton-d-acces-de-test';
@@ -41,13 +44,14 @@ function failure(code: string, message: string) {
  */
 export async function mockApi(
   page: Page,
-  initial: Partial<Omit<ApiState, 'jobs' | 'applications'>> & {
+  initial: Partial<Omit<ApiState, 'jobs' | 'applications' | 'analytics'>> & {
     jobs?: MockJob[];
     applications?: MockApplication[];
     cvVersions?: {id: string; label: string}[];
+    report?: MockReport;
   } = {}
 ): Promise<ApiState> {
-  const {jobs = [], applications = [], cvVersions = [], ...rest} = initial;
+  const {jobs = [], applications = [], cvVersions = [], report = emptyReport(), ...rest} = initial;
   const state: ApiState = {
     session: false,
     unavailable: false,
@@ -63,6 +67,7 @@ export async function mockApi(
       listStatus: 0,
       writeStatus: 0
     },
+    analytics: {report, queries: [], status: 0},
     ...rest
   };
 
@@ -127,7 +132,8 @@ export async function mockApi(
       default:
         if (
           (await handleJobs(state.jobs, route, request.method(), path, new URL(request.url()))) ||
-          (await handleApplications(state.applications, route, request.method(), path, new URL(request.url())))
+          (await handleApplications(state.applications, route, request.method(), path, new URL(request.url()))) ||
+          (await handleAnalytics(state.analytics, route, request.method(), path, new URL(request.url())))
         ) {
           return;
         }

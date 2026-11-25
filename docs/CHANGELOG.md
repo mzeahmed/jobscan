@@ -10,6 +10,20 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-12-22
+
+#### Added
+
+- Front 3 : écran Analytics (`/analytics`) — choix de la période dans l'adresse, parcours des candidatures, répartitions (source, CV, profil, canal), rendement des sources ; taux affichés « x/y » sous l'effectif minimal. 6 tests Playwright supplémentaires (60 au total).
+
+#### Changed
+
+- Design system : `Card` avec titre devient une région nommée par ce titre (`aria-labelledby`).
+
+#### Removed
+
+- Écran provisoire « Bientôt disponible » (plus aucun écran à migrer).
+
 ### 2026-12-21
 
 #### Added

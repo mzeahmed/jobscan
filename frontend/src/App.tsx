@@ -2,8 +2,8 @@ import {BrowserRouter, Route, Routes} from 'react-router-dom';
 import {AuthProvider} from '@/auth/AuthProvider.tsx';
 import {AppShell} from '@/layout/components/AppShell.tsx';
 import {ErrorBoundary} from '@/layout/components/ErrorBoundary.tsx';
-import {ModuleNotBuiltPage} from '@/layout/pages/ModuleNotBuiltPage.tsx';
 import {NotFoundPage} from '@/layout/pages/NotFoundPage.tsx';
+import {AnalyticsPage} from '@/modules/Analytics/AnalyticsPage.tsx';
 import {Login} from '@/modules/Auth/Login.tsx';
 import {ApplicationDetailPage} from '@/modules/Applications/ApplicationDetailPage.tsx';
 import {ApplicationsPage} from '@/modules/Applications/ApplicationsPage.tsx';
@@ -26,11 +26,10 @@ function App() {
               <Route element={<ProtectedRoute />}>
                 <Route element={<AppShell />}>
                   <Route index element={<HomePage />} />
-                  {/* Écrans migrés aux lots Front 1 à 3. */}
                   <Route path="/jobs" element={<JobsPage />} />
                   <Route path="/applications" element={<ApplicationsPage />} />
                   <Route path="/applications/:id" element={<ApplicationDetailPage />} />
-                  <Route path="/analytics" element={<ModuleNotBuiltPage />} />
+                  <Route path="/analytics" element={<AnalyticsPage />} />
                   <Route path="*" element={<NotFoundPage />} />
                 </Route>
               </Route>

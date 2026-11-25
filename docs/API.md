@@ -95,7 +95,7 @@ Une annonce est écrite par un tiers : l'API n'en publie que du **texte brut** (
 - [x] **Front 0** — squelette `frontend/` (Vite, React 19, TypeScript strict, ESLint, Prettier, Playwright), design-system, routeur, client HTTP, authentification, Docker et Traefik
 - [x] **Front 1** — Offres : liste, filtres dans l'adresse, pagination, suivre, décider
 - [x] **Front 2** — Candidatures : liste par statut, détail, historique, changement de statut, édition
-- [ ] **Front 3** — Analytics
+- [x] **Front 3** — Analytics : parcours, répartitions, rendement des sources
 - [ ] **Final** — retrait de l'interface Twig, documentation
 
 Choix retenus : `/api/v1` sur **la même origine** (Traefik route le chemin vers Symfony et le reste vers le front : ni CORS ni nouveau certificat), JWT via `firebase/php-jwt`, i18n `i18next` en français seul au départ, interface Twig conservée jusqu'au dernier lot.
@@ -116,7 +116,6 @@ Commandes : `make front-check` (types, lint, format, build) et `make front-e2e` 
 - **Filtres dans l'adresse** (`?source=rss&min_score=60&page=2`, mêmes noms que les paramètres de l'API) : la page se partage, le bouton « précédent » fonctionne. L'adresse est relue sans jamais échouer : une valeur absurde retombe sur le défaut. Les champs ne sont envoyés qu'au clic sur « Filtrer » (pas de requête à chaque frappe) ; changer un filtre revient à la page 1.
 - **Actions** : « Suivre » (brouillon, rien n'est envoyé), « Sauvegarder / Ignorer / Archiver / Retirer la décision ». Une action en échec est signalée et l'offre reste utilisable.
 - **Annonces non fiables** : titre, entreprise et extrait sont rendus comme du texte (jamais comme du HTML) ; le lien vers l'annonce n'existe que si l'API fournit une URL http(s), et s'ouvre avec `noopener noreferrer`. Un score absent s'affiche « — », jamais 0.
-- `/applications/:id` est réservé (écran « Bientôt disponible ») jusqu'au Front 2.
 
 ### Écrans Candidatures (Front 2)
 
@@ -124,3 +123,13 @@ Commandes : `make front-check` (types, lint, format, build) et `make front-e2e` 
 - `/applications/:id` : changement de statut (**seules les transitions que l'API renvoie sont proposées**, date et note facultatives ; un statut final n'a plus de formulaire), informations (recruteur, canal, CV, relance, message, notes) et historique du plus récent au plus ancien. Un identifiant invalide n'appelle jamais l'API : même écran qu'une candidature inconnue.
 - **Édition** : texte vide = champ effacé (`null`) ; le CV n'est envoyé que si le profil en propose (sinon le CV associé n'est pas touché). Une erreur `422` s'affiche sous le champ concerné et **garde la saisie** ; une panne du serveur est annoncée sans perdre le texte.
 - Notes et message sont des textes de l'utilisateur, affichés et renvoyés tels quels, jamais interprétés. Rien n'est envoyé à un recruteur : l'écran le rappelle.
+
+### Écran Analytics (Front 3)
+
+- `/analytics` : `GET /api/v1/analytics?since=`. La période se choisit par des liens (`30d`, `90d` par défaut, `365d`, `all`) ; l'adresse la porte (`?since=30d`, rien pour la valeur par défaut) et une valeur inconnue est ignorée, jamais envoyée.
+- **Parcours** : envoyées → réponses → entretiens → propositions (barres `<progress>`, sans style en ligne), puis acceptées, refusées, sans réponse et délai médian (« Inconnu » s'il n'y a aucune réponse).
+- **Répartitions** : par source, version du CV, profil de recherche et canal, en tableaux.
+- **Jamais de pourcentage trompeur** : le taux vient de l'API ; `null` (moins de `min_sample` = 5 candidatures) donne « x/y », sinon « x/y (NN %) ». Le front ne calcule aucun pourcentage lui-même.
+- **Rendement des sources** : offres collectées → compatibles → notifiées → suivies → postulées. Affiché même sans candidature envoyée ; sans candidature, un état vide remplace le parcours.
+- Les libellés (source, CV, profil) peuvent venir de contenus externes : rendus comme du texte.
+- Tous les écrans de l'ancienne interface sont migrés : l'écran « Bientôt disponible » est supprimé.
