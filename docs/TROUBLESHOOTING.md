@@ -13,7 +13,7 @@ nouvelles s'ajoutent **en haut** du fichier, avec la date du jour au format
 
 **Symptôme** : n'importe quelle cible `make` exécutée en local (hors Docker) échoue
 avec une `RuntimeException` levée depuis `app/vendor/composer/platform_check.php` —
-`make run-pipeline`, `make cs`, `make stan`, `make test`… Exemple :
+`make run-pipeline`, `make lint`, `make stan`, `make test`… Exemple :
 
 ```
 cd app && php bin/console app:jobs:run
@@ -60,7 +60,7 @@ mauvais binaire, donc corriger l'un ne suffit pas.
   ```
 
 Si l'erreur revient : vérifier d'abord qu'un PHP ≥ 8.4.1 est bien installé
-(`ls /usr/bin/php8.*`), puis quelle version est réellement utilisée — `make cs`
+(`ls /usr/bin/php8.*`), puis quelle version est réellement utilisée — `make lint`
 affiche une ligne `PHP runtime: …`, et `php8.4 bin/console --version` doit répondre
 sans erreur. Toute nouvelle cible du makefile invoquant PHP doit utiliser `$(PHP)`
 plutôt que `php` en dur.
@@ -80,6 +80,9 @@ indépendant de la configuration système.
 **Cause** : le conteneur `app` exécute php-fpm sous l'utilisateur `www-data` (uid 33).
 `app/var/` est monté depuis l'hôte (`./app:/app`) et appartient à votre utilisateur
 local — `www-data` n'a donc pas les droits d'écriture dessus.
+
+> **Obsolète** : le conteneur de développement tourne désormais sous votre identifiant (voir [DEPLOY.md](DEPLOY.md)).
+> La solution ci-dessous ne concerne que les fichiers créés auparavant par `root` ou `www-data`.
 
 **Solution** :
 

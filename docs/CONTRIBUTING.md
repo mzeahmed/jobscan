@@ -63,15 +63,15 @@ cd app && symfony console app:jobs:run
 2. **PHP-CS-Fixer** — vérifier le style de code (PSR-12 + règles projet)
 
    ```bash
-   make cs         # vérification
-   make csf        # correction automatique
+   make lint       # vérification
+   make lintf      # correction automatique
    ```
 
 3. **Rector** — vérifier les transformations de modernisation du code
 
    ```bash
-   make rector-check   # vérification
-   make rector         # application
+   make rector     # vérification (simulation)
+   make rectorf    # application
    ```
 
 4. **Tests** — placer les tests isolés dans `app/tests/Unit/` et les tests utilisant
@@ -89,7 +89,7 @@ cd app && symfony console app:jobs:run
 
 6. S'assurer que le pipeline tourne sans erreur en local.
 
-Le hook `pre-push` lance PHPStan automatiquement. Si le hook ne se déclenche pas, lancer `make setup`.
+Les hooks lancent PHP-CS-Fixer et PHPStan au commit, puis PHPUnit au push. S'ils ne se déclenchent pas, lancer `make setup`.
 
 ---
 
@@ -108,25 +108,31 @@ Le hook `pre-push` lance PHPStan automatiquement. Si le hook ne se déclenche pa
 
 ## Ajouter un provider
 
-Un provider implémente `JobProviderInterface` et retourne un tableau de `JobDTO`.
+Un provider implémente `App\Provider\JobProviderInterface` et retourne des `JobDto`. Il ne propage jamais d'exception vers le pipeline.
 
 ```php
-// src/Service/Provider/MonProvider.php
+// app/src/Provider/MonProvider.php
 final class MonProvider implements JobProviderInterface
 {
+    public function name(): string
+    {
+        return 'mon-provider';
+    }
+
+    public function isHealthy(): bool
+    {
+        // Sonde légère : false si la source est injoignable
+    }
+
+    /** @return JobDto[] */
     public function fetch(): array
     {
-        // Récupérer et retourner des JobDTO
+        // Récupérer et retourner des JobDto
     }
 }
 ```
 
-Taguer le service dans `config/services.yaml` :
-
-```yaml
-App\Service\Provider\MonProvider:
-    tags: ['app.job_provider']
-```
+Le service est tagué `app.job_provider` automatiquement (`_instanceof` dans `config/services.yaml`) : seuls ses arguments, s'il en a, sont à déclarer.
 
 ---
 

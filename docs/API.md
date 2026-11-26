@@ -1,6 +1,6 @@
 # API Jobscan (`/api/v1`)
 
-Chantier : un **front React** (dossier `frontend/`) qui consomme Symfony comme API, sur le modèle de l'API et du front Yoostart v4. La migration est terminée : l'ancienne interface Twig a été supprimée (lot Final).
+Symfony n'expose qu'une API, consommée par le front React du dossier `frontend/`.
 
 ## Contrat de réponse
 
@@ -86,45 +86,34 @@ Limite connue : deux rafraîchissements simultanés avec le même cookie (deux o
 
 Une annonce est écrite par un tiers : l'API n'en publie que du **texte brut** (balises retirées, entités décodées, longueur bornée : extrait de 240 caractères en liste, 20 000 en détail) et une **URL `http(s)`** (`url` vaut `null` sinon, jamais `javascript:`). Le front affiche ces champs comme du texte, jamais comme du HTML. Les dates sont en ISO 8601 ; un champ inconnu vaut `null`, jamais une valeur inventée.
 
-## Plan du chantier
+## Choix de conception
 
-- [x] **API 0** — enveloppe, erreurs JSON, sondes, racine de l'API
-- [x] **API 1** — authentification : login, refresh rotatif, logout, me ; pare-feu `^/api` sans état ; table `refresh_token`
-- [x] **API 2** — lecture : offres (filtres, pagination), candidatures, analytics
-- [x] **API 3** — écriture : suivre, décider, statut, détails
-- [x] **Front 0** — squelette `frontend/` (Vite, React 19, TypeScript strict, ESLint, Prettier, Playwright), design-system, routeur, client HTTP, authentification, Docker et Traefik
-- [x] **Front 1** — Offres : liste, filtres dans l'adresse, pagination, suivre, décider
-- [x] **Front 2** — Candidatures : liste par statut, détail, historique, changement de statut, édition
-- [x] **Front 3** — Analytics : parcours, répartitions, rendement des sources
-- [x] **Final** — retrait de l'interface Twig (contrôleurs, gabarits, assets, TwigBundle, AssetMapper, TypeScriptBundle), image nginx de production avec l'écran construit, CI du front, documentation
-
-Choix retenus : `/api/v1` sur **la même origine** (Traefik route le chemin vers Symfony et le reste vers le front : ni CORS ni nouveau certificat), JWT via `firebase/php-jwt`, i18n `i18next` en français seul au départ, interface Twig supprimée au dernier lot.
+Choix retenus : `/api/v1` sur **la même origine** (Traefik route le chemin vers Symfony et le reste vers le front : ni CORS ni nouveau certificat), JWT via `firebase/php-jwt`, i18n `i18next` en français seul au départ.
 
 ## Front (`frontend/`)
 
-Front 0 livré : React 19, TypeScript strict, Vite, TanStack Query, react-router, i18next (français), design-system `js-*` (variables reprises de l'interface Twig), client HTTP `symfonyClient` (rafraîchissement du jeton en vol unique, verrou Web Locks entre onglets).
+React 19, TypeScript strict, Vite, TanStack Query, react-router, i18next (français), design-system `js-*`, client HTTP `symfonyClient` (rafraîchissement du jeton en vol unique, verrou Web Locks entre onglets).
 Commandes : `make front-check` (types, lint, format, build) et `make front-e2e` (Playwright, build de production avec CSP stricte, API simulée).
 
 - **Développement** : `make up` lance le conteneur `frontend` (Vite). Accès `https://jobscan.local:8443` (ou son alias `https://app.jobscan.local:8443`) (nginx route `/api` et `/health` vers Symfony, le reste vers Vite — une seule origine, donc ni CORS ni cookie inter-site) ou directement `http://localhost:5174` (port réglable par `FRONTEND_PORT`). `make hosts` ajoute `app.jobscan.local`.
-- **Production** : l'image nginx (`.docker/nginx/Dockerfile`) construit l'écran (étape Node, comme Coelbook) et le sert ; `/api/` et `/health` sont relayés à php-fpm (`.docker/nginx/prod.conf`). Une seule origine, sur `127.0.0.1:8088`.
+- **Production** : l'image nginx (`.docker/nginx/Dockerfile`) construit l'écran (étape Node) et le sert ; `/api/` et `/health` sont relayés à php-fpm (`.docker/nginx/prod.conf`). Une seule origine, sur `127.0.0.1:8088`.
 - **Contrat d'authentification** : `POST /auth/login {username,password}` et `POST /auth/refresh` (cookie HttpOnly) renvoient `{user:{id,username,roles}, access_token, token_type, expires_in}` ; `POST /auth/logout` répond 204.
-- **Vérifié** contre l'API réelle (API 1) : connexion, `me`, rotation, déconnexion.
 
-### Écran Offres (Front 1)
+### Écran Offres
 
 - `/jobs` : liste paginée (`GET /api/v1/jobs`), cartes avec anneau de score, filtres et tri.
 - **Filtres dans l'adresse** (`?source=rss&min_score=60&page=2`, mêmes noms que les paramètres de l'API) : la page se partage, le bouton « précédent » fonctionne. L'adresse est relue sans jamais échouer : une valeur absurde retombe sur le défaut. Les champs ne sont envoyés qu'au clic sur « Filtrer » (pas de requête à chaque frappe) ; changer un filtre revient à la page 1.
 - **Actions** : « Suivre » (brouillon, rien n'est envoyé), « Sauvegarder / Ignorer / Archiver / Retirer la décision ». Une action en échec est signalée et l'offre reste utilisable.
 - **Annonces non fiables** : titre, entreprise et extrait sont rendus comme du texte (jamais comme du HTML) ; le lien vers l'annonce n'existe que si l'API fournit une URL http(s), et s'ouvre avec `noopener noreferrer`. Un score absent s'affiche « — », jamais 0.
 
-### Écrans Candidatures (Front 2)
+### Écrans Candidatures
 
 - `/applications` : onglets par statut avec compteurs (liens `?status=`, l'adresse porte le filtre ; un statut inconnu est ignoré et jamais envoyé), bandeau des relances dues, cartes avec statut, canal, CV, date d'envoi, relance.
 - `/applications/:id` : changement de statut (**seules les transitions que l'API renvoie sont proposées**, date et note facultatives ; un statut final n'a plus de formulaire), informations (recruteur, canal, CV, relance, message, notes) et historique du plus récent au plus ancien. Un identifiant invalide n'appelle jamais l'API : même écran qu'une candidature inconnue.
 - **Édition** : texte vide = champ effacé (`null`) ; le CV n'est envoyé que si le profil en propose (sinon le CV associé n'est pas touché). Une erreur `422` s'affiche sous le champ concerné et **garde la saisie** ; une panne du serveur est annoncée sans perdre le texte.
 - Notes et message sont des textes de l'utilisateur, affichés et renvoyés tels quels, jamais interprétés. Rien n'est envoyé à un recruteur : l'écran le rappelle.
 
-### Écran Analytics (Front 3)
+### Écran Analytics
 
 - `/analytics` : `GET /api/v1/analytics?since=`. La période se choisit par des liens (`30d`, `90d` par défaut, `365d`, `all`) ; l'adresse la porte (`?since=30d`, rien pour la valeur par défaut) et une valeur inconnue est ignorée, jamais envoyée.
 - **Parcours** : envoyées → réponses → entretiens → propositions (barres `<progress>`, sans style en ligne), puis acceptées, refusées, sans réponse et délai médian (« Inconnu » s'il n'y a aucune réponse).
@@ -132,13 +121,3 @@ Commandes : `make front-check` (types, lint, format, build) et `make front-e2e` 
 - **Jamais de pourcentage trompeur** : le taux vient de l'API ; `null` (moins de `min_sample` = 5 candidatures) donne « x/y », sinon « x/y (NN %) ». Le front ne calcule aucun pourcentage lui-même.
 - **Rendement des sources** : offres collectées → compatibles → notifiées → suivies → postulées. Affiché même sans candidature envoyée ; sans candidature, un état vide remplace le parcours.
 - Les libellés (source, CV, profil) peuvent venir de contenus externes : rendus comme du texte.
-- Tous les écrans de l'ancienne interface sont migrés : l'écran « Bientôt disponible » est supprimé.
-
-### Lot Final
-
-- **Supprimé** : `src/Controller/`, `templates/`, `assets/`, les extensions Twig, le formulaire de connexion et ses tests, `symfony/twig-bundle`, `symfony/asset`, `symfony/asset-mapper`, `sensiolabs/typescript-bundle` (avec eux, 9 avis de sécurité de dépendances disparaissent), les commandes `make w`/`make b` et le hook d'assets.
-- **En-têtes de sécurité** : `SecurityHeadersSubscriber` ne pose plus de nonce (plus de page HTML côté Symfony) : chaque réponse de l'API porte `default-src 'none'`, `frame-ancestors 'none'`, `nosniff`, `no-referrer`, `no-store`. La CSP de l'écran React est dans `frontend/security-headers.conf` (source unique, relue par Vite).
-- **Image de production** : `docker-compose.prod.yml` ne passe plus `additional_contexts` à nginx (plus de ressources PHP à copier) ; l'image nginx embarque `frontend/dist`.
-- **Développement** : `jobscan.local` et `app.jobscan.local` mènent au même écran (Vite derrière nginx) ; `/api` et `/health` vont à Symfony.
-- **CI** : un travail `frontend` (types, ESLint, Prettier, build, Playwright) s'ajoute au travail PHP.
-- **Vérifié de bout en bout** sur la pile de production construite (projet Docker isolé, identifiants factices) : connexion réelle depuis un navigateur, les trois écrans, rechargement avec session conservée, déconnexion, aucune violation de CSP ; `/api/v1/*` répond avec le jeton ; `/login` côté Symfony n'existe plus.

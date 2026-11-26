@@ -311,7 +311,7 @@ searxng:
     image: searxng/searxng
     container_name: jobscan_searxng
     volumes:
-        - ./docker/searxng/settings.yml:/etc/searxng/settings.yml
+        - ./.docker/searxng/settings.yml:/etc/searxng/settings.yml
     environment:
         SEARXNG_BASE_URL: http://searxng.local
 ```
@@ -346,8 +346,7 @@ php bin/console app:profile:init       # crée config/profile/local/candidate.ya
 php bin/console app:profile:validate   # contrôle sans jamais afficher le contenu
 ```
 
-Jobscan n'invente aucune compétence : seule ce que vous déclarez compte. Ce chargement est la première brique du
-matching par profil ; il n'est pas encore branché sur le scoring. Voir [docs/PROFILE.md](docs/PROFILE.md).
+Jobscan n'invente aucune compétence : seul ce que vous déclarez compte. Ce profil alimente le matching ci-dessous. Voir [docs/PROFILE.md](docs/PROFILE.md).
 
 ---
 
@@ -363,7 +362,7 @@ php bin/console app:jobs:explain 123     # pourquoi cette offre : critères, com
 php bin/console app:jobs:match           # (re)calcule les résultats périmés, sans appel au LLM
 ```
 
-Voir [docs/MATCHING.md](docs/MATCHING.md). Ce matching ne remplace pas encore le score historique, qui reste celui des notifications.
+Voir [docs/MATCHING.md](docs/MATCHING.md). Avec un profil de recherche actif, c'est ce matching qui déclenche les notifications ; le score historique ne sert qu'en l'absence de profil.
 
 ---
 
@@ -559,16 +558,9 @@ mkdir -p certs && cd certs && mkcert jobscan.local searxng.local && cd ..
 
 make hosts   # ajoute jobscan.local et searxng.local dans /etc/hosts (sudo)
 make up
-make fix-perms     # requis : php-fpm tourne en www-data, différent de l'utilisateur hôte
 make run-pipeline
 make alerts
 ```
-
-> **`Unable to write in the "cache" directory` dans le navigateur ?** Le conteneur
-> `app` exécute php-fpm sous l'utilisateur `www-data`, qui n'a pas les droits
-> d'écriture sur `app/var/` monté depuis l'hôte (appartenant à votre utilisateur local).
-> `make fix-perms` corrige ça (`sudo chmod -R 777 app/var` — suffisant en local, à ne
-> jamais faire en production).
 
 Accès application (écran React : offres, candidatures, analytics) :
 
@@ -714,13 +706,12 @@ make help          # liste toutes les commandes
 make migrate       # applique les migrations
 make run-pipeline  # lance le pipeline
 make alerts        # suit les alertes en live
-make fix-perms     # corrige les permissions SQLite
 make logs          # affiche les logs Docker
 make bash          # ouvre un shell dans le conteneur app
-make cs            # PHP-CS-Fixer — vérification
-make csf           # PHP-CS-Fixer — correction automatique
-make rector-check  # Rector — vérification
-make rector        # Rector — application
+make lint          # PHP-CS-Fixer — vérification
+make lintf         # PHP-CS-Fixer — correction automatique
+make rector        # Rector — vérification (simulation)
+make rectorf       # Rector — application
 make stan          # PHPStan — analyse statique
 ```
 

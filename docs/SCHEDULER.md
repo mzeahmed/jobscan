@@ -17,7 +17,7 @@ Pas de lecture seule de documentation : un **prototype jetable** (projet Symfony
 | Idem avec un planning **stateful** (`->stateful($cache)->processOnlyLastMissedRun(true)`) et un horaire `cron` | **Une seule** exécution de rattrapage dès le redémarrage (2 minutes manquées → 1 exécution à +0,1 s), sans doublon. *(Avec un intervalle relatif `every`, une exécution supplémentaire est apparue une seconde plus tard : à éviter pour un envoi Telegram.)* |
 | Horaires de type cron | Exigent un **paquet de plus** (`dragonmantank/cron-expression`). |
 | Démarrage et mémoire | Application Jobscan : **0,2 s** et **52 Mo** de pic pour démarrer une commande ; prototype minimal en worker : 45 Mo au repos. |
-| Sécurité du prototype | `composer audit` : *No security vulnerability advisories found* avec les versions à jour (8.1.11) — voir « Hors évaluation ». |
+| Sécurité du prototype | `composer audit` : *No security vulnerability advisories found* avec les versions à jour (8.1.11). |
 
 ## Comparaison pour Jobscan
 
@@ -70,7 +70,3 @@ final class JobscanSchedule implements ScheduleProviderInterface
 - Le prototype est un **squelette minimal**, pas Jobscan : la mémoire d'un worker complet (Doctrine, profils, caches) n'a pas été mesurée sur la durée, ni les fuites éventuelles.
 - Aucun essai de longue durée, de plusieurs workers, ni du verrou `lock` de Scheduler.
 - Observations faites avec Scheduler 8.1.10 et Messenger 8.1.11 ; le comportement peut évoluer.
-
-## Hors évaluation : mise à jour de sécurité
-
-Le prototype s'est installé avec les versions **corrigées** de Symfony (8.1.11) et `composer audit` n'y signale aucun avis, alors que le dépôt en cumule 24 avec ses versions actuelles. La mise à jour est donc faisable ; elle reste **bloquée** par les fichiers appartenant à root dans `app/vendor` (voir [DEPLOY.md](DEPLOY.md), « fin des fichiers appartenant à root »).
