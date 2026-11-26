@@ -54,6 +54,7 @@ final readonly class ApplicationDetailsInput
             if (!\array_key_exists($field, $body)) {
                 continue;
             }
+
             $value = $body[$field];
             if ($value !== null && !\is_string($value)) {
                 $errors[$field] = 'Texte attendu.';

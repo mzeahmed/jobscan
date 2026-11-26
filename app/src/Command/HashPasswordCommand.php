@@ -38,6 +38,7 @@ final class HashPasswordCommand extends Command
 
             return Command::FAILURE;
         }
+
         if (!hash_equals($password, $ask('Confirmez le mot de passe'))) {
             $io->error('Les deux saisies diffèrent.');
 

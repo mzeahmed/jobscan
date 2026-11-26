@@ -77,6 +77,7 @@ final class RecruiteeProvider extends AbstractAtsProvider
         if (!is_scalar($id) || (string) $id === '' || $title === null || !$this->isHttpUrl($url)) {
             return null;
         }
+
         if (is_string($offer['status'] ?? null) && $offer['status'] !== 'published') {
             return null;
         }

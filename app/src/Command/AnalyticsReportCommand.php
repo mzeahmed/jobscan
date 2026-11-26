@@ -46,6 +46,7 @@ final class AnalyticsReportCommand extends Command
 
             return Command::INVALID;
         }
+
         $format = (string) $input->getOption('format');
         if (!in_array($format, ['table', 'json'], true)) {
             $io->error('--format : table ou json.');
@@ -93,6 +94,7 @@ final class AnalyticsReportCommand extends Command
             if ($rows === []) {
                 continue;
             }
+
             $io->section($title);
             $io->table(['', 'Envoyées', 'Réponses', 'Entretiens', 'Propositions'], array_map(static fn (BreakdownRow $r): array => [
                 $r->label,

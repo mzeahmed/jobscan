@@ -116,6 +116,7 @@ final class EmailJobProviderTest extends KernelTestCase
         foreach ($this->processed->findAll() as $row) {
             $byStatus[$row->getStatus()->value] = ($byStatus[$row->getStatus()->value] ?? 0) + 1;
         }
+
         self::assertSame(['unsupported' => 1, 'no_offers' => 1, 'parse_failed' => 1, 'ingested' => 1], $byStatus);
         self::assertSame(2, $this->jobs()->countAll());
         self::assertCount(1, $this->diagnostics->drain('email')['errors'], 'L\'échec de parsing est relevé pour le monitoring.');

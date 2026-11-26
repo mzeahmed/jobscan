@@ -10,6 +10,13 @@ publiée est `v0.4.0` ; la prochaine sera constituée du contenu de la section
 
 ## [Unreleased]
 
+### 2026-11-26
+
+#### Sécurité
+
+- Paquets Symfony mis à jour (8.1.12 au plus haut) : `composer audit` ne remonte plus d'avis (27 avis distincts
+  auparavant). Le plus exposé était CVE-2026-108082 (`Cache-Control`, atteignable sans connexion).
+
 ### 2026-11-25
 
 #### Changed

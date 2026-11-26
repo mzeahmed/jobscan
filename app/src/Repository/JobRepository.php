@@ -274,6 +274,7 @@ class JobRepository extends ServiceEntityRepository
         if ($minimum !== null) {
             $query->andWhere('j.score >= :minimum')->setParameter('minimum', $minimum);
         }
+
         if ($maximum !== null) {
             $query->andWhere('j.score <= :maximum')->setParameter('maximum', $maximum);
         }
@@ -315,6 +316,7 @@ class JobRepository extends ServiceEntityRepository
         } else {
             $query->orderBy('j.createdAt', 'DESC');
         }
+
         // Ordre total : sans départage, deux offres ex æquo peuvent changer de page d'un appel à l'autre.
         $query->addOrderBy('j.id', 'DESC');
 
@@ -352,28 +354,36 @@ class JobRepository extends ServiceEntityRepository
             $query->andWhere('LOWER(j.location) LIKE LOWER(:location)')
                 ->setParameter('location', '%' . $filters->location . '%');
         }
+
         if ($filters->remote !== null) {
             $query->andWhere('j.remote = :remote')->setParameter('remote', $filters->remote);
         }
+
         if ($filters->contractType !== null) {
             $query->andWhere('j.contractType = :contractType')->setParameter('contractType', $filters->contractType->value);
         }
+
         if ($filters->seniority !== null) {
             $query->andWhere('j.seniority = :seniority')->setParameter('seniority', $filters->seniority->value);
         }
+
         if ($filters->freelance !== null) {
             $query->andWhere('j.freelance = :freelance')->setParameter('freelance', $filters->freelance);
         }
+
         if ($filters->minimumScore !== null) {
             $query->andWhere('j.score >= :minimumScore')->setParameter('minimumScore', $filters->minimumScore);
         }
+
         if ($filters->source !== null) {
             $query->andWhere('j.source = :source')->setParameter('source', $filters->source);
         }
+
         if ($filters->ageInDays !== null) {
             $query->andWhere('j.createdAt >= :createdSince')
                 ->setParameter('createdSince', new \DateTimeImmutable(sprintf('-%d days', $filters->ageInDays)));
         }
+
         if ($filters->notified !== null) {
             $query->andWhere($filters->notified ? 'j.notifiedAt IS NOT NULL' : 'j.notifiedAt IS NULL');
         }

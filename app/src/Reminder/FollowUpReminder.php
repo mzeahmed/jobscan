@@ -70,6 +70,7 @@ final readonly class FollowUpReminder
         if ($applied !== null) {
             $facts[] = sprintf('postulé le %s (%s)', $applied->format('d/m/Y'), self::elapsed($applied, $now));
         }
+
         $lines[] = TelegramHtml::escape(implode(' · ', $facts));
 
         $followUp = $application->getFollowUpAt();

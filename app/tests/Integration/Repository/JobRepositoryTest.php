@@ -91,6 +91,7 @@ final class JobRepositoryTest extends KernelTestCase
         foreach ([$old, $recent] as $job) {
             $this->entityManager->persist(new JobSource($job, $job->toDto(), (string) $job->getUrl(), new \DateTimeImmutable()));
         }
+
         $this->entityManager->flush();
         $this->entityManager->clear();
 

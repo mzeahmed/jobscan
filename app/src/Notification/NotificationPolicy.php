@@ -46,9 +46,11 @@ final readonly class NotificationPolicy
                 throw new \InvalidArgumentException('Les seuils de notification doivent être compris entre 0 et 100.');
             }
         }
+
         if (!($priorityThreshold >= $interestingThreshold && $interestingThreshold >= $secondaryThreshold)) {
             throw new \InvalidArgumentException('Les seuils de notification doivent décroître : prioritaire ≥ intéressante ≥ secondaire.');
         }
+
         if ($digestMaxItems < 1 || $maxAgeDays < 1) {
             throw new \InvalidArgumentException('Le nombre maximal d\'offres du récapitulatif et l\'ancienneté maximale doivent être positifs.');
         }
@@ -60,6 +62,7 @@ final readonly class NotificationPolicy
         if ($secondary === null || $secondary === NotificationMode::Immediate) {
             throw new \InvalidArgumentException(sprintf('Mode de notification des offres secondaires invalide : « %s » (digest ou off).', $secondaryMode));
         }
+
         $this->secondaryMode = $secondary;
     }
 
@@ -98,6 +101,7 @@ final readonly class NotificationPolicy
         if ($this->interestingMode !== NotificationMode::Off) {
             $thresholds[NotificationLevel::Interesting->value] = $this->interestingThreshold;
         }
+
         if ($this->secondaryMode !== NotificationMode::Off) {
             $thresholds[NotificationLevel::Secondary->value] = $this->secondaryThreshold;
         }

@@ -211,6 +211,7 @@ final class FranceTravailProvider implements JobProviderInterface
 
                     return null;
                 }
+
                 $this->wait($this->backoffMs($attempt));
 
                 continue;

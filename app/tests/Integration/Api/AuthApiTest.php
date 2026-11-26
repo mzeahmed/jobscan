@@ -162,6 +162,7 @@ final class AuthApiTest extends WebTestCaseBase
         for ($i = 0; $i < 4; ++$i) {
             $this->apiLogin('mauvais');
         }
+
         $this->apiLogin();
         self::assertResponseStatusCodeSame(200);
 

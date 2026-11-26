@@ -79,6 +79,7 @@ final readonly class CandidateProfileFactory
             if (isset($seen[$skill->key()])) {
                 throw new \InvalidArgumentException(sprintf('Compétence déclarée en double : « %s ».', $skill->name));
             }
+
             $seen[$skill->key()] = true;
 
             if ($profile->excludes($skill->name)) {
@@ -96,6 +97,7 @@ final readonly class CandidateProfileFactory
             if ($salary->min === null && $salary->max === null) {
                 throw new \InvalidArgumentException('Une prétention salariale doit avoir au moins une borne (min ou max).');
             }
+
             if ($salary->min !== null && $salary->max !== null && $salary->min > $salary->max) {
                 throw new \InvalidArgumentException('Prétention salariale : le minimum dépasse le maximum.');
             }
@@ -106,6 +108,7 @@ final readonly class CandidateProfileFactory
             if (isset($ids[$cv->id])) {
                 throw new \InvalidArgumentException(sprintf('Version de CV déclarée en double : « %s ».', $cv->id));
             }
+
             $ids[$cv->id] = true;
         }
     }

@@ -172,6 +172,7 @@ final class FranceTravailProviderTest extends TestCase
             parse_str((string) parse_url($request['url'], PHP_URL_QUERY), $query);
             $ranges[] = $query['range'];
         }
+
         self::assertSame(['0-1', '2-3', '4-5'], $ranges);
     }
 

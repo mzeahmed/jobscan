@@ -56,6 +56,7 @@ abstract class WebTestCaseBase extends WebTestCase
             $this->restore['REMOTE_ADDR'] = [$_SERVER['REMOTE_ADDR'] ?? null, $_ENV['REMOTE_ADDR'] ?? null];
             $_SERVER['REMOTE_ADDR'] = $remoteAddress;
         }
+
         static::ensureKernelShutdown();
         $this->boot();
     }
@@ -71,12 +72,14 @@ abstract class WebTestCaseBase extends WebTestCase
             } else {
                 $_SERVER[$name] = $server;
             }
+
             if ($env === null) {
                 unset($_ENV[$name]);
             } else {
                 $_ENV[$name] = $env;
             }
         }
+
         \Symfony\Component\HttpFoundation\Request::setTrustedProxies([], 0);
 
         $_SERVER['JOBSCAN_UI_PASSWORD_HASH'] = $_ENV['JOBSCAN_UI_PASSWORD_HASH'] = $this->originalHash;

@@ -15,6 +15,7 @@ final class InputReader
         if ($value === null || $value === '') {
             return $now;
         }
+
         if (!is_string($value)) {
             throw new \InvalidArgumentException('Date invalide.');
         }

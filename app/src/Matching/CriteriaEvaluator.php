@@ -210,6 +210,7 @@ final readonly class CriteriaEvaluator
         if ($preferences->remoteModes === []) {
             return [CriterionStatus::NotApplicable, null, 'Aucune préférence de mode de travail.'];
         }
+
         if ($requirements->remoteMode === null) {
             return [CriterionStatus::Unknown, null, 'Mode de travail non précisé par l\'annonce.'];
         }
@@ -231,6 +232,7 @@ final readonly class CriteriaEvaluator
         if ($preferences->contracts === []) {
             return [CriterionStatus::NotApplicable, null, 'Aucune préférence de contrat.'];
         }
+
         if ($requirements->contractTypes === []) {
             return [CriterionStatus::Unknown, null, 'Type de contrat non précisé par l\'annonce.'];
         }
@@ -267,6 +269,7 @@ final readonly class CriteriaEvaluator
         if ($expectation === null || $expectation->min === null) {
             return [CriterionStatus::NotApplicable, null, sprintf('Aucune prétention déclarée comparable (rémunération %s).', $salary->period->value)];
         }
+
         if ($expectation->currency !== $salary->currency) {
             return [CriterionStatus::Unknown, null, sprintf('Devise de l\'annonce (%s) différente de celle de la prétention (%s) : non convertie.', $salary->currency, $expectation->currency)];
         }
@@ -278,6 +281,7 @@ final readonly class CriteriaEvaluator
         if ($low >= $expectation->min) {
             return [CriterionStatus::Match, 1.0, sprintf('Rémunération annoncée (%s %s) au moins égale à la prétention (%d).', $range, $salary->currency, $expectation->min)];
         }
+
         if ($high >= $expectation->min) {
             return [CriterionStatus::Partial, 0.7, sprintf('La fourchette annoncée (%s %s) recoupe la prétention (%d).', $range, $salary->currency, $expectation->min)];
         }
@@ -326,6 +330,7 @@ final readonly class CriteriaEvaluator
         if ($required === []) {
             return [CriterionStatus::NotApplicable, null, 'Aucune langue exigée par l\'annonce.'];
         }
+
         if ($candidate->languages === []) {
             return [CriterionStatus::Unknown, null, 'Langues du candidat non déclarées.'];
         }

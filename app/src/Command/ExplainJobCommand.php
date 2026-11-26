@@ -67,6 +67,7 @@ final class ExplainJobCommand extends Command
                 $this->matcher->matchJob($job, $now, true);
                 $this->jobRepository->flush();
             }
+
             $names = $this->profileNames();
         } catch (InvalidProfileException $e) {
             $io->error($e->getMessage());
@@ -138,6 +139,7 @@ final class ExplainJobCommand extends Command
                 $criterion->detail,
             ];
         }
+
         $io->table(['Critère', 'Statut', 'Score', 'Poids', 'Explication'], $rows);
 
         $this->list($io, 'Éliminatoire', $result->eliminations, 'error');
@@ -150,6 +152,7 @@ final class ExplainJobCommand extends Command
         if ($result->requirementsSource->value === 'heuristic') {
             $io->writeln('  <comment>Exigences extraites par l\'heuristique locale : compétences exigées indéterminées.</comment>');
         }
+
         $unevaluated = count(array_filter($result->criteria, static fn ($criterion): bool => $criterion->status === CriterionStatus::Unknown));
         if ($unevaluated > 0 && $result->coverage < 100) {
             $io->writeln(sprintf('  <comment>%d critère(s) non évalué(s) faute d\'information : le score repose sur %d %% du poids applicable.</comment>', $unevaluated, $result->coverage));
@@ -167,6 +170,7 @@ final class ExplainJobCommand extends Command
         foreach ($items as $item) {
             $io->writeln('  • ' . $item);
         }
+
         $io->newLine();
     }
 

@@ -72,6 +72,7 @@ final class ApplicationTrackingTest extends NotificationIntegrationTestCase
                 self::addToAssertionCount(1);
             }
         }
+
         $this->entityManager->flush();
         self::assertSame(0, $this->applications->count([]), 'Un refus ne crée rien.');
     }
@@ -145,6 +146,7 @@ final class ApplicationTrackingTest extends NotificationIntegrationTestCase
         foreach ([$tracked, $saved, $ignored] as $kept) {
             self::assertNotNull($this->jobs->find($kept->getId()));
         }
+
         self::assertSame(1, $this->applications->count([]));
         self::assertGreaterThan(0, $this->matches->count([]), 'Les résultats de matching des offres conservées le sont aussi.');
     }

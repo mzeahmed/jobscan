@@ -94,6 +94,7 @@ final class TelegramPollCommand extends Command implements SignalableCommandInte
 
                     return Command::FAILURE;
                 }
+
                 sleep(self::RETRY_DELAY_SECONDS);
             } else {
                 foreach ($updates as $update) {

@@ -93,6 +93,7 @@ final class HealthCheckCommand extends Command
             foreach ($report->problems() as $problem) {
                 $lines[] = sprintf('%s %s : %s', $problem->status->symbol(), TelegramHtml::escape($problem->name), TelegramHtml::escape(mb_substr($problem->message, 0, 200)));
             }
+
             $message = implode("\n", $lines);
         }
 

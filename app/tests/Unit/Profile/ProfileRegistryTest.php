@@ -83,6 +83,7 @@ final class ProfileRegistryTest extends ProfileTestCase
             self::assertStringContainsString('EXEMPLE', $content);
             self::assertStringContainsString('fictives', $content);
         }
+
         self::assertStringContainsString('example.com', (string) file_get_contents(__DIR__ . '/../../../config/profile/candidate.example.yaml'));
     }
 

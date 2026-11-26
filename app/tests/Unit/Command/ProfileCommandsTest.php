@@ -32,10 +32,12 @@ final class ProfileCommandsTest extends TestCase
             foreach (glob($directory . '/*') ?: [] as $file) {
                 unlink($file);
             }
+
             if (is_dir($directory)) {
                 rmdir($directory);
             }
         }
+
         rmdir(dirname($this->local));
     }
 

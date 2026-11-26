@@ -49,9 +49,11 @@ final class TemplateDraftWriter
                 return $replacement . substr($fact, strlen($prefix));
             }
         }
+
         if (str_starts_with($fact, ArgumentBuilder::PREFIX_EXPERIENCE)) {
             return 'Expérience : ' . substr($fact, strlen(ArgumentBuilder::PREFIX_EXPERIENCE));
         }
+
         if (str_starts_with($fact, ArgumentBuilder::PREFIX_PROJECT)) {
             return 'Projet : ' . substr($fact, strlen(ArgumentBuilder::PREFIX_PROJECT));
         }

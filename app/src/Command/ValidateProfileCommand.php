@@ -84,6 +84,7 @@ final class ValidateProfileCommand extends Command
                     $profile->cvId ?? '—',
                 ];
             }
+
             $io->table(['Id', 'Nom', 'Actif', 'Seuil', 'Compétences prio. / sec.', 'CV'], $rows);
         }
 

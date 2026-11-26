@@ -145,7 +145,9 @@ final class ApiFoundationTest extends WebTestCase
     {
         $this->client->request('GET', '/page-inexistante');
 
-        self::assertStringNotContainsString('"success"', (string) $this->client->getResponse()->getContent());
+        // Sur le type de réponse : la page d'erreur de debug cite du code source, son texte ne prouve rien.
+        self::assertResponseStatusCodeSame(404);
+        self::assertStringNotContainsString('application/json', $this->contentType());
     }
 
     public function testOnlyTheProbesAndTheApiRootArePublic(): void

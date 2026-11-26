@@ -41,6 +41,7 @@ final readonly class JobListQuery
             if ($value === null) {
                 return null;
             }
+
             if (mb_strlen(trim($value)) > $max) {
                 $errors[$name] = 'Valeur invalide.';
 
@@ -54,6 +55,7 @@ final readonly class JobListQuery
             if ($value === null || $value === '') {
                 return null;
             }
+
             if (!\in_array($value, $allowed, true)) {
                 $errors[$name] = 'Valeur attendue : ' . implode(', ', $allowed) . '.';
 
@@ -67,6 +69,7 @@ final readonly class JobListQuery
             if ($value === null || $value === '') {
                 return $default;
             }
+
             $number = filter_var($value, FILTER_VALIDATE_INT);
             if (!\is_int($number) || $number < $min || $number > $max) {
                 $errors[$name] = sprintf('Entier attendu entre %d et %d.', $min, $max);

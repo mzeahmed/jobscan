@@ -130,19 +130,24 @@ final readonly class ApplicationAssistant
         if ($noFacts) {
             $checks[] = 'Aucun fait du profil à mettre en avant : complétez vos compétences et expériences dans candidate.yaml.';
         }
+
         if ($match->getVerdict() !== MatchVerdict::Eligible) {
             $checks[] = sprintf('Cette offre n\'est pas jugée compatible pour le profil « %s » (%s).', $match->getSearchProfileId(), $match->getVerdict()->label());
         }
+
         if ($missingRequired !== []) {
             $checks[] = 'Compétences demandées que vous ne déclarez pas (non mentionnées dans le message) : ' . implode(', ', $missingRequired) . '.';
         }
+
         $result = $match->getResult();
         if ($result !== null && $result->requirementsSource === ExtractionSource::Heuristic) {
             $checks[] = 'Les exigences de l\'offre viennent d\'une analyse heuristique, moins fiable : vérifiez l\'annonce.';
         }
+
         if ($result !== null && $result->unknown !== []) {
             $checks[] = 'L\'annonce ne précise pas : ' . implode(' ; ', $result->unknown);
         }
+
         $checks[] = 'Ajoutez vous-même vos coordonnées et, si besoin, le nom du recruteur : rien n\'est deviné.';
 
         return $checks;

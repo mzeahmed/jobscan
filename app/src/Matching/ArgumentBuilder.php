@@ -41,6 +41,7 @@ final readonly class ArgumentBuilder
         if ($comparison->matchedRequired !== []) {
             $arguments[] = self::PREFIX_REQUIRED . implode(', ', array_map($this->describe(...), $comparison->matchedRequired)) . '.';
         }
+
         if ($comparison->matchedNice !== []) {
             $arguments[] = self::PREFIX_NICE . implode(', ', array_map($this->describe(...), $comparison->matchedNice)) . '.';
         }
@@ -53,6 +54,7 @@ final readonly class ArgumentBuilder
         foreach ($this->relevant($candidate->experiences, $jobSkills, self::MAX_EXPERIENCES) as [$experience, $shared]) {
             $arguments[] = sprintf(self::PREFIX_EXPERIENCE . '%s chez %s (%s).', $experience->title, $experience->company, implode(', ', $shared));
         }
+
         foreach ($this->relevant($candidate->projects, $jobSkills, self::MAX_PROJECTS) as [$project, $shared]) {
             $arguments[] = sprintf(self::PREFIX_PROJECT . '%s (%s).', $project->name, implode(', ', $shared));
         }

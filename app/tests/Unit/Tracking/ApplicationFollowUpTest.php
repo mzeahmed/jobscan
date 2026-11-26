@@ -30,6 +30,7 @@ final class ApplicationFollowUpTest extends TestCase
                 $application->transitionTo($status, $this->now->modify('-10 days'));
             }
         }
+
         self::assertNotEmpty($path);
 
         return $application;

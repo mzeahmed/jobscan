@@ -149,6 +149,7 @@ abstract class AbstractAtsProvider implements JobProviderInterface
 
                     return null;
                 }
+
                 $this->wait($this->backoffMs($attempt));
 
                 continue;

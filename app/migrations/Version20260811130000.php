@@ -30,6 +30,7 @@ final class Version20260811130000 extends AbstractMigration
                 [$canonicalUrl, $id],
             );
         }
+
         $this->addSql('CREATE UNIQUE INDEX uniq_job_url ON job (url)');
         $this->addSql('CREATE UNIQUE INDEX uniq_job_canonical_url ON job (canonical_url)');
         $this->addSql('CREATE UNIQUE INDEX uniq_job_fingerprint ON job (fingerprint)');

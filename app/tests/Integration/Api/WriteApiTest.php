@@ -58,6 +58,7 @@ final class WriteApiTest extends WebTestCaseBase
         if ($status !== ApplicationStatus::Draft) {
             $manager->changeStatus($application, ApplicationStatus::Applied, new \DateTimeImmutable('-2 days'));
         }
+
         $this->entityManager->flush();
 
         return (int) $application->getId();
@@ -188,6 +189,7 @@ final class WriteApiTest extends WebTestCaseBase
             self::assertResponseStatusCodeSame(422, json_encode($body));
             self::assertArrayHasKey('state', $this->json()['data']['errors']);
         }
+
         self::assertNull($this->reload(Job::class, (int) $job->getId())->getUserState());
     }
 
@@ -238,6 +240,7 @@ final class WriteApiTest extends WebTestCaseBase
             self::assertResponseStatusCodeSame(422, json_encode($body));
             self::assertArrayHasKey($field, $this->json()['data']['errors']);
         }
+
         self::assertSame(ApplicationStatus::Draft, $this->reload(\App\Entity\Application::class, $id)->getStatus());
     }
 

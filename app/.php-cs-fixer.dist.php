@@ -19,6 +19,7 @@ declare(strict_types=1);
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
 use App\CsFixer\SplitMethodAttributeArgsFixer;
+use App\CsFixer\BlankLineAfterControlStructureFixer;
 
 $finder = Finder::create()
                 ->in(__DIR__)
@@ -39,6 +40,7 @@ $finder = Finder::create()
 return (new Config())
     ->registerCustomFixers([
         new SplitMethodAttributeArgsFixer(),
+        new BlankLineAfterControlStructureFixer(),
     ])
     ->setRules([
         // Preset "psr12" de Pint
@@ -81,7 +83,9 @@ return (new Config())
         ],
 
         // Règle custom : un argument par ligne sur les attributs de méthode 2+ args
-        'CsFixer/split_method_attribute_args' => true
+        'CsFixer/split_method_attribute_args' => true,
+        // Regle custom : ligne vide après le corps d'une structure de contrôle
+        'CsFixer/blank_line_after_control_structure' => true,
     ])
     ->setRiskyAllowed(true)
     ->setUsingCache(true)

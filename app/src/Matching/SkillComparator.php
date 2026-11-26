@@ -47,6 +47,7 @@ final readonly class SkillComparator
             if (isset($seen[$key])) {
                 continue;
             }
+
             $seen[$key] = true;
 
             if (isset($declared[$key])) {

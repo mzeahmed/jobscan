@@ -31,6 +31,7 @@ abstract class ProfileTestCase extends TestCase
         foreach (glob($this->directory . '/*') ?: [] as $file) {
             unlink($file);
         }
+
         rmdir($this->directory);
     }
 
@@ -49,6 +50,7 @@ abstract class ProfileTestCase extends TestCase
         if ($candidate !== '') {
             $this->write(ProfileLoader::CANDIDATE_FILE, $candidate);
         }
+
         if ($searchProfiles !== '') {
             $this->write(ProfileLoader::SEARCH_PROFILES_FILE, $searchProfiles);
         }

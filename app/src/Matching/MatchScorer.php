@@ -75,6 +75,7 @@ final readonly class MatchScorer
                 $known += $criterion->weight;
                 $points += $criterion->weight * ($criterion->score ?? 0.0);
             }
+
             if ($criterion->status->isKnown() || $criterion->status === CriterionStatus::Unknown) {
                 $applicable += $criterion->weight;
             }

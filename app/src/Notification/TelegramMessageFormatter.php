@@ -113,6 +113,7 @@ final readonly class TelegramMessageFormatter
         if ($where !== []) {
             $lines[] = TelegramHtml::escape(implode(' · ', $where));
         }
+
         $lines[] = $this->publication($job, $now);
         $lines[] = sprintf('Compatibilité <b>%d</b> · Fraîcheur <b>%d</b> · Priorité <b>%d</b>', $match->getMatchScore(), $match->getFreshnessScore(), $match->getPriorityScore());
         $lines[] = TelegramHtml::link((string) $job->getUrl(), 'Voir l\'offre');
@@ -140,12 +141,15 @@ final readonly class TelegramMessageFormatter
         if ($requirements !== null && $requirements->contractTypes !== []) {
             $facts[] = 'Contrat : ' . implode(', ', array_map(static fn ($type): string => $type->value, $requirements->contractTypes));
         }
+
         if ($requirements?->remoteMode !== null) {
             $facts[] = 'Télétravail : ' . self::REMOTE_LABELS[$requirements->remoteMode->value];
         }
+
         if ($requirements?->salary !== null) {
             $facts[] = 'Salaire : ' . $this->salary($requirements->salary);
         }
+
         if ($facts !== []) {
             $lines[] = TelegramHtml::escape(implode(' · ', $facts));
         }

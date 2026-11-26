@@ -125,9 +125,11 @@ class Application
         if ($to === ApplicationStatus::Applied) {
             $this->appliedAt ??= $at;
         }
+
         if ($to->isResponse()) {
             $this->respondedAt ??= $at;
         }
+
         if ($to->recordsContact()) {
             $this->lastContactAt = $at;
         }
@@ -264,6 +266,7 @@ class Application
         if ($at != $this->followUpAt) {
             $this->followUpRemindedAt = null;
         }
+
         $this->followUpAt = $at;
     }
 

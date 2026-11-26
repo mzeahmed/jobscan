@@ -61,6 +61,7 @@ final class SendRemindersCommand extends Command
                 $io->writeln(OutputFormatterEscape::escape(strip_tags($preview)));
                 $io->newLine();
             }
+
             $io->note(sprintf('%d rappel(s) — aperçu, non envoyé.', $result->due));
 
             return Command::SUCCESS;

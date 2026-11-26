@@ -79,6 +79,7 @@ final class DigestNotifierTest extends NotificationIntegrationTestCase
         foreach (range(1, 5) as $i) {
             $this->eligibleJob('Offre ' . $i, url: 'https://jobs.example/' . $i);
         }
+
         $notifier = $this->digestNotifier($this->secondaryPolicy(maxItems: 2));
 
         $first = $notifier->send($this->now);

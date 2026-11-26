@@ -39,6 +39,7 @@ final readonly class ApplicationManager
             $this->assertSearchProfileExists($searchProfileId);
             $application->setSearchProfileId($searchProfileId);
         }
+
         if ($cvVersionId !== null) {
             $this->attachCv($application, $cvVersionId);
         }

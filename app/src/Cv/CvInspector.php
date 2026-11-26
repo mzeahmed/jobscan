@@ -27,6 +27,7 @@ final readonly class CvInspector
         if (!is_file($path)) {
             return CvFileStatus::problem(CvFileStatus::MISSING, $path);
         }
+
         if (!is_readable($path)) {
             return CvFileStatus::problem(CvFileStatus::UNREADABLE, $path);
         }

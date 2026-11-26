@@ -50,6 +50,7 @@ final class MatchScorerTest extends MatchingTestCase
                 self::assertSame(CriterionStatus::Match, $criterion->status, $criterion->criterion);
             }
         }
+
         self::assertSame(CriterionStatus::NotApplicable, $result->criterion('availability')?->status);
     }
 

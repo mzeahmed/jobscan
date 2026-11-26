@@ -36,6 +36,7 @@ final class MatchNotifierTest extends NotificationIntegrationTestCase
         foreach (['Opportunité prioritaire', 'Développeur back-end PHP', 'Compatibilité <b>100</b>', 'Fraîcheur <b>100</b>', 'Priorité <b>100</b>', 'Profil : Backend PHP / Symfony · CV : CV Backend PHP', 'Contrat : cdi', 'https://jobs.example/1'] as $expected) {
             self::assertStringContainsString($expected, $payload['text'], $expected);
         }
+
         self::assertNotNull($job->getNotifiedAt());
         $logs = $this->logs->findAll();
         self::assertCount(1, $logs);
@@ -234,6 +235,7 @@ final class MatchNotifierTest extends NotificationIntegrationTestCase
         foreach (range(1, 4) as $i) {
             $this->eligibleJob(publishedAt: $this->now->modify('-1 hour'), url: 'https://jobs.example/p' . $i);
         }
+
         $this->eligibleJob(url: 'https://jobs.example/digest');
 
         $policy = new NotificationPolicy(priorityThreshold: 90, interestingThreshold: 90, secondaryThreshold: 50);
@@ -243,6 +245,7 @@ final class MatchNotifierTest extends NotificationIntegrationTestCase
         foreach (range(1, 4) as $i) {
             $this->eligibleJob(publishedAt: $this->now->modify('-1 hour'), url: 'https://jobs.example/q' . $i);
         }
+
         self::assertSame(2, $this->matchNotifier($policy)->catchUp($this->now, 2));
     }
 }

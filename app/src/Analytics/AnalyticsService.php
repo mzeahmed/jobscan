@@ -71,6 +71,7 @@ final readonly class AnalyticsService
                 $delays[] = max(0, $seconds) / 86400;
             }
         }
+
         sort($delays);
 
         return new Funnel(
@@ -108,6 +109,7 @@ final readonly class AnalyticsService
         foreach ($groups as $label => $group) {
             $rows[] = new BreakdownRow($label, $group['sent'], $group['responded'], $group['interviews'], $group['offers']);
         }
+
         usort($rows, static fn (BreakdownRow $a, BreakdownRow $b): int => [$b->sent, $a->label] <=> [$a->sent, $b->label]);
 
         return $rows;
@@ -146,6 +148,7 @@ final readonly class AnalyticsService
             $sql .= ' AND j.first_seen_at >= :since';
             $parameters['since'] = $since->format('Y-m-d H:i:s');
         }
+
         $sql .= ' GROUP BY j.source ORDER BY collected DESC, j.source ASC';
 
         $rows = [];

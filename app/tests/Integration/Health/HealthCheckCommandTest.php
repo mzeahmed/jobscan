@@ -23,6 +23,7 @@ final class HealthCheckCommandTest extends NotificationIntegrationTestCase
         foreach (glob(self::getContainer()->getParameter('kernel.project_dir') . '/migrations/Version*.php') ?: [] as $file) {
             $db->executeStatement('INSERT OR IGNORE INTO doctrine_migration_versions (version) VALUES (:v)', ['v' => 'DoctrineMigrations\\' . basename($file, '.php')]);
         }
+
         $this->stateFile = sys_get_temp_dir() . '/jobscan-health-' . bin2hex(random_bytes(4)) . '/state';
         self::getContainer()->set(HealthStateStore::class, new HealthStateStore($this->stateFile));
     }
@@ -33,6 +34,7 @@ final class HealthCheckCommandTest extends NotificationIntegrationTestCase
             unlink($this->stateFile);
             rmdir(dirname($this->stateFile));
         }
+
         parent::tearDown();
     }
 

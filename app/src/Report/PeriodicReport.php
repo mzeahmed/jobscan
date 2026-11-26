@@ -86,6 +86,7 @@ final readonly class PeriodicReport
         if ($report->toSort === []) {
             $lines[] = 'Aucune offre compatible en attente.';
         }
+
         foreach ($report->toSort as $offer) {
             $lines[] = sprintf('- [%s](%s)%s — priorité %d', $offer['title'], $offer['url'], $offer['company'] === null ? '' : ' (' . $offer['company'] . ')', $offer['priority']);
         }
@@ -95,6 +96,7 @@ final readonly class PeriodicReport
         if ($report->problems === []) {
             $lines[] = sprintf('Tout est en ordre (%d contrôles).', $report->healthChecks);
         }
+
         foreach ($report->problems as $problem) {
             $lines[] = sprintf('- %s **%s** : %s', $problem->status->symbol(), $problem->name, $problem->message);
         }

@@ -45,6 +45,7 @@ final class ApplicationListCommand extends Command
 
                 return Command::INVALID;
             }
+
             $statuses = [$status];
         }
 
@@ -76,6 +77,7 @@ final class ApplicationListCommand extends Command
                 ($application->getFollowUpAt()?->format('d/m/Y') ?? '—') . ($application->isFollowUpDue($now) ? ' ⏰' : ''),
             ];
         }
+
         $io->table(['#', 'Statut', 'Poste', 'Entreprise', 'Postulé le', 'CV', 'Relance'], $rows);
 
         $counts = $this->applications->countByStatus();
@@ -85,6 +87,7 @@ final class ApplicationListCommand extends Command
                 $parts[] = sprintf('%s : %d', $status->label(), $counts[$status->value]);
             }
         }
+
         $io->writeln(implode(' · ', $parts));
 
         return Command::SUCCESS;

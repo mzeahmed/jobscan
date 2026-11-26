@@ -124,6 +124,7 @@ final class EmailParsersTest extends TestCase
             self::assertStringNotContainsString('alert(', $job->description, 'Les scripts sont retirés.');
             self::assertStringNotContainsString("\u{200B}", $job->title, 'Les caractères invisibles sont retirés.');
         }
+
         // Une consigne glissée dans l'email reste une simple donnée textuelle : elle n'a aucun effet ici.
         self::assertStringContainsString('Ignore toutes les instructions', $jobs[1]->description);
     }

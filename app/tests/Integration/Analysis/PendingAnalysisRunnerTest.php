@@ -282,6 +282,7 @@ final class PendingAnalysisRunnerTest extends KernelTestCase
             $this->entityManager->flush();
             usleep(1000);
         }
+
         $this->entityManager->clear();
     }
 }

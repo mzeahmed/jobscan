@@ -103,6 +103,7 @@ final readonly class ProfileLoader
             if (isset($seen[$profile->id])) {
                 throw new InvalidProfileException(sprintf('%s : profil « %s » déclaré en double.', self::SEARCH_PROFILES_FILE, $profile->id));
             }
+
             $seen[$profile->id] = true;
 
             $this->assertNoContradiction($profile);
@@ -197,6 +198,7 @@ final readonly class ProfileLoader
         if ($data === null) {
             $data = [];
         }
+
         if (!is_array($data) || ($data !== [] && array_is_list($data))) {
             throw new InvalidProfileException(sprintf('%s : le fichier doit contenir une table YAML (clé: valeur), pas une liste.', $file));
         }

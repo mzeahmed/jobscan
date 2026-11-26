@@ -141,6 +141,7 @@ final class RunPipelineCommand extends Command
             } else {
                 $io->writeln(sprintf('  → <info>%d</info> offre(s) récupérée(s)', \count($jobs)));
             }
+
             $fetched += \count($jobs);
 
             try {
@@ -173,9 +174,11 @@ final class RunPipelineCommand extends Command
                 if ($result->status === JobProcessingStatus::Saved) {
                     ++$providerNew;
                 }
+
                 if ($result->status === JobProcessingStatus::Duplicate) {
                     ++$providerDuplicates;
                 }
+
                 if ($result->status === JobProcessingStatus::DryRun && $result->score !== null) {
                     $result->usedFallback ? ++$dryRunFallback : ++$dryRunScored;
                 }
@@ -208,6 +211,7 @@ final class RunPipelineCommand extends Command
                 $analysis->failed,
             ));
         }
+
         $analyzedByAI = $analysis->analyzedByAi + $dryRunScored;
         $analyzedByFallback = $analysis->analyzedByFallback + $dryRunFallback;
 

@@ -35,6 +35,7 @@ final readonly class DraftGuard
         if ($subject === '' || $body === '') {
             return ['objet ou corps vide'];
         }
+
         if (mb_strlen($subject) > self::MAX_SUBJECT || mb_strlen($body) > self::MAX_BODY) {
             $violations[] = 'texte trop long';
         }
@@ -44,6 +45,7 @@ final readonly class DraftGuard
         if (preg_match('~https?://|www\.|[\w.+-]+@[\w-]+\.[\w.]+~iu', $text) === 1) {
             $violations[] = 'lien ou adresse email non fournis';
         }
+
         if ($this->injection->isSuspicious($text)) {
             $violations[] = 'consigne détectée dans le texte';
         }
@@ -64,6 +66,7 @@ final readonly class DraftGuard
                 $violations[] = sprintf('compétence « %s » absente des faits', $term);
             }
         }
+
         foreach ($context->missingSkills as $term) {
             if ($matcher->containsWord($term)) {
                 $violations[] = sprintf('compétence non déclarée « %s » revendiquée', $term);

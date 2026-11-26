@@ -88,6 +88,7 @@ final readonly class JobProcessor implements JobProcessorInterface
                 if ($prepared['persisted']) {
                     $savedIndexes[] = $index;
                 }
+
                 if ($prepared['persisted'] || $prepared['touched']) {
                     ++$pendingWrites;
                 }
@@ -109,6 +110,7 @@ final readonly class JobProcessor implements JobProcessorInterface
                 for ($remaining = $index + 1, $count = count($jobDtos); $remaining < $count; ++$remaining) {
                     $results[$remaining] = JobProcessingResult::failed('Traitement interrompu après un échec de persistance.');
                 }
+
                 break;
             }
 

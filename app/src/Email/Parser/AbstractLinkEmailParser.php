@@ -155,12 +155,14 @@ abstract class AbstractLinkEmailParser implements EmailParserInterface
 
                         continue;
                     }
+
                     if (preg_match('#https?://#i', $candidate) === 1) {
                         break;
                     }
 
                     array_unshift($block, $candidate);
                 }
+
                 $title = array_find($block, fn ($candidate) => !$this->isGenericLabel($candidate));
 
                 if ($title === null || mb_strlen($title) > self::MAX_TITLE_LENGTH) {

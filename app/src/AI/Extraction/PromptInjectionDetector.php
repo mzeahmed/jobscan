@@ -67,6 +67,7 @@ final readonly class PromptInjectionDetector
             for ($byte = 0, $length = strlen($piece); $byte < $length; ++$byte) {
                 $map[strlen($folded) + $byte] = $index;
             }
+
             $folded .= $piece;
         }
 

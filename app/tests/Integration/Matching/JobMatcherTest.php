@@ -259,9 +259,11 @@ final class JobMatcherTest extends MatchingIntegrationTestCase
         foreach ($top as $match) {
             $perJob[(int) $match->getJob()->getId()][] = $match->getSearchProfileId();
         }
+
         foreach ($perJob as $profiles) {
             self::assertCount(1, $profiles, 'Chaque offre n\'apparaît que pour son meilleur profil.');
         }
+
         self::assertSame('backend', $perJob[(int) $job->getId()][0]);
         self::assertSame('devops', $perJob[(int) $other->getId()][0]);
 

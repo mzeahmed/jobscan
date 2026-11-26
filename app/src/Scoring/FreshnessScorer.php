@@ -39,6 +39,7 @@ final readonly class FreshnessScorer
             if ($band['max_hours'] <= $previous) {
                 throw new \InvalidArgumentException('Les tranches de fraîcheur doivent être triées par âge croissant.');
             }
+
             $previous = $band['max_hours'];
         }
     }

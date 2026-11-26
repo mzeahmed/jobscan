@@ -36,6 +36,7 @@ final readonly class JobIdentity
                 unset($query[$key]);
             }
         }
+
         ksort($query);
 
         $scheme = strtolower($parts['scheme'] ?? 'https');

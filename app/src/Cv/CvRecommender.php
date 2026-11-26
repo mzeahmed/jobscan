@@ -33,6 +33,7 @@ final readonly class CvRecommender
         if ($profile === null) {
             return new CvRecommendation(null, $match->getSearchProfileId(), $match->getPriorityScore(), sprintf('Le profil « %s » n\'existe plus.', $match->getSearchProfileId()));
         }
+
         if ($profile->cvId === null) {
             return new CvRecommendation(null, $profile->id, $match->getPriorityScore(), sprintf('Le profil « %s » n\'a pas de CV associé (clé `cv`).', $profile->name));
         }

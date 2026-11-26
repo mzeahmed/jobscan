@@ -113,6 +113,7 @@ class ApplicationRepository extends ServiceEntityRepository
                 $ids[] = $job->getId();
             }
         }
+
         if ($ids === []) {
             return [];
         }

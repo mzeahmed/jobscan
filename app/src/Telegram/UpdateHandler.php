@@ -146,6 +146,7 @@ final readonly class UpdateHandler
                 if ($application === null) {
                     return ['Aucune candidature pour cette offre.', null];
                 }
+
                 try {
                     if ($application->getStatus() === ApplicationStatus::Draft) {
                         $this->manager->changeStatus($application, ApplicationStatus::Applied, $now, 'Via Telegram');

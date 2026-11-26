@@ -79,6 +79,7 @@ final class ApplicationStatusCommand extends Command
         if ($message !== null) {
             $application->setMessageSent($message);
         }
+
         $this->entityManager->flush();
 
         $io->success(sprintf('Candidature n°%d : %s → %s.', (int) $application->getId(), $from->label(), $status->label()));

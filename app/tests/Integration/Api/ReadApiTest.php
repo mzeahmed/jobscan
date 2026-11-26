@@ -223,6 +223,7 @@ final class ReadApiTest extends WebTestCaseBase
         foreach (['description', 'budget', 'score_breakdown', 'requirements', 'publication', 'analysis', 'first_seen_at', 'last_seen_at', 'probable_duplicate_of_id'] as $key) {
             self::assertArrayHasKey($key, $data);
         }
+
         self::assertSame(['source', 'confidence'], array_keys($data['publication']));
     }
 
@@ -359,6 +360,7 @@ final class ReadApiTest extends WebTestCaseBase
             self::assertResponseStatusCodeSame(200, $window);
             self::assertSame($window, $this->json()['data']['window']);
         }
+
         $this->get('/api/v1/analytics', ['since' => 'all']);
         self::assertNull($this->json()['data']['since']);
 
@@ -378,6 +380,7 @@ final class ReadApiTest extends WebTestCaseBase
                 $this->manager()->changeStatus($application, ApplicationStatus::Interview, $now->modify('-5 days'));
             }
         }
+
         $this->entityManager->flush();
 
         $this->get('/api/v1/analytics');

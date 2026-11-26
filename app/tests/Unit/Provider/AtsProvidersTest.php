@@ -131,6 +131,7 @@ final class AtsProvidersTest extends TestCase
             parse_str((string) parse_url($request['url'], PHP_URL_QUERY), $query);
             $skips[] = [$query['mode'], $query['skip'], $query['limit']];
         }
+
         self::assertSame([['json', '0', '3'], ['json', '3', '3'], ['json', '6', '3']], $skips);
     }
 
@@ -343,6 +344,7 @@ final class AtsProvidersTest extends TestCase
             self::assertStringStartsWith('https://api.smartrecruiters.com/v1/companies/Exemple/postings', $request['url']);
             self::assertStringNotContainsString('evil.test', $request['url']);
         }
+
         self::assertSame('https://api.smartrecruiters.com/v1/companies/Exemple/postings/744000100001', $this->requests[1]['url']);
         self::assertSame('https://api.smartrecruiters.com/v1/companies/Exemple/postings/744000100002', $this->requests[2]['url']);
         self::assertCount(3, $this->requests, 'Un identifiant d\'offre douteux ne donne jamais de requête.');

@@ -82,6 +82,7 @@ abstract class MatchingIntegrationTestCase extends KernelTestCase
         foreach (glob($this->profileDirectory . '/*') ?: [] as $file) {
             unlink($file);
         }
+
         rmdir($this->profileDirectory);
         $this->useProfileDirectory('/nonexistent-jobscan-profile');
 

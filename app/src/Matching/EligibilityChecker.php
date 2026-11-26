@@ -46,6 +46,7 @@ final readonly class EligibilityChecker
         foreach ($preferences->excludedSkills as $skill) {
             $excludedSkills[$this->skills->key($skill)] = true;
         }
+
         foreach ($requirements->requiredSkills as $skill) {
             if (isset($excludedSkills[$this->skills->key($skill)])) {
                 $reasons[] = sprintf('L\'annonce exige « %s », une compétence exclue.', $skill);

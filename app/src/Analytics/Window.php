@@ -19,6 +19,7 @@ final class Window
         if ($expression === 'all') {
             return null;
         }
+
         if (preg_match('/^(\d{1,4})([dw])$/', $expression, $matches) !== 1 || (int) $matches[1] < 1) {
             return false;
         }

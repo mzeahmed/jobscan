@@ -47,6 +47,7 @@ final class FollowUpReminderTest extends NotificationIntegrationTestCase
                 $this->manager->changeStatus($application, $status, $this->now->modify('-10 days'));
             }
         }
+
         $application->setFollowUpAt($followUp === null ? null : $this->now->modify($followUp));
         $this->entityManager->flush();
 
@@ -72,6 +73,7 @@ final class FollowUpReminderTest extends NotificationIntegrationTestCase
         foreach (['Relance à faire', 'Développeur PHP &lt;b&gt;senior&lt;/b&gt;', 'Statut : Postulé', sprintf('postulé le %s (il y a 20 j)', $applied), sprintf('Relance prévue le %s — en retard de 3 j', $planned), 'Voir l&#039;offre'] as $expected) {
             self::assertStringContainsString($expected, $payload['text'], $expected);
         }
+
         self::assertStringNotContainsString('Camille', $payload['text'], 'Les données d\'un tiers ne transitent pas par Telegram.');
         self::assertStringNotContainsString('exemple.fr', $payload['text']);
         self::assertSame(['r1', 'p1', 'q1'], array_column($payload['reply_markup']['inline_keyboard'][0], 'callback_data'));

@@ -65,6 +65,7 @@ final class TelegramMessageFormatterTest extends NotificationTestCase
         foreach (['Contrat', 'Télétravail', 'Salaire', ' · CV', 'Exemple SAS'] as $absent) {
             self::assertStringNotContainsString($absent, $message, $absent);
         }
+
         self::assertStringContainsString('⭐ <b>Offre intéressante</b>', $message);
         self::assertStringContainsString('Profil : Backend', $message);
     }

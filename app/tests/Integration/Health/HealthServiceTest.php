@@ -59,6 +59,7 @@ final class HealthServiceTest extends NotificationIntegrationTestCase
                 return $check;
             }
         }
+
         self::fail(sprintf('Aucun contrôle « %s ».', $name));
     }
 
@@ -210,6 +211,7 @@ final class HealthServiceTest extends NotificationIntegrationTestCase
         foreach ([$notified->getId()] as $id) {
             $this->db->executeStatement('UPDATE job SET first_seen_at = :at WHERE id = :id', ['at' => $this->now->modify('-10 hours')->format('Y-m-d H:i:s'), 'id' => $id]);
         }
+
         self::assertNotNull($recent->getId());
 
         self::assertSame(HealthStatus::Ok, $this->check('notifications')->status, 'Récente (pas encore en retard) ou déjà notifiée.');
@@ -281,6 +283,7 @@ final class HealthServiceTest extends NotificationIntegrationTestCase
             $job = \App\Entity\Job::fromDTO(new \App\DTO\JobDto('En attente ' . $i, 'https://jobs.example/p' . $i . '-' . $hoursOld, 'D', 'test'));
             $this->entityManager->persist($job);
         }
+
         $this->entityManager->flush();
         $this->db->executeStatement("UPDATE job SET first_seen_at = :at, analysis_status = 'pending' WHERE title LIKE 'En attente%'", ['at' => $this->now->modify('-' . $hoursOld . ' hours')->format('Y-m-d H:i:s')]);
     }
@@ -291,6 +294,7 @@ final class HealthServiceTest extends NotificationIntegrationTestCase
             $job = \App\Entity\Job::fromDTO(new \App\DTO\JobDto('Analysée ' . $status . $i, 'https://jobs.example/a-' . $status . $i, 'D', 'test'));
             $this->entityManager->persist($job);
         }
+
         $this->entityManager->flush();
         $this->db->executeStatement('UPDATE job SET analysis_status = :s, analyzed_at = :at WHERE title LIKE :t', ['s' => $status, 'at' => $this->now->modify('-1 day')->format('Y-m-d H:i:s'), 't' => 'Analysée ' . $status . '%']);
     }

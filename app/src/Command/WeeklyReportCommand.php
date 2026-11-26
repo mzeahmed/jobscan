@@ -54,6 +54,7 @@ final class WeeklyReportCommand extends Command
 
                 return Command::FAILURE;
             }
+
             $io->success(sprintf('Rapport écrit dans %s.', $file));
         } else {
             $output->write($markdown);
@@ -65,6 +66,7 @@ final class WeeklyReportCommand extends Command
 
                 return Command::FAILURE;
             }
+
             $io->writeln('Résumé envoyé sur Telegram.');
         }
 

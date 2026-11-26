@@ -103,6 +103,7 @@ final class MatchJobsCommand extends Command
         foreach ($this->matchRepository->countByVerdict() as $verdict => $total) {
             $verdicts[] = [$verdict, $total];
         }
+
         if ($verdicts !== []) {
             $io->section('Résultats par verdict');
             $io->table(['Verdict', 'Total'], $verdicts);

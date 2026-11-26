@@ -150,6 +150,7 @@ final class ApplicationAssistantTest extends NotificationIntegrationTestCase
         foreach (['Prénom Secret', 'secret@example.com', '33 6 11', '61234', 'candidate.yaml'] as $private) {
             self::assertStringNotContainsString($private, $this->sentToLlm[0], $private);
         }
+
         self::assertStringContainsString('PHP (expert, 8 an(s))', $this->sentToLlm[0]);
         self::assertStringStartsWith('Bonjour,', $draft->body);
         self::assertStringEndsWith("Cordialement,\nPrénom Secret", $draft->body, 'La signature est ajoutée localement, jamais par le LLM.');

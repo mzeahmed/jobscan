@@ -49,6 +49,7 @@ final class AnalyticsTest extends NotificationIntegrationTestCase
         foreach ($path as [$status, $days]) {
             $this->manager->changeStatus($application, $status, $sent->modify(sprintf('+%d days', $days)));
         }
+
         $this->entityManager->flush();
 
         return $application;
@@ -125,6 +126,7 @@ final class AnalyticsTest extends NotificationIntegrationTestCase
         foreach (range(1, 6) as $i) {
             $this->application(cv: 'backend-php', path: $i <= 3 ? [[ApplicationStatus::Interview, 2]] : []);
         }
+
         $this->application(cv: 'backend-php', path: [[ApplicationStatus::Offer, 3]]);
 
         $rows = $this->service()->report(null, $this->now)->breakdowns['cv'];
@@ -181,6 +183,7 @@ final class AnalyticsTest extends NotificationIntegrationTestCase
         foreach (range(1, 5) as $i) {
             $this->application(path: [[ApplicationStatus::Interview, 2]]);
         }
+
         $this->application(cv: null);
 
         $tester = $this->command();

@@ -44,6 +44,7 @@ final class JobStatsCommand extends Command
         foreach ($this->jobRepository->countBySource() as $source => $total) {
             $sources[] = [$source, $total];
         }
+
         $io->section('Par source');
         $io->table(['Source', 'Total'], $sources);
 
@@ -52,6 +53,7 @@ final class JobStatsCommand extends Command
         foreach ($this->jobRepository->countByAnalysisStatus() as $status => $total) {
             $analysis[] = [$status, $total];
         }
+
         $io->table(['Statut', 'Total'], $analysis);
         $outdated = $this->jobRepository->countOutdatedExtraction(JobRequirements::SCHEMA_VERSION);
         if ($outdated > 0) {
@@ -77,6 +79,7 @@ final class JobStatsCommand extends Command
                 $run->getLastError() === null ? '' : mb_substr($run->getLastError(), 0, 60),
             ];
         }
+
         $io->table(
             ['Provider', 'Statut', 'Dernier run', 'Dernier succès', 'Récup. / nouv. / doublons', 'Erreurs', 'Durée', 'Dernière erreur'],
             $runs,

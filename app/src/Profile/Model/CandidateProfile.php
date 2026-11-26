@@ -79,6 +79,7 @@ final readonly class CandidateProfile
             if ($end > $from) {
                 $months += $end - $from;
             }
+
             $coveredUntil = max($coveredUntil ?? $end, $end);
         }
 

@@ -148,6 +148,7 @@ final readonly class HealthService
             if ($run['status'] !== ProviderRunStatus::Failed->value) {
                 break;
             }
+
             ++$streak;
         }
 
@@ -157,15 +158,19 @@ final readonly class HealthService
         if ($streak >= $this->thresholds->providerFailureStreak) {
             return HealthCheck::critical($name, sprintf('%d échecs consécutifs%s', $streak, $detail));
         }
+
         if ($hours >= $this->thresholds->providerStaleHours * 3) {
             return HealthCheck::critical($name, sprintf('aucune exécution depuis %d h', $hours));
         }
+
         if ($hours >= $this->thresholds->providerStaleHours) {
             return HealthCheck::warning($name, sprintf('aucune exécution depuis %d h', $hours));
         }
+
         if ($status === ProviderRunStatus::Failed) {
             return HealthCheck::warning($name, 'dernière collecte en échec' . $detail);
         }
+
         if ($status === ProviderRunStatus::Partial) {
             return HealthCheck::warning($name, 'dernière collecte partielle' . $detail);
         }
@@ -288,6 +293,7 @@ final readonly class HealthService
         if ($candidate === null) {
             return [HealthCheck::warning('profils', 'profil candidat absent : pas de matching ni de notifications fondées sur le profil (voir docs/PROFILE.md)')];
         }
+
         if ($searchProfiles === []) {
             return [HealthCheck::warning('profils', 'aucun profil de recherche actif : aucune offre ne sera rapprochée')];
         }

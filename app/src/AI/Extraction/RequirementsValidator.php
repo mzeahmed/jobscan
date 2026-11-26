@@ -108,6 +108,7 @@ final readonly class RequirementsValidator
         if ($value === null) {
             return [];
         }
+
         if (!is_array($value)) {
             $warnings[] = sprintf('Champ « %s » ignoré : liste attendue.', $field);
 

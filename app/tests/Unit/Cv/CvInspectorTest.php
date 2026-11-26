@@ -25,6 +25,7 @@ final class CvInspectorTest extends TestCase
             chmod($file, 0600);
             unlink($file);
         }
+
         rmdir($this->directory);
     }
 
@@ -56,6 +57,7 @@ final class CvInspectorTest extends TestCase
         if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
             self::markTestSkipped('root lit tout.');
         }
+
         file_put_contents($this->directory . '/secret.pdf', 'x');
         chmod($this->directory . '/secret.pdf', 0000);
 
